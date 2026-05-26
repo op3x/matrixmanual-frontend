@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+  <html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Upload Your PLC File – ManualOS</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,700;1,9..144,700&family=Spline+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+      :root {
+        --cream: #fdf6ed;
+        --cream-deep: #f5e9d6;
+        --amber: #d97706;
+        --amber-light: #fbbf24;
+        --amber-pale: #fef3c7;
+        --terra: #b45309;
+        --terra-deep: #92400e;
+      --charcoal: #1c1917;
+      --warm-gray: #57534e;
+      --warm-gray-lt: #a8a29e;
+              --radius-lg: 20px;
+      --shadow-sm: 0 1px 3px rgba(28,25,23,.08);
+      --shadow-md: 0 4px 16px rgba(28,25,23,.10);
+      --shadow-lg: 0 12px 40px rgba(28,25,23,.14);
+}
+    *, ::before, ::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+            font-family: "Spline Sans", system-ui, sans-serif;
+      background: var(--cream);
+      color: var(--charcoal);
+      line-height: 1.65;
+      -webkit-font-smoothing: antialiased;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+}
+    nav {
+            position: sticky; top: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 16px 48px;
+      background: rgba(253,246,237,.88);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(217,119,6,.12);
+}
+    .nav-logo {
+            font-family: Fraunces, serif; font-size: 1.2rem; font-weight: 700;
+      color: var(--charcoal); text-decoration: none;
+      display: flex; align-items: center; gap: 10px;
+}
+    .nav-logo-icon {
+            width: 36px; height: 36px; background: var(--amber);
+      border-radius: 10px; display: flex; align-items: center;
+      justify-content: center; color: #fff; font-weight: 700; font-size: 1rem;
+      }
+    .nav-back {
+            font-size: 0.9rem; font-weight: 600; color: var(--warm-gray);
+      text-decoration: none; display: flex; align-items: center; gap: 6px;
+      transition: color .2s;
+}
+    .nav-back:hover { color: var(--amber); }
+    main {
+            flex: 1;
+      max-width: 700px;
+      margin: 56px auto 80px;
+      padding: 0 24px;
+      width: 100%;
+}
+    .page-eyebrow {
+            font-size: 0.78rem; font-weight: 700; letter-spacing: .1em;
+      text-transform: uppercase; color: var(--amber); margin-bottom: 10px;
+}
+    .page-title {
+            font-family: Fraunces, serif; font-size: 2.4rem; font-weight: 700;
+      line-height: 1.15; margin-bottom: 10px;
+}
+    .page-sub {
+            color: var(--warm-gray); margin-bottom: 40px; font-size: 1.05rem;
+}
+    /* Drop zone */
+    .upload-box {
+            border: 2px dashed rgba(217,119,6,.35);
+      border-radius: var(--radius-lg);
+      padding: 52px 40px;
+      text-align: center;
+      background: #fff;
+            cursor: pointer;
+      transition: border-color .2s, background .2s, box-shadow .2s;
+      box-shadow: var(--shadow-sm);
+}
+    .upload-box:hover, .upload-box.drag-over {
+            border-color: var(--amber);
+      background: #fffbf5;
+            box-shadow: 0 4px 24px rgba(217,119,6,.12);
+}
+    .upload-icon { font-size: 3.2rem; margin-bottom: 18px; }
+    .upload-box h2 { font-size: 1.2rem; font-weight: 700; margin-bottom: 8px; }
+    .upload-box p { color: var(--warm-gray); font-size: 0.92rem; margin-bottom: 28px; }
+    .upload-box input[type="file"] { display: none; }
+    .btn-primary {
+            background: var(--amber); color: #fff; border: none;
+      padding: 14px 32px; border-radius: 12px; font-size: 1rem;
+      font-weight: 700; cursor: pointer; transition: background .2s;
+      display: inline-block; text-decoration: none; font-family: inherit;
+}
+    .btn-primary:hover { background: var(--terra); }
+    .btn-primary:disabled { background: var(--warm-gray-lt); cursor: not-allowed; }
+            /* File selected state */
+    .file-info {
+      margin-top: 20px; padding: 14px 20px;
+      background: var(--amber-pale); border-radius: 12px;
+      display: none; align-items: center; gap: 12px;
+      font-size: 0.95rem; font-weight: 600;
+      border: 1px solid rgba(217,119,6,.2);
+}
+    .file-info.visible { display: flex; }
+    .file-info-name { flex: 1; text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .file-remove {
+            background: none; border: none; cursor: pointer;
+      color: var(--warm-gray); font-size: 1.1rem; padding: 0 4px;
+      transition: color .2s;
+}
+    .file-remove:hover { color: var(--charcoal); }
+    /* Generate button row */
+    .submit-row { margin-top: 24px; display: none; }
+    .submit-row.visible { display: block; }
+    /* Supported formats */
+    .formats {
+            margin-top: 32px; padding: 24px 28px;
+      background: #fff; border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-sm);
+}
+    .formats h3 {
+            font-size: 0.78rem; font-weight: 700; letter-spacing: .08em;
+      text-transform: uppercase; color: var(--warm-gray); margin-bottom: 14px;
+}
+    .format-list { display: flex; gap: 10px; flex-wrap: wrap; }
+    .format-pill {
+            background: var(--cream); border: 1px solid rgba(217,119,6,.22);
+      padding: 6px 14px; border-radius: 999px;
+      font-size: 0.82rem; font-weight: 600; color: var(--charcoal);
+}
+    /* Progress bar */
+    .progress-wrap {
+            margin-top: 20px; display: none;
+      background: var(--cream-deep); border-radius: 999px; height: 8px; overflow: hidden;
+}
+    .progress-wrap.visible { display: block; }
+    .progress-bar {
+            height: 100%; width: 0%; background: linear-gradient(90deg, var(--amber), var(--amber-light));
+      border-radius: 999px; transition: width .4s ease;
+}
+    .progress-label {
+            margin-top: 10px; font-size: 0.88rem; font-weight: 600;
+      color: var(--warm-gray); display: none;
+}
+    .progress-label.visible { display: block; }
+    /* Success state */
+    .success-section {
+            display: none; text-align: center; padding: 60px 24px;
+}
+    .success-section.visible { display: block; }
+    .success-icon { font-size: 4rem; margin-bottom: 20px; }
+    .success-section h2 {
+            font-family: Fraunces, serif; font-size: 2rem;
+      font-weight: 700; margin-bottom: 12px;
+}
+    .success-section p { color: var(--warm-gray); font-size: 1rem; margin-bottom: 28px; }
+    .btn-outline {
+            border: 2px solid var(--amber); color: var(--amber);
+      background: none; padding: 12px 28px; border-radius: 12px;
+      font-size: 0.95rem; font-weight: 700; cursor: pointer;
+      text-decoration: none; display: inline-block;
+      transition: background .2s, color .2s; font-family: inherit;
+}
+    .btn-outline:hover { background: var(--amber); color: #fff; }
+        /* Responsive */
+    @media (max-width: 600px) {
+      nav { padding: 14px 20px; }
+      main { margin-top: 36px; }
+      .page-title { font-size: 1.8rem; }
+      .upload-box { padding: 36px 20px; }
+}
+  </style>
+    </head>
+    <body>
+
+    <nav>
+      <a href="/" class="nav-logo">
+        <div class="nav-logo-icon">M</div>ManualOS
+      </a>
+      <a href="/" class="nav-back">&#8592; Back to home</a>
+    </nav>
+
+    <main>
+
+      <!-- Upload section -->
+      <div id="upload-section">
+        <div class="page-eyebrow">Step 1 of 1</div>
+        <h1 class="page-title">Upload your PLC file</h1>
+    <p class="page-sub">Drop your ladder logic file below. We'll decode every rung and generate a plain-English operator manual in minutes.</p>
+
+        <div class="upload-box" id="drop-zone" onclick="document.getElementById('file-input').click()">
+          <div class="upload-icon">&#128193;</div>
+          <h2>Drag &amp; drop your file here</h2>
+      <p>Supports .L5X, .ACD, .zap15, .gx3, .cxp, .xml and all major PLC export formats</p>
+          <input type="file" id="file-input" accept=".l5x,.acd,.zap15,.gx3,.cxp,.xml,.zip" />
+          <label class="btn-primary" for="file-input" onclick="event.stopPropagation()">Choose file</label>
+        </div>
+
+        <div class="file-info" id="file-info">
+          <span>&#128196;</span>
+          <span class="file-info-name" id="file-name">No file selected</span>
+      <button class="file-remove" id="file-remove" title="Remove file" onclick="removeFile()">&#10005;</button>
+        </div>
+
+        <div class="progress-wrap" id="progress-wrap">
+          <div class="progress-bar" id="progress-bar"></div>
+        </div>
+        <div class="progress-label" id="progress-label">Uploading...</div>
+
+        <div class="submit-row" id="submit-row">
+          <button class="btn-primary" id="generate-btn" onclick="handleGenerate()">
+            Generate my manual &#8594;
+      </button>
+            </div>
+
+            <div class="formats">
+              <h3>Supported platforms</h3>
+              <div class="format-list">
+                <span class="format-pill">Allen-Bradley L5X / ACD</span>
+                <span class="format-pill">Siemens TIA Portal</span>
+                <span class="format-pill">Mitsubishi GX Works</span>
+                <span class="format-pill">Omron CX-Programmer</span>
+                <span class="format-pill">Schneider EcoStruxure</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Success section -->
+          <div class="success-section" id="success-section">
+            <div class="success-icon">&#9889;</div>
+            <h2>Your manual is being generated!</h2>
+            <p>Check your email — you'll receive your PDF operator manual within a few minutes.</p>
+    <a href="/" class="btn-outline">Back to home</a>
+          </div>
+
+        </main>
+
+        <script>
+          const dropZone   = document.getElementById('drop-zone');
+  const fileInput  = document.getElementById('file-input');
+  const fileInfo   = document.getElementById('file-info');
+  const fileNameEl = document.getElementById('file-name');
+  const submitRow  = document.getElementById('submit-row');
+  const progressWrap = document.getElementById('progress-wrap');
+  const progressBar  = document.getElementById('progress-bar');
+  const progressLabel = document.getElementById('progress-label');
+
+  let selectedFile = null;
+
+  fileInput.addEventListener('change', () => {
+        if (fileInput.files.length > 0) showFile(fileInput.files[0]);
+});
+
+  dropZone.addEventListener('dragover', e => {
+        e.preventDefault();
+    dropZone.classList.add('drag-over');
+});
+  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+  dropZone.addEventListener('drop', e => {
+        e.preventDefault();
+    dropZone.classList.remove('drag-over');
+    if (e.dataTransfer.files.length > 0) showFile(e.dataTransfer.files[0]);
+});
+
+  function showFile(file) {
+        selectedFile = file;
+    const sizeKB = (file.size / 1024).toFixed(1);
+    fileNameEl.textContent = file.name + '  (' + sizeKB + ' KB)';
+    fileInfo.classList.add('visible');
+    submitRow.classList.add('visible');
+  }
+
+  function removeFile() {
+        selectedFile = null;
+    fileInput.value = '';
+          fileInfo.classList.remove('visible');
+    submitRow.classList.remove('visible');
+  }
+
+  function handleGenerate() {
+        if (!selectedFile) return;
+
+    const btn = document.getElementById('generate-btn');
+    btn.disabled = true;
+    btn.textContent = 'Uploading...';
+
+    progressWrap.classList.add('visible');
+    progressLabel.classList.add('visible');
+
+    // Simulate upload progress (replace with real FormData fetch to your backend)
+    let pct = 0;
+    const interval = setInterval(() => {
+      pct += Math.random() * 18;
+      if (pct >= 95) { pct = 95; clearInterval(interval); }
+      progressBar.style.width = pct + '%';
+    }, 300);
+
+    // TODO: Replace the setTimeout below with your actual API call, e.g.:
+    //
+    // const formData = new FormData();
+    // formData.append('file', selectedFile);
+    // fetch('https://your-api.manualos.com/generate', {
+    //   method: 'POST',
+    //   body: formData
+    // }).then(r => r.json()).then(data => {
+    //   clearInterval(interval);
+    //   progressBar.style.width = '100%';
+    //   setTimeout(showSuccess, 400);
+    // });
+
+    setTimeout(() => {
+            clearInterval(interval);
+      progressBar.style.width = '100%';
+      progressLabel.textContent = 'Processing...';
+      setTimeout(showSuccess, 600);
+  }, 2800);
+}
+
+  function showSuccess() {
+        document.getElementById('upload-section').style.display = 'none';
+    document.getElementById('success-section').classList.add('visible');
+  }
+</script>
+
+  </body>
+  </html>
