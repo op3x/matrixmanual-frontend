@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Matrix Manual - Plain-English PLC Manuals, Instantly</title>
+<meta name="description" content="Upload your PLC program. Get a complete, plain-English operator manual in minutes. Supports Allen-Bradley, Siemens, Mitsubishi, Omron and more.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,600;0,9..144,700;1,9..144,400&family=Spline+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--cream:#fdf6ed;--cream-deep:#f5e9d6;--amber:#d97706;--amber-light:#fbbf24;--amber-pale:#fef3c7;--terra:#b45309;--terra-deep:#92400e;--charcoal:#1c1917;--warm-gray:#57534e;--warm-gray-lt:#a8a29e;--radius-lg:20px;--shadow-sm:0 1px 3px rgba(28,25,23,.08);--shadow-md:0 4px 16px rgba(28,25,23,.10);--shadow-lg:0 12px 40px rgba(28,25,23,.14);--shadow-amber:0 4px 24px rgba(217,119,6,.22)}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:'Spline Sans',system-ui,sans-serif;background:var(--cream);color:var(--charcoal);line-height:1.65;-webkit-font-smoothing:antialiased}
+nav{position:sticky;top:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:16px 48px;background:rgba(253,246,237,.88);backdrop-filter:blur(12px);border-bottom:1px solid rgba(217,119,6,.12)}
+.nav-logo{font-family:'Fraunces',serif;font-size:1.35rem;font-weight:700;color:var(--charcoal);text-decoration:none;display:flex;align-items:center;gap:10px}
+.nav-logo-icon{width:36px;height:36px;border-radius:8px;background:linear-gradient(135deg,var(--amber),var(--terra));display:grid;place-items:center;color:#fff;font-size:1.1rem;box-shadow:var(--shadow-amber)}
+.nav-links{display:flex;align-items:center;gap:32px}
+.nav-links a{color:var(--warm-gray);text-decoration:none;font-size:.9rem;font-weight:500;transition:color .2s}
+.nav-links a:hover{color:var(--amber)}
+.btn-nav{background:var(--charcoal);color:#fff;padding:9px 22px;border-radius:8px;font-size:.88rem;font-weight:600;text-decoration:none;transition:background .2s}
+.btn-nav:hover{background:var(--amber)}
+.hero{min-height:90vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:80px 24px 60px}
+.hero-badge{display:inline-flex;align-items:center;gap:8px;background:var(--amber-pale);border:1px solid rgba(217,119,6,.25);color:var(--terra);font-size:.82rem;font-weight:600;padding:6px 16px;border-radius:999px;margin-bottom:28px;animation:fadeUp .6s ease both}
+.hero-badge .dot{width:7px;height:7px;border-radius:50%;background:var(--amber);animation:pulse 2s ease infinite}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.6;transform:scale(1.3)}}
+h1{font-family:'Fraunces',serif;font-size:clamp(2.6rem,6vw,4.2rem);font-weight:700;line-height:1.12;color:var(--charcoal);max-width:780px;animation:fadeUp .7s .1s ease both}
+h1 em{color:var(--amber);font-style:normal}
+.hero-sub{font-size:1.15rem;color:var(--warm-gray);max-width:560px;margin:24px auto 0;animation:fadeUp .7s .2s ease both}
+.hero-cta{display:flex;align-items:center;gap:16px;margin-top:40px;flex-wrap:wrap;justify-content:center;animation:fadeUp .7s .3s ease both}
+.btn-primary{background:linear-gradient(135deg,var(--amber),var(--terra));color:#fff;padding:15px 36px;border-radius:10px;font-size:1rem;font-weight:600;text-decoration:none;border:none;cursor:pointer;box-shadow:var(--shadow-amber);transition:transform .2s,box-shadow .2s}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 8px 32px rgba(217,119,6,.35)}
+.btn-secondary{color:var(--warm-gray);font-size:.95rem;font-weight:500;text-decoration:none;transition:color .2s}
+.btn-secondary:hover{color:var(--amber)}
+.demo-wrap{margin-top:64px;width:100%;max-width:900px;display:flex;align-items:center;gap:24px;animation:fadeUp .8s .4s ease both;flex-wrap:wrap;justify-content:center}
+.demo-card{flex:1;min-width:260px;max-width:360px;background:#fff;border:1px solid rgba(217,119,6,.15);border-radius:var(--radius-lg);padding:24px;box-shadow:var(--shadow-md)}
+.demo-card-label{font-size:.72rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--warm-gray-lt);margin-bottom:12px}
+.input-card .demo-card-label{color:#6b7c5e}
+.output-card .demo-card-label{color:var(--amber)}
+.code-block{font-family:'JetBrains Mono',monospace;font-size:.72rem;color:var(--charcoal);background:var(--cream-deep);border-radius:8px;padding:14px;line-height:1.6}
+.kw{color:#7c3aed}.val{color:var(--terra)}.cm-c{color:var(--warm-gray-lt)}
+.output-text{font-size:.85rem;color:var(--warm-gray);line-height:1.7}
+.output-text strong{color:var(--charcoal)}
+.demo-arrow{font-size:1.8rem;color:var(--amber);flex-shrink:0;display:flex;flex-direction:column;align-items:center;gap:6px}
+.demo-arrow span{font-size:.72rem;color:var(--warm-gray-lt);font-weight:600;letter-spacing:.06em;text-transform:uppercase}
+.brands{background:linear-gradient(135deg,var(--terra-deep),var(--terra));padding:28px 48px;display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap}
+.brands-label{color:rgba(255,255,255,.6);font-size:.8rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;margin-right:8px}
+.brand-pill{background:rgba(255,255,255,.12);color:rgba(255,255,255,.9);border:1px solid rgba(255,255,255,.2);padding:6px 16px;border-radius:999px;font-size:.8rem;font-weight:600}
+.section{padding:96px 24px;max-width:1100px;margin:0 auto}
+.section-eyebrow{font-size:.8rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--amber);margin-bottom:14px}
+.section-title{font-family:'Fraunces',serif;font-size:clamp(1.9rem,4vw,2.8rem);font-weight:700;color:var(--charcoal);line-height:1.2;max-width:600px}
+.section-title em{color:var(--amber);font-style:normal}
+.features-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:24px;margin-top:56px}
+.feature-card{background:#fff;border:1px solid var(--cream-deep);border-radius:var(--radius-lg);padding:32px 28px;box-shadow:var(--shadow-sm);opacity:0;transform:translateY(20px);transition:opacity .5s ease,transform .5s ease}
+.feature-card.visible{opacity:1;transform:translateY(0)}
+.feature-card:hover{box-shadow:var(--shadow-md);transform:translateY(-3px)}
+.feature-icon{width:48px;height:48px;border-radius:12px;background:var(--amber-pale);display:grid;place-items:center;font-size:1.4rem;margin-bottom:20px}
+.feature-card h3{font-family:'Fraunces',serif;font-size:1.15rem;font-weight:600;margin-bottom:10px}
+.feature-card p{font-size:.9rem;color:var(--warm-gray);line-height:1.7}
+.how-wrap{background:linear-gradient(135deg,var(--cream-deep),var(--amber-pale));border-radius:28px;padding:64px 48px}
+.steps{display:flex;gap:32px;margin-top:48px;flex-wrap:wrap}
+.step{flex:1;min-width:200px;display:flex;flex-direction:column;gap:16px}
+.step-num{width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,var(--amber),var(--terra));color:#fff;font-family:'Fraunces',serif;font-size:1.15rem;font-weight:700;display:grid;place-items:center;box-shadow:var(--shadow-amber);flex-shrink:0}
+.step h3{font-family:'Fraunces',serif;font-size:1.1rem;font-weight:600}
+.step p{font-size:.88rem;color:var(--warm-gray)}
+.pricing-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:24px;margin-top:56px}
+.price-card{background:#fff;border:2px solid var(--cream-deep);border-radius:var(--radius-lg);padding:36px 32px;box-shadow:var(--shadow-sm);opacity:0;transform:translateY(20px);transition:opacity .5s ease,transform .5s ease;position:relative}
+.price-card.visible{opacity:1;transform:translateY(0)}
+.price-card:hover{transform:translateY(-4px);box-shadow:var(--shadow-lg)}
+.price-card.featured{border-color:var(--amber);box-shadow:var(--shadow-amber)}
+.featured-badge{position:absolute;top:-14px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,var(--amber),var(--terra));color:#fff;font-size:.72rem;font-weight:700;padding:5px 18px;border-radius:999px;white-space:nowrap;letter-spacing:.06em;text-transform:uppercase}
+.price-tier{font-size:.8rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--warm-gray-lt);margin-bottom:8px}
+.price-amount{font-family:'Fraunces',serif;font-size:2.6rem;font-weight:700;color:var(--charcoal);line-height:1}
+.price-amount sup{font-size:1.2rem;vertical-align:top;margin-top:6px}
+.price-period{font-size:.85rem;color:var(--warm-gray-lt);margin-bottom:24px}
+.price-desc{font-size:.88rem;color:var(--warm-gray);margin-bottom:28px;line-height:1.6}
+.price-features{list-style:none;display:flex;flex-direction:column;gap:10px;margin-bottom:32px}
+.price-features li{font-size:.88rem;color:var(--warm-gray);display:flex;align-items:flex-start;gap:10px}
+.price-features li::before{content:"- ";color:var(--amber);font-weight:700;flex-shrink:0}
+.btn-price{display:block;text-align:center;padding:13px 24px;border-radius:10px;font-size:.92rem;font-weight:600;text-decoration:none;cursor:pointer;border:none;transition:transform .2s}
+.btn-price.primary{background:linear-gradient(135deg,var(--amber),var(--terra));color:#fff;box-shadow:var(--shadow-amber)}
+.btn-price.primary:hover{transform:translateY(-2px)}
+.btn-price.outline{background:transparent;color:var(--charcoal);border:2px solid var(--cream-deep)}
+.btn-price.outline:hover{border-color:var(--amber);color:var(--amber)}
+footer{background:var(--charcoal);color:rgba(255,255,255,.6);padding:48px 48px 36px;display:flex;flex-direction:column;gap:32px}
+.footer-top{display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:24px}
+.footer-brand{font-family:'Fraunces',serif;font-size:1.2rem;font-weight:700;color:#fff}
+.footer-brand span{color:var(--amber-light)}
+.footer-tagline{font-size:.83rem;margin-top:6px;max-width:260px}
+.footer-links{display:flex;gap:24px;flex-wrap:wrap}
+.footer-links a{color:rgba(255,255,255,.5);text-decoration:none;font-size:.85rem;transition:color .2s}
+.footer-links a:hover{color:var(--amber-light)}
+.footer-tags{display:flex;flex-wrap:wrap;gap:8px}
+.footer-tag{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);color:rgba(255,255,255,.4);padding:4px 12px;border-radius:999px;font-size:.72rem}
+.footer-bottom{border-top:1px solid rgba(255,255,255,.08);padding-top:24px;font-size:.8rem;display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px}
+@keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+@media(max-width:768px){nav{padding:14px 20px}.nav-links{display:none}.hero{padding:60px 20px 48px}.section{padding:64px 20px}.brands{padding:20px}.how-wrap{padding:40px 24px}footer{padding:40px 20px 28px}}
+</style>
+</head>
+<body>
+<nav>
+  <a href="#" class="nav-logo"><div class="nav-logo-icon">M</div>Matrix Manual</a>
+  <div class="nav-links">
+    <a href="#features">Features</a><a href="#how">How it works</a><a href="#pricing">Pricing</a>
+    <a href="#pricing" class="btn-nav">Get Started</a>
+  </div>
+</nav>
+<section class="hero">
+  <div class="hero-badge"><span class="dot"></span>Now supporting Allen-Bradley, Siemens, Mitsubishi and more</div>
+  <h1>PLC programs <em>decoded</em> into plain-English manuals.</h1>
+  <p class="hero-sub">Upload your ladder logic. Get a complete operator manual your team can actually use in minutes, not months.</p>
+  <div class="hero-cta">
+    <a href="#pricing" class="btn-primary">Generate my first manual</a>
+    <a href="#how" class="btn-secondary">See how it works</a>
+  </div>
+  <div class="demo-wrap">
+    <div class="demo-card input-card">
+      <div class="demo-card-label">Your L5X / ACD File</div>
+      <div class="code-block">
+        <span class="cm-c">// Rung 0014 -- Conveyor Start</span><br>
+        <span class="kw">XIC</span> ConveyorRunReady<br>
+        <span class="kw">XIC</span> SafetyGate_OK<br>
+        <span class="kw">ONS</span> StartOnShot<br>
+        <span class="kw">OTE</span> Conveyor_Running<br>
+        <span class="kw">EQU</span> SpeedRef <span class="val">450</span>
+      </div>
+    </div>
+    <div class="demo-arrow">&#9889;<span>Matrix Manual</span></div>
+    <div class="demo-card output-card">
+      <div class="demo-card-label">Plain-English Manual</div>
+      <div class="output-text">
+        <strong>Section 4 -- Conveyor Startup</strong><br><br>
+        The conveyor will start only when the ready signal is confirmed and the safety gate is closed. A one-shot pulse initiates motion at 450 RPM. If either condition drops, the conveyor stops immediately.
+      </div>
+    </div>
+  </div>
+</section>
+<div class="brands">
+  <span class="brands-label">Supported platforms</span>
+  <span class="brand-pill">Allen-Bradley</span>
+  <span class="brand-pill">Siemens</span>
+  <span class="brand-pill">Mitsubishi</span>
+  <span class="brand-pill">Omron</span>
+  <span class="brand-pill">Schneider</span>
+  <span class="brand-pill">Middleby-Alkar</span>
+  <span class="brand-pill">+ more</span>
+</div>
+<section class="section" id="features">
+  <div class="section-eyebrow">What you get</div>
+  <h2 class="section-title">Everything your team needs to run the line <em>confidently.</em></h2>
+  <div class="features-grid">
+    <div class="feature-card"><div class="feature-icon">&#9889;</div><h3>Instant generation</h3><p>Upload your PLC file and receive a structured manual in minutes. No back-and-forth with engineering.</p></div>
+    <div class="feature-card"><div class="feature-icon">&#128202;</div><h3>Code reference scale</h3><p>Every section links back to the exact rungs and tags so operators and engineers stay aligned.</p></div>
+    <div class="feature-card"><div class="feature-icon">&#128196;</div><h3>PDF-ready output</h3><p>Clean, print-ready PDF manuals with sections, page numbers, and a table of contents built in.</p></div>
+    <div class="feature-card"><div class="feature-icon">&#127981;</div><h3>OEM intelligence</h3><p>Understands Alkar, Middleby, and major OEM naming conventions out of the box.</p></div>
+    <div class="feature-card"><div class="feature-icon">&#128737;</div><h3>Safe and private</h3><p>Your PLC files are processed and immediately discarded. Nothing is stored or used for training.</p></div>
+    <div class="feature-card"><div class="feature-icon">&#128295;</div><h3>Multi-platform</h3><p>Works with Allen-Bradley, Siemens TIA Portal, Mitsubishi GX Works, Omron CX-Programmer, and more.</p></div>
+  </div>
+</section>
+<section class="section" id="how" style="padding-top:0">
+  <div class="how-wrap">
+    <div class="section-eyebrow">Simple process</div>
+    <h2 class="section-title">From file to manual in <em>three steps.</em></h2>
+    <div class="steps">
+      <div class="step"><div class="step-num">1</div><h3>Upload your PLC file</h3><p>Drag and drop your .L5X, .ACD, or exported project file. We support all major PLC formats.</p></div>
+      <div class="step"><div class="step-num">2</div><h3>Matrix Manual generates</h3><p>Our AI engine reads every rung, tag, and comment, then writes plain-English explanations your operators can follow.</p></div>
+      <div class="step"><div class="step-num">3</div><h3>Download and share</h3><p>Get a professional PDF manual instantly. Print it, share it, or keep it in your digital work order system.</p></div>
+    </div>
+  </div>
+</section>
+<section class="section" id="pricing">
+  <div class="section-eyebrow">Straightforward pricing</div>
+  <h2 class="section-title">Start free. Scale when you are ready.</h2>
+  <div class="pricing-grid">
+    <div class="price-card">
+      <div class="price-tier">Starter</div>
+      <div class="price-amount"><sup>$</sup>0</div>
+      <div class="price-period">forever free</div>
+      <div class="price-desc">Perfect for evaluating Matrix Manual with your first PLC program.</div>
+      <ul class="price-features">
+        <li>3 manual generations per month</li>
+        <li>Up to 500 rungs per file</li>
+        <li>PDF download</li>
+        <li>Allen-Bradley L5X support</li>
+      </ul>
+      <a href="mailto:hello@matrixmanual.com" class="btn-price outline">Get started free</a>
+    </div>
+    <div class="price-card featured">
+      <div class="featured-badge">Most popular</div>
+      <div class="price-tier">Pro</div>
+      <div class="price-amount"><sup>$</sup>79</div>
+      <div class="price-period">per month</div>
+      <div class="price-desc">For maintenance teams and engineers generating manuals regularly.</div>
+      <ul class="price-features">
+        <li>Unlimited generations</li>
+        <li>All PLC platforms supported</li>
+        <li>Code reference percentage scale</li>
+        <li>OEM-aware output (Alkar, Middleby)</li>
+        <li>Priority processing</li>
+        <li>Email support</li>
+      </ul>
+      <a href="mailto:hello@matrixmanual.com?subject=Pro Plan" class="btn-price primary">Start Pro</a>
+    </div>
+    <div class="price-card">
+      <div class="price-tier">Enterprise</div>
+      <div class="price-amount" style="font-size:2rem">Custom</div>
+      <div class="price-period">volume pricing</div>
+      <div class="price-desc">For multi-plant operations, integrators, and OEM documentation teams.</div>
+      <ul class="price-features">
+        <li>Bulk processing API</li>
+        <li>Custom branding on PDFs</li>
+        <li>On-premise deployment option</li>
+        <li>SLA and dedicated support</li>
+        <li>Net-30 invoicing</li>
+      </ul>
+      <a href="mailto:hello@matrixmanual.com?subject=Enterprise" class="btn-price outline">Contact us</a>
+    </div>
+  </div>
+</section>
+<footer>
+  <div class="footer-top">
+    <div>
+      <div class="footer-brand">Matrix <span>Manual</span></div>
+      <div class="footer-tagline">Plain-English PLC documentation for the people who actually run the machines.</div>
+    </div>
+    <div class="footer-links">
+      <a href="#features">Features</a>
+      <a href="#how">How it works</a>
+      <a href="#pricing">Pricing</a>
+      <a href="mailto:hello@matrixmanual.com">Contact</a>
+    </div>
+  </div>
+  <div class="footer-tags">
+    <span class="footer-tag">PLC documentation</span>
+    <span class="footer-tag">Allen-Bradley manuals</span>
+    <span class="footer-tag">ladder logic explained</span>
+    <span class="footer-tag">operator manual generator</span>
+    <span class="footer-tag">Siemens TIA Portal</span>
+    <span class="footer-tag">Middleby-Alkar PLC</span>
+    <span class="footer-tag">AI manual generation</span>
+  </div>
+  <div class="footer-bottom">
+    <span>2026 Matrix Manual. All rights reserved.</span>
+    <span>matrixmanual.com</span>
+  </div>
+</footer>
+<script>
+const obs = new IntersectionObserver(function(entries) {
+  entries.forEach(function(e) { if(e.isIntersecting) e.target.classList.add('visible'); });
+}, {threshold: 0.1});
+document.querySelectorAll('.feature-card, .price-card').forEach(function(el) { obs.observe(el); });
+</script>
+</body>
+</html>
