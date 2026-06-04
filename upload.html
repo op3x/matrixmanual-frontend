@@ -196,9 +196,12 @@
                         const a = document.createElement('a');
                         a.href = url;
                         a.download = baseName + '-manual.pdf';
+                        a.style.display = 'none';
                         document.body.appendChild(a);
-                        a.click();
-            document.body.removeChild(a);
+                        setTimeout(() => {
+                          a.click();
+                          setTimeout(() => { URL.revokeObjectURL(url); document.body.removeChild(a); }, 1000);
+                        }, 100)
                         setTimeout(() => URL.revokeObjectURL(url), 10000);
 
                         // Show success screen
