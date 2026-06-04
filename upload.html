@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,700;1,9..144,700&family=Spline+Sans:wght@400;600;700&display=swap" rel="stylesheet">
   <style>
-    :root { --cream:#fdf6ed;--cream-deep:#f5e9d6;--amber:#d97706;--amber-light:#fbbf24;--amber-pale:#fef3c7;--terra:#b45309;--charcoal:#1c1917;--warm-gray:#57534e;--radius-lg:16px }
+    :root { --cream:#fdf6ed;--cream-deep:#f5e9d6;--amber:#d97706;--amberh-light:#fbbf24;--amber-pale:#fef3c7;--terra:#b45309;--charcoal:#1c1917;--warm-gray:#57534e;--radius-lg:16px }
     *,::before,::after{box-sizing:border-box;margin:0;padding:0}
     body{font-family:"Spline Sans",system-ui,sans-serif;background:var(--cream);color:var(--charcoal);line-height:1.65;-webkit-font-smoothing:antialiased;min-height:100vh;display:flex;flex-direction:column}
     nav{position:sticky;top:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:16px 48px;background:rgba(253,246,237,.88);backdrop-filter:blur(12px);border-bottom:1px solid rgba(217,119,6,.12)}
@@ -173,7 +173,7 @@
             progressLabel.textContent = 'Analysing ladder logic…';
 
             try {
-                        const res = await fetch('https://unique-connection.up.railway.app/generate-manual', {
+                                const res = await fetch('https://manualforge-backend-production-5e39.up.railway.app/generate-manual', {
                                       method: 'POST',
                                       body: formData
                         });
