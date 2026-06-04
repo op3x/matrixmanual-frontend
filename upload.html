@@ -163,58 +163,55 @@
     progressFill.style.width = '20%';
     progressLabel.textContent = 'Uploading...';
 
-    const reader = new FileReader();
-    reader.onerror = () => {
-      generateBtn.disabled = false;
-      generateBtn.textContent = 'Generate my manual →';
-      progressWrap.classList.remove('visible');
-      alert('Failed to read file. Please try again.');
-    };
-    reader.onload = async (e) => {
-      const plcContent = e.target.result;
-      progressFill.style.width = '40%';
-      progressLabel.textContent = 'Analysing ladder logic…';
-      try {
-        const res = await fetch('https://unique-connection.up.railway.app/generate-manual', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ plcContent, brand: '', sections: [] })
-        });
-        progressFill.style.width = '90%';
-        progressLabel.textContent = 'Building your manual…';
-        if (!res.ok) {
-          const errText = await res.text();
-          throw new Error('Server error ' + res.status + ': ' + errText);
-        }
-        const blob = await res.blob();
-        progressFill.style.width = '100%';
-        progressLabel.textContent = 'Done!';
+        // Use FormData to send file directly (handles binary ACD/ZIP files correctly)
+            const formData = new FormData();
+            formData.append('file', selectedFile);
+            formData.append('brand', '');
+            formData.append('sections', JSON.stringify([]));
 
-        // Auto-download the PDF
-        const baseName = selectedFile.name.replace(/.[^.]+$/, '');
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = baseName + '-manual.pdf';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        setTimeout(() => URL.revokeObjectURL(url), 10000);
+            progressFill.style.width = '40%';
+            progressLabel.textContent = 'Analysing ladder logic…';
 
-        // Show success screen
-        uploadSection.style.display = 'none';
-        successSub.textContent = 'Your PDF is downloading now. Check your Downloads folder.';
-        successSection.classList.add('visible');
-      } catch (err) {
-        generateBtn.disabled = false;
-        generateBtn.textContent = 'Generate my manual →';
-        progressFill.style.width = '0%';
-        progressWrap.classList.remove('visible');
-        alert('Error generating manual: ' + err.message);
-      }
-    };
-    reader.readAsText(selectedFile);
-  }
+            try {
+                        const res = await fetch('https://unique-connection.up.railway.app/generate-manual', {
+                                      method: 'POST',
+                                      body: formData
+                        });
+
+                        progressFill.style.width = '90%';
+                        progressLabel.textContent = 'Building your manual…';
+
+                        if (!res.ok) {
+                                      const errText = await res.text();
+                                      throw new Error('Server error ' + res.status + ': ' + errText);
+                        }
+
+                        const blob = await res.blob();
+                        progressFill.style.width = '100%';
+                        progressLabel.textContent = 'Done!';
+
+                        // Auto-download the PDF
+                        const baseName = selectedFile.name.replace(/\.[^.]+$/, '');
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = baseName + '-manual.pdf';
+                        document.body.appendChild(a);
+                        a.click();
+            document.body.removeChild(a);
+                        setTimeout(() => URL.revokeObjectURL(url), 10000);
+
+                        // Show success screen
+                        uploadSection.style.display = 'none';
+                        successSub.textContent = 'Your PDF is downloading now. Check your Downloads folder.';
+                        successSection.classList.add('visible');
+            } catch (err) {
+                        generateBtn.disabled = false;
+                        generateBtn.textContent = 'Generate my manual →';
+                        progressFill.style.width = '0%';
+                        progressWrap.classList.remove('visible');
+                        alert('Error generating manual: ' + err.message);
+            }
 </script>
 </body>
 </html>
