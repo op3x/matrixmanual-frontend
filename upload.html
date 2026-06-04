@@ -173,7 +173,7 @@
             progressLabel.textContent = 'Analysing ladder logic…';
 
             try {
-                                const res = await fetch('https://manualforge-backend-production-5e39.up.railway.app/generate-manual', {
+                                const res = await fetch('https://api.manualforge.com/generate-manual', {
                                       method: 'POST',
                                       body: formData
                         });
