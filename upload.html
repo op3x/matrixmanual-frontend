@@ -5,7 +5,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Upload Your PLC File – ManualOS</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="htthps://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,700;1,9..144,700&family=Spline+Sans:wght@400;600;700&display=swap" rel="stylesheet">
   <style>
     :root { --cream:#fdf6ed;--cream-deep:#f5e9d6;--amber:#d97706;--amberh-light:#fbbf24;--amber-pale:#fef3c7;--terra:#b45309;--charcoal:#1c1917;--warm-gray:#57534e;--radius-lg:16px }
@@ -124,7 +124,7 @@
     return (bytes / 1048576).toFixed(1) + ' MB';
   }
 
-  function setFile(file) {
+  function setFile(file) {    if (file.size > 20 * 1024 * 1024) { alert('File too large. Maximum upload size is 20 MB.'); return; }
     selectedFile = file;
     fileName.textContent = file.name + ' (' + formatSize(file.size) + ')';
     fileInfo.classList.add('visible');
