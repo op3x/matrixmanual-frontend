@@ -18,12 +18,12 @@
 <meta property="og:image:type" content="image/jpeg">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
-<meta property="og:image:alt" content="ManualOS: plain-English equipment manuals from PLC programs. Starter is $39 once. Pro is $79 per month. A sample palletizer manual page sits beside the title.">
+<meta property="og:image:alt" content="ManualOS: plain-English equipment manuals from PLC programs. Starter is $39 once. Pro is $79 per month. The cover of a 34-page sample case packer manual sits beside the title.">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="ManualOS — Plain-English manuals from PLC programs">
 <meta name="twitter:description" content="Turn PLC programs into plain-English equipment manuals for small manufacturers, techs, and integrators. Starter is $39 once for 3 manuals. Pro is $79/month.">
 <meta name="twitter:image" content="https://manualos.com/assets/og-image.jpg">
-<meta name="twitter:image:alt" content="ManualOS: plain-English equipment manuals from PLC programs. Starter is $39 once. Pro is $79 per month.">
+<meta name="twitter:image:alt" content="ManualOS: plain-English equipment manuals from PLC programs. Starter is $39 once. Pro is $79 per month. The cover of a 34-page sample case packer manual sits beside the title.">
 <link rel="icon" href="/favicon.ico" sizes="32x32">
 <meta name="theme-color" content="#fdf6ed">
 <link rel="preconnect" href="https://manualforge-backend-production.up.railway.app" crossorigin>
@@ -82,6 +82,8 @@ figure{margin:0;background:var(--card);border:1px solid var(--line);border-radiu
 figure img{display:block;width:100%;background:#fff}
 figcaption{padding:.75rem .9rem 1rem;font-size:.95rem;color:var(--text)}
 .sample-actions{display:flex;flex-wrap:wrap;gap:.75rem;align-items:center;margin:1rem 0 1.2rem}
+.sample-sections{margin:.6rem 0 0;padding-left:1.2rem;max-width:40rem}
+.sample-sections li{margin:.25rem 0}
 .features,.who-list,.pricing-grid{display:grid;gap:1rem;padding-top:.8rem}
 .feature,.who-list li,.price-card{background:var(--card);border:1px solid var(--line);border-radius:1rem;padding:1.15rem}
 .who-list{list-style:none;margin:0;padding:0}
@@ -195,7 +197,7 @@ figcaption{padding:.75rem .9rem 1rem;font-size:.95rem;color:var(--text)}
           "name": "What is in a manual?",
           "acceptedAnswer": {
             "@type": "Answer",
-            "text": "You get a PDF with a cover, a short description of the machine, the sequence of operations, subsystem sections, and routine-by-routine explanations in plain English. Where a sentence is tied back to the program, the manual shows a code reference note. The sample on this page is a functional description of a conveyor palletizer cell."
+            "text": "You get a PDF operating and maintenance manual. The 34-page sample on this page is for a case packer. It includes safety, machine description and theory of operation, transport, installation, operation, maintenance and troubleshooting, drawings, and a parts list. Where a sentence is tied back to the PLC program, the manual shows a code reference note."
           }
         },
         {
@@ -298,61 +300,73 @@ OTE  Conv_Run</code></pre>
       </li>
     </ol>
   </section>
+  <!--
+    SAMPLE BUNDLE. To swap in a longer sample, replace the files in /assets/sample/ and edit only this section.
+    PDF: /assets/sample/manual.pdf
+    Previews, in order: preview-01 through preview-06, each as .webp and .jpg at the same pixel size.
+    Also update the page count, the section list, the figcaptions, and the alt text so they match the new PDF.
+    Current file: Acme CP-200 Case Packer, Operating and Maintenance Manual (Sample), 34 pages.
+    preview-01 cover. preview-02 contents, page i. preview-03 residual risk, page 2.
+    preview-04 theory of operation, page 6. preview-05 sequence of operation, page 11.
+    preview-06 troubleshooting, page 16.
+  -->
   <section class="section" id="sample" aria-labelledby="sample-title">
     <h2 id="sample-title">Sample manual</h2>
-    <p class="section-intro">A functional description of a conveyor palletizer cell, generated from a PLC program. The pages below are the real sample, not a mockup.</p>
+    <p class="section-intro">A 34-page sample operating and maintenance manual for a case packer, the Acme CP-200. The download is that full PDF. The six pages below are taken from it.</p>
+    <ul class="sample-sections">
+      <li>Safety, including residual risk</li>
+      <li>Machine description and theory of operation</li>
+      <li>Transport, receiving, and storage</li>
+      <li>Installation</li>
+      <li>Operation, including the sequence of operation and control logic</li>
+      <li>Maintenance and troubleshooting</li>
+      <li>Drawings, spare parts, and an appendix</li>
+    </ul>
     <div class="sample-actions">
-      <a class="btn btn-primary" href="/assets/sample-manual-CP200.pdf" download="sample-manual-CP200.pdf">Download the sample PDF (1.1 MB)</a>
+      <a class="btn btn-primary" href="/assets/sample/manual.pdf" download="Acme-CP-200-sample-manual.pdf">Download the 34-page sample PDF (1.1 MB)</a>
     </div>
     <div class="gallery">
       <figure>
         <picture>
-          <source srcset="/assets/sample-cover.webp" type="image/webp">
-          <img src="/assets/sample-cover.jpg" width="600" height="776" alt="Sample manual cover page titled Functional Description for a conveyor palletizer cell, showing a code reference scale of 82 percent." loading="lazy" decoding="async">
+          <source srcset="/assets/sample/preview-01.webp" type="image/webp">
+          <img src="/assets/sample/preview-01.jpg" width="680" height="880" alt="Cover of the sample Acme CP-200 Case Packer operating and maintenance manual. The subtitle says Sample, and the code reference scale is 84 percent." loading="lazy" decoding="async">
         </picture>
-        <figcaption>Cover. Functional description, with a code reference scale of 82%.</figcaption>
+        <figcaption>Cover. Operating and maintenance manual, code reference scale 84%.</figcaption>
       </figure>
       <figure>
         <picture>
-          <source srcset="/assets/sample-sequence.webp" type="image/webp">
-          <img src="/assets/sample-sequence.jpg" width="600" height="776" alt="Sample manual page 2, sequence of operations: pallet check, pusher extend, stacker advance, and discharge conveyor." loading="lazy" decoding="async">
+          <source srcset="/assets/sample/preview-02.webp" type="image/webp">
+          <img src="/assets/sample/preview-02.jpg" width="680" height="880" alt="Table of contents, page i, listing safety, machine description, theory of operation, transport, installation, and operation for the Acme CP-200 case packer." loading="lazy" decoding="async">
         </picture>
-        <figcaption>Page 2. Sequence from pallet check through pusher, stacker, and discharge.</figcaption>
+        <figcaption>Page i. Contents, from safety through operation.</figcaption>
       </figure>
       <figure>
         <picture>
-          <source srcset="/assets/sample-subsystems.webp" type="image/webp">
-          <img src="/assets/sample-subsystems.jpg" width="600" height="776" alt="Sample manual page 5, subsystem overview of the infeed conveyor, pusher, stacker, and discharge conveyor." loading="lazy" decoding="async">
+          <source srcset="/assets/sample/preview-03.webp" type="image/webp">
+          <img src="/assets/sample/preview-03.jpg" width="680" height="880" alt="Page 2, residual risk assessment. The table lists a case-erector jam, a flap-folder pinch point, an infeed photoeye fault, and a damaged guard, with severity and the safeguard for each." loading="lazy" decoding="async">
         </picture>
-        <figcaption>Page 5. Subsystems: infeed, pusher, stacker, and discharge.</figcaption>
+        <figcaption>Page 2. Residual risk: jam, pinch point, photoeye fault, and a damaged guard.</figcaption>
       </figure>
       <figure>
         <picture>
-          <source srcset="/assets/sample-control-logic.webp" type="image/webp">
-          <img src="/assets/sample-control-logic.jpg" width="600" height="776" alt="Sample manual page 6, control logic for one palletizer cycle, including a 10 second discharge fault timer." loading="lazy" decoding="async">
+          <source srcset="/assets/sample/preview-04.webp" type="image/webp">
+          <img src="/assets/sample/preview-04.jpg" width="680" height="880" alt="Page 6, theory of operation for the case erector, flap folder, infeed, and discharge. Each subsystem has a plain-English description and the main PLC tag that runs it." loading="lazy" decoding="async">
         </picture>
-        <figcaption>Page 6. Control logic for one cycle, including a 10 second discharge fault.</figcaption>
+        <figcaption>Page 6. How the case erector, flap folder, infeed, and discharge work.</figcaption>
       </figure>
       <figure>
         <picture>
-          <source srcset="/assets/sample-rung-pallet.webp" type="image/webp">
-          <img src="/assets/sample-rung-pallet.jpg" width="600" height="776" alt="Sample manual page 18, rung 5, a pallet-present check with a 2 second delay before the pusher extends." loading="lazy" decoding="async">
+          <source srcset="/assets/sample/preview-05.webp" type="image/webp">
+          <img src="/assets/sample/preview-05.jpg" width="680" height="880" alt="Page 11, sequence of operation: the case erector feeds a case, the flap folder closes the flaps, the infeed loads the product, and the discharge sends the case out. Each step names its PLC tag." loading="lazy" decoding="async">
         </picture>
-        <figcaption>Page 18, rung 5. Pallet-present check, then a 2 second delay before the pusher extends.</figcaption>
+        <figcaption>Page 11. Sequence of operation, one step per subsystem, with the PLC tag.</figcaption>
       </figure>
       <figure>
         <picture>
-          <source srcset="/assets/sample-rung-full.webp" type="image/webp">
-          <img src="/assets/sample-rung-full.jpg" width="600" height="776" alt="Sample manual page 24, rung 11, a pallet-full check with a 3 second delay before the stacker advances." loading="lazy" decoding="async">
+          <source srcset="/assets/sample/preview-06.webp" type="image/webp">
+          <img src="/assets/sample/preview-06.jpg" width="680" height="880" alt="Page 16, troubleshooting. The table lists a case-erector jam, a flap-folder fault, an infeed jam, and a discharge jam, with the likely cause, the PLC check, and what to do." loading="lazy" decoding="async">
         </picture>
-        <figcaption>Page 24, rung 11. Pallet-full check, then a 3 second delay before the stacker advances.</figcaption>
-      </figure>
-      <figure>
-        <picture>
-          <source srcset="/assets/sample-xref.webp" type="image/webp">
-          <img src="/assets/sample-xref.jpg" width="600" height="776" alt="Sample manual page 35, cross-reference of PLC tag names to the manual sections that describe them." loading="lazy" decoding="async">
-        </picture>
-        <figcaption>Page 35. Cross-reference from tag names to the sections that describe them.</figcaption>
+        <figcaption>Page 16. Troubleshooting: likely cause, the PLC check, and what to do.</figcaption>
       </figure>
     </div>
   </section>
@@ -365,11 +379,11 @@ OTE  Conv_Run</code></pre>
       </article>
       <article class="feature">
         <h3>Tied to the program</h3>
-        <p>Sections can include a code reference note when a sentence comes from the file. The sample cover shows 82%.</p>
+        <p>Sections can include a code reference note when a sentence comes from the file. The sample cover shows 84%.</p>
       </article>
       <article class="feature">
         <h3>A PDF you can hand over</h3>
-        <p>Cover, sequence, subsystems, and routine-by-routine pages, in one file.</p>
+        <p>An operating and maintenance PDF. The sample runs 34 pages, from safety and theory of operation through the sequence, maintenance, and troubleshooting.</p>
       </article>
     </div>
   </section>
@@ -457,7 +471,7 @@ OTE  Conv_Run</code></pre>
     </div>
     <div class="faq-item">
       <h3>What is in a manual?</h3>
-      <p>You get a PDF with a cover, a short description of the machine, the sequence of operations, subsystem sections, and routine-by-routine explanations in plain English. Where a sentence is tied back to the program, the manual shows a code reference note. The sample on this page is a functional description of a conveyor palletizer cell.</p>
+      <p>You get a PDF operating and maintenance manual. The 34-page sample on this page is for a case packer. It includes safety, machine description and theory of operation, transport, installation, operation, maintenance and troubleshooting, drawings, and a parts list. Where a sentence is tied back to the PLC program, the manual shows a code reference note.</p>
     </div>
     <div class="faq-item">
       <h3>What counts as one manual?</h3>
