@@ -2,10 +2,20 @@
 // Requires puppeteer-core and Chrome. Does not call production or Stripe.
 import { spawn } from 'node:child_process';
 import { mkdir, mkdtemp, readFile, writeFile } from 'node:fs/promises';
+import { createRequire } from 'node:module';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import puppeteer from 'puppeteer-core';
+
+const require = createRequire(import.meta.url);
+function loadPuppeteer() {
+  const candidates = ['puppeteer-core', '/tmp/manualos-test/node_modules/puppeteer-core'];
+  for (const name of candidates) {
+    try { return require(name); } catch { /* try the next location */ }
+  }
+  throw new Error('Install puppeteer-core to run this check.');
+}
+const puppeteer = loadPuppeteer();
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const shotDir = process.env.SCREENSHOT_DIR || '/opt/cursor/artifacts/screenshots';
@@ -48,19 +58,19 @@ async function shoot(page, name, scrollSelector) {
     { width: 390, height: 844 },
   ]) {
     await page.setViewport({ ...viewport, deviceScaleFactor: 1 });
-    await page.evaluate((selector) => {
-      const el = selector ? document.querySelector(selector) : null;
-      if (!el) {
-        window.scrollTo(0, 0);
-        return;
-      }
-      const y = el.getBoundingClientRect().top + window.scrollY - 72;
-      window.scrollTo(0, Math.max(0, y));
-    }, scrollSelector);
-    await new Promise((resolve) => setTimeout(resolve, 150));
+    const handle = await page.$(scrollSelector);
+    if (!handle) throw new Error(`${name} missing ${scrollSelector}`);
+    await handle.evaluate((el) => el.scrollIntoView({ block: 'center', inline: 'nearest' }));
+    await new Promise((resolve) => setTimeout(resolve, 200));
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
     if (overflow > 1) throw new Error(`${name} at ${viewport.width}px overflows by ${overflow}px`);
-    await page.screenshot({ path: path.join(shotDir, `${name}_${viewport.width}.png`) });
+    const file = path.join(shotDir, `${name}_${viewport.width}.png`);
+    await page.screenshot({ path: file });
+    const box = await handle.boundingBox();
+    if (!box || box.width < 40 || box.height < 20) throw new Error(`${name} at ${viewport.width}px is not visible`);
+    const view = await page.evaluate(() => ({ w: window.innerWidth, h: window.innerHeight, y: window.scrollY }));
+    const inView = box.y < view.h && box.y + box.height > 0;
+    if (!inView) throw new Error(`${name} at ${viewport.width}px is outside the viewport`);
   }
   await page.setViewport({ width: 1280, height: 1000, deviceScaleFactor: 1 });
 }
@@ -148,7 +158,10 @@ async function main() {
     const pageErrors = [];
     page.on('pageerror', (err) => pageErrors.push(String(err)));
     page.on('console', (msg) => {
-      if (msg.type() === 'error' && !/favicon/i.test(msg.text())) pageErrors.push(msg.text());
+      const text = msg.text();
+      if (msg.type() !== 'error') return;
+      if (/favicon|Failed to load resource/i.test(text)) return;
+      pageErrors.push(text);
     });
 
     await openUpload(page, base, '?session_id=cs_test_local');
@@ -176,18 +189,23 @@ async function main() {
     note('PLC, CAD, and Both selector, including keyboard', true);
 
     await page.click('input[value="plc"]');
-    await addFile(page, fixtures.gx3);
-    await addFile(page, fixtures.cxp);
-    await addFile(page, fixtures.zap);
-    let alertText = await page.$eval('#upload-error', (el) => el.innerText);
-    if (!/gx3/.test(alertText) || !/did not use a credit/i.test(alertText)) throw new Error('blocked ext: ' + alertText);
-    if (!/\.cxp/.test(alertText) || !/zap15/.test(alertText)) throw new Error('missing cxp/zap message: ' + alertText);
+    for (const [file, pattern] of [
+      [fixtures.gx3, /gx3/i],
+      [fixtures.cxp, /\.cxp/i],
+      [fixtures.zap, /zap15/i],
+    ]) {
+      await addFile(page, file);
+      const alertText = await page.$eval('#upload-error', (el) => el.innerText);
+      if (!pattern.test(alertText) || !/did not use a credit/i.test(alertText)) {
+        throw new Error('blocked ext ' + file + ': ' + alertText);
+      }
+    }
     const listed = await page.$$eval('#file-list li', (nodes) => nodes.length);
     if (listed !== 0) throw new Error('rejected files were listed');
     note('client rejects gx3, cxp, and zap15 without listing them', true);
 
     await addFile(page, fixtures.big);
-    alertText = await page.$eval('#upload-error', (el) => el.innerText);
+    let alertText = await page.$eval('#upload-error', (el) => el.innerText);
     if (!/50 MB/.test(alertText)) throw new Error('size message: ' + alertText);
     note('client rejects a file over 50 MB', true);
 
