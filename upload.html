@@ -76,7 +76,7 @@
     .upload-error ul{margin:0;padding-left:1.15rem}
     .upload-error li+li{margin-top:.35rem}
     .upload-error a{color:var(--amber);font-weight:700}
-    .mode-note{margin:0 0 1rem;padding:14px 16px;border-radius:12px;background:var(--amber-pale);border:1px solid rgba(154,52,18,.35);font-weight:600}
+    .mode-note{margin:1rem 0;padding:14px 16px;border-radius:12px;background:var(--amber-pale);border:1px solid rgba(154,52,18,.35);font-weight:600}
     .success-section{text-align:center;padding:1.5rem 0 0}
     .success-icon{font-size:2.5rem;margin-bottom:12px}
     .success-title{font-size:clamp(1.6rem,4vw,2rem);font-weight:700;margin-bottom:12px}
@@ -100,6 +100,9 @@
     .access-banner a{color:var(--amber);font-weight:700;text-decoration:underline;text-underline-offset:.15rem;min-height:3rem;display:inline-flex;align-items:center}
     .access-banner a[hidden]{display:none}
     .access-banner a:hover{color:var(--terra)}
+    html.has-session .access-banner{align-items:flex-start;align-content:flex-start}
+    html.has-session #payment-welcome[hidden]{display:block !important;visibility:hidden}
+    .access-banner .payment-welcome{flex:1 0 100%;margin:.75rem 0 0}
     .upload-box.is-disabled{background:#faf7f2}
     .upload-box.is-disabled .btn-primary{background:#57534e;border-color:#57534e}
     .payment-welcome{margin:0 0 16px;padding:14px 16px;border-radius:12px;background:#ecfdf3;border:2px solid #166534;color:#14532d;font-weight:700}
@@ -118,8 +121,11 @@
     @media (prefers-reduced-motion:reduce){
       *{scroll-behavior:auto !important;transition:none !important}
     }
-    #source-picker,#file-list,#progress-wrap,#upload-error,#success-section,#export-help{scroll-margin-top:5rem}
+    #source-picker,#file-list,#progress-wrap,#upload-error,#success-section,#export-help,#mode-note,#access-banner,#generate-btn{scroll-margin-top:5rem}
   </style>
+  <script>
+    if (/[?&]session_id=/.test(location.search)) document.documentElement.classList.add('has-session');
+  </script>
 </head>
 <body data-phase="checking">
 <a class="skip-link" href="#main">Skip to content</a>
@@ -131,10 +137,10 @@
 </header>
 <main id="main" tabindex="-1">
   <noscript><p class="upload-error noscript">ManualOS needs JavaScript to check your purchase and upload files.</p></noscript>
-  <p id="payment-welcome" class="payment-welcome" role="status" hidden></p>
   <div id="access-banner" class="access-banner" role="status">
     <span id="access-message">Checking your access…</span>
     <a id="access-pricing-link" href="/#pricing" hidden>View pricing</a>
+    <p id="payment-welcome" class="payment-welcome" role="status" hidden>Payment confirmed. You are on the Starter plan, with 3 manuals remaining. Upload a PLC program, a CAD model, or both when you are ready.</p>
   </div>
   <div id="upload-section">
     <p class="page-eyebrow">Generate a manual</p>
@@ -185,8 +191,8 @@
     </div>
     <div class="upload-error" id="upload-error" role="alert" tabindex="-1" hidden></div>
   </div>
+  <p class="mode-note" id="mode-note" role="status" hidden></p>
   <section class="success-section" id="success-section" tabindex="-1" hidden>
-    <p class="mode-note" id="mode-note" role="status" hidden></p>
     <p class="success-icon" aria-hidden="true">&#9889;</p>
     <h2 class="success-title" id="success-title">Your manual is ready</h2>
     <p class="success-sub" id="success-sub"></p>
@@ -249,7 +255,7 @@
 (function () {
   // POST /jobs is the preferred upload (async progress, up to 25 files). It is not
   // deployed on production yet. When POST /jobs returns 404, this page falls back
-  // to POST /generate-manual for one file so the current site keeps working.
+  // to POST /generate-manual for the first PLC file so the current site keeps working.
   // ?jobs=0 always uses the current generator. ?jobs=1 never falls back.
   // On localhost the API is the page origin (see dev/mock-api.mjs). On manualos.com
   // it is the production Railway host. A localhost ?api= override must also be local.
@@ -449,6 +455,7 @@
       uploadError.appendChild(line);
     }
     uploadError.hidden = false;
+    dismissWelcome();
     if (!opts.keepPhase) setPhase('error');
     if (!opts.quiet) uploadError.focus();
   }
@@ -456,6 +463,11 @@
   function clearUploadError() {
     uploadError.hidden = true;
     uploadError.replaceChildren();
+  }
+
+  function dismissWelcome() {
+    if (paymentWelcome) paymentWelcome.hidden = true;
+    document.documentElement.classList.remove('has-session');
   }
 
   function readSessionId() {
@@ -476,6 +488,15 @@
   }
 
   function applySession(data) {
+    if (data.remaining === 0) {
+      setUploadEnabled(false);
+      showAccess('Starter credits are used up', { showPricing: true, ok: false });
+      dismissWelcome();
+      if (document.body.dataset.phase !== 'progress' && document.body.dataset.phase !== 'success' && document.body.dataset.phase !== 'error') {
+        setPhase('locked');
+      }
+      return;
+    }
     setUploadEnabled(true);
     showAccess(planLabel(data.plan) + ' plan \u00b7 ' + remainingLabel(data.remaining), { showPricing: false, ok: true });
     if (document.body.dataset.phase !== 'progress' && document.body.dataset.phase !== 'success' && document.body.dataset.phase !== 'error') {
@@ -525,6 +546,7 @@
     guidance.textContent = GUIDANCE[source] || GUIDANCE.plc;
     dropHelp.textContent = DROP_HELP[source] || DROP_HELP.plc;
     fileInput.setAttribute('accept', acceptAttribute(source));
+    clearUploadError();
     renderFiles();
     updateGenerateButton();
   }
@@ -532,7 +554,7 @@
   function rejectReason(file, source) {
     if (!file) return 'Choose a file.';
     if (file.size <= 0) return file.name + ' is empty.';
-    if (file.size > MAX_BYTES) return file.name + ' is ' + formatSize(file.size) + '. Each file must be 50 MB or smaller.';
+    if (file.size > MAX_BYTES) return file.name + ' is ' + formatSize(file.size) + '. Each file must be 50 MB or smaller. This did not use a credit.';
     var ext = extensionOf(file.name);
     if (BLOCKED[ext]) return BLOCKED[ext] + ' This did not use a credit.';
     if (!ext || extensionsFor(source).indexOf(ext) === -1) {
@@ -829,6 +851,7 @@
     if (updated && updated.remaining === null) successText += ' Unlimited manuals remaining.';
     else if (updated) successText += ' ' + remainingLabel(updated.remaining) + '.';
     successSub.textContent = successText;
+    dismissWelcome();
     uploadSection.hidden = true;
     successSection.hidden = false;
     setBusy(false);
@@ -879,12 +902,26 @@
     return 'We couldn’t reach ManualOS. Check your connection and try again. If the upload never started, no credit was used.';
   }
 
+  function firstPlcFile(files) {
+    for (var i = 0; i < files.length; i += 1) {
+      if (PLC_EXT.indexOf(extensionOf(files[i].name)) !== -1) return files[i];
+    }
+    return null;
+  }
+
   async function startLegacy(token, filesToSend, becauseMissing) {
+    var file = firstPlcFile(filesToSend);
+    if (!file) {
+      resetProgress();
+      setBusy(false);
+      generateBtn.textContent = 'Generate my manual';
+      showUploadError('CAD models need the new generator, which isn\u2019t live yet. Nothing was uploaded and no credit was used.');
+      return;
+    }
     document.body.dataset.api = 'legacy';
-    var file = filesToSend[0];
     var note = 'The multi-file generator isn’t on this server yet, so this manual uses the current single-file generator.';
     if (filesToSend.length > 1) {
-      note += ' Only ' + file.name + ' was sent. The other files were not uploaded and did not use a credit.';
+      note += ' Only ' + file.name + ' was sent. The other files were not used and did not use a credit.';
     }
     showModeNote(note);
     showProgress(becauseMissing
@@ -1006,6 +1043,7 @@
       return;
     }
     document.body.dataset.api = 'jobs';
+    generateBtn.textContent = 'Generating\u2026';
     paintJob(data);
     var job = await pollJob(data.id, token);
     if (token !== runToken || !job) {
@@ -1061,6 +1099,7 @@
     selectedFiles = selectedFiles.filter(function (item) { return item.id !== id; });
     renderFiles();
     updateGenerateButton();
+    clearUploadError();
   });
 
   uploadForm.addEventListener('submit', function (event) {

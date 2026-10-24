@@ -93,9 +93,25 @@ async function waitPhase(page, phase) {
   await page.waitForFunction((expected) => document.body.dataset.phase === expected, { timeout: 15000 }, phase);
 }
 
-async function requests(base) {
+  async function requests(base) {
   const res = await fetch(base + '/__mock/requests');
   return res.json();
+}
+
+const axePath = '/tmp/manualos-test/node_modules/axe-core/axe.min.js';
+async function runAxe(page, label) {
+  const hasAxe = await page.evaluate(() => typeof window.axe !== 'undefined');
+  if (!hasAxe) await page.addScriptTag({ path: axePath });
+  const violations = await page.evaluate(async () => {
+    const out = await axe.run(document, { resultTypes: ['violations'] });
+    return out.violations.map((item) => ({
+      id: item.id,
+      impact: item.impact,
+      nodes: item.nodes.slice(0, 5).map((node) => node.target.join(' ')),
+    }));
+  });
+  if (violations.length) throw new Error(label + ' axe: ' + JSON.stringify(violations));
+  note('axe 0 violations: ' + label, true);
 }
 
 async function main() {
@@ -155,6 +171,23 @@ async function main() {
   });
   try {
     const page = await browser.newPage();
+    const external = [];
+    page.on('request', (req) => {
+      try {
+        const host = new URL(req.url()).hostname;
+        if (host && host !== '127.0.0.1' && host !== 'localhost') external.push(req.url());
+      } catch (err) { /* ignore unparseable urls */ }
+    });
+    await page.evaluateOnNewDocument(() => {
+      window.__cls = 0;
+      try {
+        new PerformanceObserver((list) => {
+          for (const entry of list.getEntries()) {
+            if (!entry.hadRecentInput) window.__cls += entry.value;
+          }
+        }).observe({ type: 'layout-shift', buffered: true });
+      } catch (err) { /* layout shift observer is unavailable */ }
+    });
     const pageErrors = [];
     page.on('pageerror', (err) => pageErrors.push(String(err)));
     page.on('console', (msg) => {
@@ -163,6 +196,14 @@ async function main() {
       if (/favicon|Failed to load resource/i.test(text)) return;
       pageErrors.push(text);
     });
+
+    await page.setViewport({ width: 412, height: 823, deviceScaleFactor: 1.75, isMobile: true });
+    await openUpload(page, base, '?session_id=cs_test_local');
+    await new Promise((resolve) => setTimeout(resolve, 600));
+    const cls = await page.evaluate(() => window.__cls || 0);
+    if (cls >= 0.1) throw new Error('mobile CLS ' + cls);
+    note('mobile layout shift stays under 0.1', true, cls.toFixed(3));
+    await page.setViewport({ width: 1280, height: 1000, deviceScaleFactor: 1 });
 
     await openUpload(page, base, '?session_id=cs_test_local');
     const banner = await page.$eval('#access-message', (el) => el.textContent);
@@ -206,7 +247,10 @@ async function main() {
 
     await addFile(page, fixtures.big);
     let alertText = await page.$eval('#upload-error', (el) => el.innerText);
-    if (!/50 MB/.test(alertText)) throw new Error('size message: ' + alertText);
+    if (!/50 MB/.test(alertText) || !alertText.trim().endsWith('This did not use a credit.')) throw new Error('size message: ' + alertText);
+    const welcomeHiddenOnSize = await page.$eval('#payment-welcome', (el) => el.hidden);
+    if (!welcomeHiddenOnSize) throw new Error('welcome stayed after the size error');
+    await shoot(page, 'oversize', '#upload-error');
     note('client rejects a file over 50 MB', true);
 
     await page.click('input[value="both"]');
@@ -237,8 +281,11 @@ async function main() {
     if (!/Describing how the equipment works/.test(stageText)) throw new Error('stage ' + stageText);
     const percent = await page.$eval('#progress-fill', (el) => el.value);
     if (Number(percent) < 40) throw new Error('percent ' + percent);
+    const generatingLabel = await page.$eval('#generate-btn', (el) => el.textContent);
+    if (generatingLabel !== 'Generating…') throw new Error('button during analyze: ' + generatingLabel);
+    await shoot(page, 'generating', '#generate-btn');
     await shoot(page, 'progress', '#progress-wrap');
-    note('progress shows the analyzing stage', true, stageText);
+    note('progress shows the analyzing stage', true, stageText + ' / ' + generatingLabel);
 
     await fetch(base + '/__mock/release', { method: 'POST' });
     await waitPhase(page, 'success');
@@ -259,6 +306,7 @@ async function main() {
       if (!last.fields.includes(field)) throw new Error('missing field ' + field);
     }
     if (last.files.join(',') !== 'hold.L5X,model.step') throw new Error('posted files ' + last.files.join(','));
+    if (!(await page.$eval('#payment-welcome', (el) => el.hidden))) throw new Error('welcome stayed after jobs success');
     await shoot(page, 'success', '#success-section');
     note('success shows coverage, warning, and a PDF download', true);
 
@@ -268,6 +316,7 @@ async function main() {
     await waitPhase(page, 'error');
     alertText = await page.$eval('#upload-error', (el) => el.innerText);
     if (!/did not use a credit/i.test(alertText) || !/equipment data/i.test(alertText)) throw new Error('422: ' + alertText);
+    if (!(await page.$eval('#payment-welcome', (el) => el.hidden))) throw new Error('welcome stayed after 422');
     await shoot(page, 'error', '#upload-error');
     note('422 tells the user the file did not use a credit', true);
 
@@ -294,6 +343,8 @@ async function main() {
     await waitPhase(page, 'success');
     const legacyText = await page.$eval('#mode-note', (el) => el.textContent);
     if (!/single-file generator/.test(legacyText) || !/line\.L5X/.test(legacyText)) throw new Error('legacy note: ' + legacyText);
+    if (/were not uploaded/.test(legacyText) || !/were not used/.test(legacyText)) throw new Error('legacy note wording: ' + legacyText);
+    if (!(await page.$eval('#payment-welcome', (el) => el.hidden))) throw new Error('welcome stayed after legacy success');
     const log = await requests(base);
     const legacyCalls = log.filter((entry) => entry.path === '/generate-manual' && entry.files.includes('line.L5X'));
     if (!legacyCalls.length) throw new Error('legacy endpoint was not called');
@@ -306,6 +357,7 @@ async function main() {
     const auto = await page.$eval('#mode-note', (el) => el.textContent);
     if (!/isn.t on this server yet/.test(auto)) throw new Error('auto fallback note: ' + auto);
     if ((await page.$eval('body', (el) => el.dataset.api)) !== 'legacy') throw new Error('api mode was not legacy');
+    if (!(await page.$eval('#payment-welcome', (el) => el.hidden))) throw new Error('welcome stayed after automatic legacy success');
     note('POST /jobs 404 falls back to generate-manual', true);
 
     const beforeForced = (await requests(base)).filter((entry) => entry.path === '/generate-manual').length;
@@ -320,8 +372,24 @@ async function main() {
     note('jobs=1 does not fall back when /jobs is 404', true);
 
     await page.goto(base + '/upload.html?session_id=cs_test_empty', { waitUntil: 'networkidle0' });
-    await page.waitForFunction(() => /0 manuals remaining/.test(document.getElementById('access-message').textContent));
-    note('starter with no manuals left stays visible in the access banner', true);
+    await page.waitForFunction(() => document.getElementById('access-message').textContent === 'Starter credits are used up');
+    const emptyState = await page.evaluate(() => {
+      const link = document.getElementById('access-pricing-link');
+      const rect = link.getBoundingClientRect();
+      return {
+        pricing: !link.hidden && rect.height > 20 && getComputedStyle(link).visibility !== 'hidden',
+        inputDisabled: document.getElementById('file-input').disabled,
+        generateDisabled: document.getElementById('generate-btn').disabled,
+        welcomeHidden: document.getElementById('payment-welcome').hidden,
+        phase: document.body.dataset.phase,
+      };
+    });
+    if (!emptyState.pricing || !emptyState.inputDisabled || !emptyState.generateDisabled || !emptyState.welcomeHidden || emptyState.phase !== 'locked') {
+      throw new Error('0-credit state ' + JSON.stringify(emptyState));
+    }
+    await shoot(page, 'no_credits', '#access-banner');
+    await runAxe(page, '0-credit session');
+    note('0-credit session disables upload and links to pricing', true);
 
     await openUpload(page, base, '?session_id=cs_test_pro');
     const pro = await page.$eval('#access-message', (el) => el.textContent);
@@ -366,6 +434,108 @@ async function main() {
     const skip = await page.evaluate(() => document.activeElement && document.activeElement.className);
     if (!/skip-link/.test(skip)) throw new Error('first tab was ' + skip);
     note('skip link is the first tab stop', true);
+
+    await openUpload(page, base);
+    await addFile(page, fixtures.big);
+    const staleStart = await page.$eval('#upload-error', (el) => el.hidden ? '' : el.innerText);
+    if (!staleStart.trim().endsWith('This did not use a credit.')) throw new Error('stale start: ' + staleStart);
+    await addFile(page, fixtures.line);
+    if (!(await page.$eval('#upload-error', (el) => el.hidden))) throw new Error('error stayed after a successful add');
+    await addFile(page, fixtures.big);
+    await page.click('.file-remove');
+    if (!(await page.$eval('#upload-error', (el) => el.hidden))) throw new Error('error stayed after remove');
+    await addFile(page, fixtures.big);
+    await page.click('input[value="cad"]');
+    if (!(await page.$eval('#upload-error', (el) => el.hidden))) throw new Error('error stayed after source change');
+    note('error banner clears after add, remove, and source change', true);
+
+    const beforeCad = (await requests(base)).length;
+    await openUpload(page, base, '?session_id=cs_test_local&jobs=0');
+    await page.click('input[value="cad"]');
+    await addFile(page, fixtures.step);
+    await page.click('#generate-btn');
+    await waitPhase(page, 'error');
+    const cadOnly = await page.$eval('#upload-error', (el) => el.innerText);
+    const cadExpected = 'CAD models need the new generator, which isn’t live yet. Nothing was uploaded and no credit was used.';
+    if (!cadOnly.includes(cadExpected)) throw new Error('cad only: ' + cadOnly);
+    const cadSent = (await requests(base)).slice(beforeCad).filter((entry) => entry.path === '/generate-manual' || entry.path === '/jobs');
+    if (cadSent.length) throw new Error('CAD-only legacy sent ' + JSON.stringify(cadSent));
+    if (!(await page.$eval('#payment-welcome', (el) => el.hidden))) throw new Error('welcome stayed after CAD-only stop');
+    await shoot(page, 'cad_only', '#upload-error');
+    note('CAD-only legacy fallback stops before upload', true);
+
+    await openUpload(page, base, '?session_id=cs_test_local&jobs=0');
+    await page.click('input[value="both"]');
+    await addFile(page, fixtures.step);
+    await addFile(page, fixtures.line);
+    await page.evaluate(() => {
+      const orig = window.fetch.bind(window);
+      window.__origFetch = orig;
+      window.fetch = function (url) {
+        const pending = orig.apply(window, arguments);
+        if (String(url).indexOf('/generate-manual') !== -1) {
+          return pending.then((res) => new Promise((resolve) => setTimeout(() => resolve(res), 900)));
+        }
+        return pending;
+      };
+    });
+    await page.click('#generate-btn');
+    await page.waitForFunction(() => {
+      const noteEl = document.getElementById('mode-note');
+      return document.body.dataset.phase === 'progress'
+        && !noteEl.hidden
+        && /line\.L5X/.test(noteEl.textContent)
+        && /were not used/.test(noteEl.textContent);
+    }, { timeout: 8000 });
+    const noteDuring = await page.evaluate(() => {
+      const el = document.getElementById('mode-note');
+      const rect = el.getBoundingClientRect();
+      return {
+        inSuccess: !!el.closest('#success-section'),
+        inUpload: !!el.closest('#upload-section'),
+        height: rect.height,
+        text: el.textContent,
+      };
+    });
+    if (noteDuring.inSuccess || noteDuring.inUpload || noteDuring.height < 20) {
+      throw new Error('legacy note hidden during progress ' + JSON.stringify(noteDuring));
+    }
+    if (/model\.step was sent/.test(noteDuring.text)) throw new Error('note named the STEP file: ' + noteDuring.text);
+    await shoot(page, 'legacy_note', '#mode-note');
+    await waitPhase(page, 'success');
+    const stepFirst = (await requests(base)).filter((entry) => entry.path === '/generate-manual');
+    const stepCall = stepFirst[stepFirst.length - 1];
+    if (!stepCall || stepCall.files.join(',') !== 'line.L5X') throw new Error('STEP-first files ' + (stepCall && stepCall.files.join(',')));
+    await page.evaluate(() => { if (window.__origFetch) window.fetch = window.__origFetch; });
+    note('Both-mode legacy fallback sends the PLC file when STEP is listed first', true);
+
+    await openUpload(page, base, '?session_id=cs_test_local&jobs=0');
+    await addFile(page, fixtures.empty);
+    await page.click('#generate-btn');
+    await waitPhase(page, 'error');
+    const noteOnError = await page.evaluate(() => {
+      const el = document.getElementById('mode-note');
+      const rect = el.getBoundingClientRect();
+      return {
+        hidden: el.hidden,
+        inSuccess: !!el.closest('#success-section'),
+        height: rect.height,
+        text: el.textContent,
+      };
+    });
+    if (noteOnError.hidden || noteOnError.inSuccess || noteOnError.height < 20 || !/single-file generator/.test(noteOnError.text)) {
+      throw new Error('legacy note hidden on error ' + JSON.stringify(noteOnError));
+    }
+    note('legacy note stays visible when generation fails', true);
+
+    await page.setViewport({ width: 1280, height: 1000, deviceScaleFactor: 1 });
+    await openUpload(page, base);
+    await runAxe(page, 'ready desktop');
+    await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 1 });
+    await runAxe(page, 'ready mobile');
+
+    if (external.length) throw new Error('external requests: ' + external.join(', '));
+    note('no production or Stripe requests', true);
 
     if (pageErrors.length) throw new Error('page errors: ' + pageErrors.join(' | '));
     note('no page errors', true);
