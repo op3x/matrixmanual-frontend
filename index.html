@@ -4,10 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ManualOS - Plain-English PLC Manuals, Instantly</title>
-<meta name="description" content="Upload your Allen-Bradley ACD or L5X file and get a complete plain-English PLC manual with routine-by-routine summaries in minutes. Free to try. No engineering back-and-forth.">
+<meta name="description" content="Upload your Allen-Bradley ACD or L5X file and get a complete plain-English PLC manual with routine-by-routine summaries in minutes. Starter is $39 one-time for 3 manuals. Pro is $79/month for unlimited manuals.">
   <meta name="keywords" content="PLC manual generator, Allen-Bradley ACD documentation, ladder logic manual, Rockwell PLC documentation, L5X to manual, PLC operator manual, automated PLC documentation, Siemens TIA Portal manual">
   <meta property="og:title" content="ManualOS – Plain-English PLC Manuals, Instantly">
-  <meta property="og:description" content="Upload your ACD or L5X file. Get a routine-by-routine PLC manual your operators can actually use — in minutes, not months. Free to start.">
+  <meta property="og:description" content="Upload your ACD or L5X file. Get a routine-by-routine PLC manual your operators can actually use — in minutes, not months. Starter $39 one-time, or Pro $79/month.">
   <meta property="og:url" content="https://manualos.com">
   <meta property="og:type" content="website">
   <meta name="twitter:card" content="summary_large_image">
@@ -86,11 +86,13 @@ h1 em{color:var(--amber);font-style:normal}
 .price-features{list-style:none;display:flex;flex-direction:column;gap:10px;margin-bottom:32px}
 .price-features li{font-size:.88rem;color:var(--warm-gray);display:flex;align-items:flex-start;gap:10px}
 .price-features li::before{content:"- ";color:var(--amber);font-weight:700;flex-shrink:0}
-.btn-price{display:block;text-align:center;padding:13px 24px;border-radius:10px;font-size:.92rem;font-weight:600;text-decoration:none;cursor:pointer;border:none;transition:transform .2s}
+.btn-price{display:block;width:100%;font-family:inherit;text-align:center;padding:13px 24px;border-radius:10px;font-size:.92rem;font-weight:600;text-decoration:none;cursor:pointer;border:none;transition:transform .2s}
 .btn-price.primary{background:linear-gradient(135deg,var(--amber),var(--terra));color:#fff;box-shadow:var(--shadow-amber)}
 .btn-price.primary:hover{transform:translateY(-2px)}
 .btn-price.outline{background:transparent;color:var(--charcoal);border:2px solid var(--cream-deep)}
 .btn-price.outline:hover{border-color:var(--amber);color:var(--amber)}
+.btn-price:disabled{opacity:.7;cursor:wait;transform:none}
+.checkout-error{margin-top:12px;text-align:center;font-size:.9rem;font-weight:600;color:var(--terra)}
 footer{background:var(--charcoal);color:rgba(255,255,255,.6);padding:48px 48px 36px;display:flex;flex-direction:column;gap:32px}
 .footer-top{display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:24px}
 .footer-brand{font-family:'Fraunces',serif;font-size:1.2rem;font-weight:700;color:#fff}
@@ -114,12 +116,22 @@ footer{background:var(--charcoal);color:rgba(255,255,255,.6);padding:48px 48px 3
     "description": "Upload your Allen-Bradley ACD or L5X PLC file and receive a complete plain-English operator manual with routine-by-routine summaries in minutes.",
     "applicationCategory": "BusinessApplication",
     "operatingSystem": "Web",
-    "offers": {
-      "@type": "Offer",
-      "price": "0",
-      "priceCurrency": "USD",
-      "description": "3 free manual generations per month"
-    }
+    "offers": [
+      {
+        "@type": "Offer",
+        "name": "Starter",
+        "price": "39",
+        "priceCurrency": "USD",
+        "description": "$39 one-time, includes 3 manuals"
+      },
+      {
+        "@type": "Offer",
+        "name": "Pro",
+        "price": "79",
+        "priceCurrency": "USD",
+        "description": "$79/month, unlimited manuals"
+      }
+    ]
   }
   </script>
 </head>
@@ -133,13 +145,13 @@ footer{background:var(--charcoal);color:rgba(255,255,255,.6);padding:48px 48px 3
 </nav>
 <section class="hero">
   <div style="display:flex;flex-direction:column;align-items:center;gap:10px;margin-bottom:4px;">
-      <div style="background:rgba(217,119,6,.12);border:1px solid rgba(217,119,6,.3);color:#92400e;font-size:.8rem;font-weight:600;padding:6px 18px;border-radius:999px;letter-spacing:.04em;">FREE — 3 manuals/month, no credit card required</div>
+      <div style="background:rgba(217,119,6,.12);border:1px solid rgba(217,119,6,.3);color:#92400e;font-size:.8rem;font-weight:600;padding:6px 18px;border-radius:999px;letter-spacing:.04em;">Starter $39 one-time · Pro $79/month</div>
       <div class="hero-badge"><span class="dot"></span>Now supporting Allen-Bradley, Siemens, Mitsubishi and more</div>
     </div>
   <h1>Equipment PLC programs <em>decoded</em> into plain-English manuals.</h1>
   <p class="hero-sub">Upload your ladder logic. Get a complete operator manual — with a summary of every routine — that your team can actually use in minutes, not months.</p>
   <div class="hero-cta">
-    <a href="/upload" class="btn-primary">Generate My First Manual — Free</a>
+    <a href="/upload" class="btn-primary">Generate a manual</a>
     <a href="#how" class="btn-secondary">See how it works</a>
   </div>
   <p style="font-size:.82rem;color:#92400e;opacity:.8;margin:0;letter-spacing:.01em;">Trusted by automation engineers at Northrop Grumman, Coca-Cola, Pratt &amp; Whitney and more.</p>
@@ -205,27 +217,27 @@ footer{background:var(--charcoal);color:rgba(255,255,255,.6);padding:48px 48px 3
   <div class="pricing-grid">
     <div class="price-card">
       <div class="price-tier">Starter</div>
-      <div class="price-amount">0<sup>$</sup></div>
-      <div class="price-period">per month</div>
-      <div class="price-desc">For teams generating PLC manuals on a regular basis.</div>
+      <div class="price-amount"><sup>$</sup>39</div>
+      <div class="price-period">one-time</div>
+      <div class="price-desc">Includes 3 manuals. Pay once and generate them whenever you are ready.</div>
       <ul class="price-features">
-        <li>3 manual generations per month</li>
+        <li>3 manuals included</li>
         <li>Up to 500 rungs per file</li>
         <li>All PLC platforms supported</li>
         <li>Code reference percentage scale</li>
         <li>OEM-aware output</li>
         <li>PDF download</li>
       </ul>
-      <a href="https://buy.stripe.com/14A6oJeBuaZDeeOboX4ZG00?success_url=https%3A%2F%2Fmanualos.com%2Fupload.html" class="btn-price outline">Get started</a>
+      <button type="button" class="btn-price outline" data-checkout="starter">Get started</button>
     </div>
     <div class="price-card featured">
       <div class="featured-badge">Most popular</div>
       <div class="price-tier">Pro</div>
       <div class="price-amount"><sup>$</sup>79</div>
       <div class="price-period">per month</div>
-      <div class="price-desc">For teams with larger programs — unlimited manuals, 1,000+ rungs.</div>
+      <div class="price-desc">Unlimited manuals for teams with larger programs and 1,000+ rungs.</div>
       <ul class="price-features">
-        <li>Unlimited generations per month</li>
+        <li>Unlimited manuals</li>
         <li>All PLC platforms supported</li>
         <li>Code reference percentage scale</li>
         <li>1,000+ rungs per file</li>
@@ -233,7 +245,7 @@ footer{background:var(--charcoal);color:rgba(255,255,255,.6);padding:48px 48px 3
         <li>OEM-aware output</li>
         <li>PDF download</li>
       </ul>
-      <a href="https://buy.stripe.com/fZu8wRctmgjXgmWgJh4ZG01?success_url=https%3A%2F%2Fmanualos.com%2Fupload.html" class="btn-price primary">Start Pro</a>
+      <button type="button" class="btn-price primary" data-checkout="pro">Start Pro</button>
     </div>
     <div class="price-card">
       <div class="price-tier">Enterprise</div>
@@ -250,6 +262,7 @@ footer{background:var(--charcoal);color:rgba(255,255,255,.6);padding:48px 48px 3
       <a href="mailto:hello@manualos.com?subject=Enterprise" class="btn-price outline">Contact us</a>
     </div>
   </div>
+  <p id="checkout-error" class="checkout-error" role="alert" hidden></p>
 </section>
 <footer>
   <div class="footer-top">
@@ -284,10 +297,46 @@ footer{background:var(--charcoal);color:rgba(255,255,255,.6);padding:48px 48px 3
   </div>
 </footer>
 <script>
+const API_BASE = 'https://manualforge-backend-production.up.railway.app';
+
 const obs = new IntersectionObserver(function(entries) {
   entries.forEach(function(e) { if(e.isIntersecting) e.target.classList.add('visible'); });
 }, {threshold: 0.1});
 document.querySelectorAll('.feature-card, .price-card').forEach(function(el) { obs.observe(el); });
+
+const checkoutError = document.getElementById('checkout-error');
+document.querySelectorAll('[data-checkout]').forEach(function(button) {
+  button.addEventListener('click', function() {
+    startCheckout(button.getAttribute('data-checkout'), button);
+  });
+});
+
+async function startCheckout(plan, button) {
+  const buttons = document.querySelectorAll('[data-checkout]');
+  const originalLabel = button.textContent;
+  checkoutError.textContent = '';
+  checkoutError.hidden = true;
+  buttons.forEach(function(el) { el.disabled = true; });
+  button.textContent = 'Starting checkout…';
+  button.setAttribute('aria-busy', 'true');
+  try {
+    const res = await fetch(API_BASE + '/create-checkout-session', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ plan: plan })
+    });
+    const data = await res.json().catch(function() { return {}; });
+    if (!res.ok || !data || !data.url) throw new Error('checkout failed');
+    window.location.href = data.url;
+  } catch (err) {
+    buttons.forEach(function(el) { el.disabled = false; el.removeAttribute('aria-busy'); });
+    button.textContent = originalLabel;
+    checkoutError.textContent = 'We couldn\u2019t start checkout. Please try again in a moment.';
+    checkoutError.hidden = false;
+    button.insertAdjacentElement('afterend', checkoutError);
+    checkoutError.scrollIntoView({ block: 'nearest' });
+  }
+}
 </script>
 </body>
 </html>
