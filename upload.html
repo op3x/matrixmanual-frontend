@@ -92,7 +92,7 @@
   <div id="upload-section">
     <p class="page-eyebrow">Step 1 of 1</p>
     <h1 class="page-title">Upload your PLC file</h1>
-    <p class="page-sub">Drop your ladder logic file below. We&#8217;ll decode every rung and generate a plain-English operator manual in minutes.</p>
+    <p class="page-sub">Drop your ladder logic file below. ManualOS explains the program&#8217;s logic in plain English.</p>
     <div class="upload-box is-disabled" id="drop-zone" aria-disabled="true">
       <div class="upload-icon" aria-hidden="true">&#128193;</div>
       <h2>Drag &amp; drop your file here</h2>
@@ -390,6 +390,7 @@
       setTimeout(() => URL.revokeObjectURL(url), 10000);
 
       const updated = await verifySession({ keepAccessOnError: true });
+      if (paymentWelcome) paymentWelcome.hidden = true;
       uploadSection.style.display = 'none';
       let successText = 'Your PDF is downloading now. Check your Downloads folder.';
       if (updated && updated.remaining === null) successText += ' Unlimited manuals remaining.';
