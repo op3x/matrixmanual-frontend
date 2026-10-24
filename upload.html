@@ -238,7 +238,11 @@
     setUploadEnabled(true);
     showAccess(planLabel(data.plan) + ' plan \u00b7 ' + remainingLabel(data.remaining), { showPricing: false, ok: true });
     if (sessionFromQuery && paymentWelcome) {
-      paymentWelcome.textContent = 'Payment confirmed. You are on the ' + planLabel(data.plan) + ' plan, with ' + remainingLabel(data.remaining) + '. Upload a PLC file below when you are ready.';
+      var planName = planLabel(data.plan);
+      var detail = data.remaining === null
+        ? 'Payment confirmed. You are on the ' + planName + ' plan, with unlimited manuals.'
+        : 'Payment confirmed. You are on the ' + planName + ' plan, with ' + remainingLabel(data.remaining) + '.';
+      paymentWelcome.textContent = detail + ' Upload a PLC file below when you are ready.';
       paymentWelcome.hidden = false;
     }
   }
