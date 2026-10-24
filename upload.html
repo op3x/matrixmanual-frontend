@@ -52,6 +52,16 @@
     .platforms-label{font-size:.75rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--warm-gray);margin-bottom:14px}
     .platform-tags{display:flex;flex-wrap:wrap;gap:8px}
     .platform-tag{font-size:.82rem;padding:6px 14px;border-radius:20px;border:1px solid rgba(217,119,6,.25);color:var(--warm-gray);background:#fff}
+    .access-banner{margin-bottom:28px;padding:14px 18px;border-radius:12px;background:#fff;border:1px solid rgba(217,119,6,.25);font-size:.95rem;color:var(--charcoal);display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center}
+    .access-banner.ok{background:var(--amber-pale)}
+    .access-banner a{color:var(--amber);font-weight:700;text-decoration:none}
+    .access-banner a:hover{color:var(--terra)}
+    .upload-box.is-disabled{opacity:.6;cursor:not-allowed;pointer-events:none}
+    .upload-box.is-disabled .btn-primary{background:#a8a29e}
+    .upload-box.is-disabled h2,.upload-box.is-disabled p{color:#a8a29e}
+    .upload-error{margin-top:16px;padding:14px 18px;border-radius:12px;background:#fff;border:1px solid rgba(180,83,9,.35);color:#92400e;font-size:.92rem;display:none}
+    .upload-error.visible{display:block}
+    .upload-error a{color:var(--amber);font-weight:700}
   </style>
 </head>
 <body>
@@ -60,16 +70,20 @@
   <a class="nav-back" href="/">&#8592; Back to home</a>
 </nav>
 <main>
+  <div id="access-banner" class="access-banner" role="status">
+    <span id="access-message">Checking your access…</span>
+    <a id="access-pricing-link" href="/#pricing" hidden>View pricing</a>
+  </div>
   <div id="upload-section">
     <p class="page-eyebrow">Step 1 of 1</p>
     <h1 class="page-title">Upload your PLC file</h1>
     <p class="page-sub">Drop your ladder logic file below. We&#8217;ll decode every rung and generate a plain-English operator manual in minutes.</p>
-    <div class="upload-box" id="drop-zone">
+    <div class="upload-box is-disabled" id="drop-zone" aria-disabled="true">
       <div class="upload-icon">&#128193;</div>
       <h2>Drag &amp; drop your file here</h2>
       <p>Supports .L5X, .ACD, .zap15, .gx3, .cxp, .xml and all major PLC export formats</p>
       <label class="btn-primary" for="file-input">Choose file</label>
-      <input type="file" id="file-input" accept=".l5x,.acd,.zap15,.gx3,.cxp,.xml,.zip">
+      <input type="file" id="file-input" accept=".l5x,.acd,.zap15,.gx3,.cxp,.xml,.zip" disabled>
     </div>
     <div class="file-info" id="file-info">
       <span>&#128196;</span>
@@ -81,8 +95,9 @@
       <p class="progress-label" id="progress-label">Uploading...</p>
     </div>
     <div class="generate-btn-wrap" id="generate-btn-wrap">
-      <button class="btn-primary" id="generate-btn" onclick="handleGenerate()">Generate my manual &#8594;</button>
+      <button class="btn-primary" id="generate-btn" type="button" disabled>Generate my manual &#8594;</button>
     </div>
+    <div class="upload-error" id="upload-error" role="alert"></div>
     <div class="platforms" style="margin-top:40px">
       <p class="platforms-label">Supported Platforms</p>
       <div class="platform-tags">
@@ -102,7 +117,12 @@
   </div>
 </main>
 <script>
+  const API_BASE = 'https://manualforge-backend-production.up.railway.app';
+  const SESSION_STORAGE_KEY = 'manualos_session_id';
+
   let selectedFile = null;
+  let sessionId = '';
+  let uploadEnabled = false;
 
   const dropZone = document.getElementById('drop-zone');
   const fileInput = document.getElementById('file-input');
@@ -117,6 +137,10 @@
   const uploadSection = document.getElementById('upload-section');
   const successSection = document.getElementById('success-section');
   const successSub = document.getElementById('success-sub');
+  const accessBanner = document.getElementById('access-banner');
+  const accessMessage = document.getElementById('access-message');
+  const accessPricingLink = document.getElementById('access-pricing-link');
+  const uploadError = document.getElementById('upload-error');
 
   function formatSize(bytes) {
     if (bytes < 1024) return bytes + ' B';
@@ -124,11 +148,112 @@
     return (bytes / 1048576).toFixed(1) + ' MB';
   }
 
-  function setFile(file) {    if (file.size > 20 * 1024 * 1024) { alert('File too large. Maximum upload size is 20 MB.'); return; }
+  function planLabel(plan) {
+    const value = String(plan || '').toLowerCase();
+    if (value === 'starter') return 'Starter';
+    if (value === 'pro') return 'Pro';
+    return plan ? String(plan) : 'Paid';
+  }
+
+  function remainingLabel(remaining) {
+    if (remaining === null) return 'Unlimited manuals';
+    const count = Number(remaining);
+    if (!Number.isFinite(count)) return 'Manuals remaining unavailable';
+    if (count === 1) return '1 manual remaining';
+    return count + ' manuals remaining';
+  }
+
+  function showAccess(message, options) {
+    const opts = options || {};
+    accessMessage.textContent = message;
+    accessPricingLink.hidden = !opts.showPricing;
+    accessBanner.classList.toggle('ok', !!opts.ok);
+  }
+
+  function setUploadEnabled(enabled) {
+    uploadEnabled = enabled;
+    fileInput.disabled = !enabled;
+    dropZone.classList.toggle('is-disabled', !enabled);
+    dropZone.setAttribute('aria-disabled', enabled ? 'false' : 'true');
+    if (!enabled) generateBtn.disabled = true;
+  }
+
+  function showUploadError(message, withPricing) {
+    uploadError.textContent = '';
+    uploadError.appendChild(document.createTextNode(message));
+    if (withPricing) {
+      uploadError.appendChild(document.createTextNode(' '));
+      const link = document.createElement('a');
+      link.href = '/#pricing';
+      link.textContent = 'View pricing';
+      uploadError.appendChild(link);
+      uploadError.appendChild(document.createTextNode('.'));
+    }
+    uploadError.classList.add('visible');
+  }
+
+  function clearUploadError() {
+    uploadError.classList.remove('visible');
+    uploadError.textContent = '';
+  }
+
+  function readSessionId() {
+    const params = new URLSearchParams(window.location.search);
+    const fromQuery = (params.get('session_id') || '').trim();
+    if (fromQuery) {
+      try { localStorage.setItem(SESSION_STORAGE_KEY, fromQuery); } catch (err) {}
+      return fromQuery;
+    }
+    try { return (localStorage.getItem(SESSION_STORAGE_KEY) || '').trim(); } catch (err) { return ''; }
+  }
+
+  function lockUpload(message) {
+    setUploadEnabled(false);
+    showAccess(message, { showPricing: true, ok: false });
+  }
+
+  function applySession(data) {
+    setUploadEnabled(true);
+    showAccess(planLabel(data.plan) + ' plan \u00b7 ' + remainingLabel(data.remaining), { showPricing: false, ok: true });
+  }
+
+  async function verifySession(options) {
+    const keepAccessOnError = !!(options && options.keepAccessOnError);
+    if (!sessionId) {
+      lockUpload('No purchase found on this browser. Choose a plan to generate manuals.');
+      return null;
+    }
+    let res;
+    try {
+      res = await fetch(API_BASE + '/verify-session?session_id=' + encodeURIComponent(sessionId));
+    } catch (err) {
+      if (!keepAccessOnError) lockUpload('We couldn\u2019t check your purchase just now. Refresh the page, or choose a plan.');
+      return null;
+    }
+    let data = {};
+    try { data = await res.json(); } catch (err) { data = {}; }
+    if (!res.ok || !data.valid) {
+      if (!(keepAccessOnError && !res.ok)) {
+        lockUpload('This purchase isn\u2019t active. Choose a plan to generate manuals.');
+      }
+      return null;
+    }
+    applySession(data);
+    return data;
+  }
+
+  function setFile(file) {
+    if (!uploadEnabled) return;
+    clearUploadError();
+    if (file.size > 20 * 1024 * 1024) {
+      showUploadError('That file is too large. The maximum upload size is 20 MB.');
+      return;
+    }
     selectedFile = file;
     fileName.textContent = file.name + ' (' + formatSize(file.size) + ')';
     fileInfo.classList.add('visible');
     generateBtnWrap.classList.add('visible');
+    generateBtn.disabled = false;
     progressWrap.classList.remove('visible');
     progressFill.style.width = '0%';
   }
@@ -141,81 +266,114 @@
     fileInput.value = '';
   }
 
+  function resetGenerateUi() {
+    generateBtn.disabled = !uploadEnabled || !selectedFile;
+    generateBtn.textContent = 'Generate my manual \u2192';
+    progressFill.style.width = '0%';
+    progressWrap.classList.remove('visible');
+  }
+
   fileInput.addEventListener('change', () => {
     if (fileInput.files[0]) setFile(fileInput.files[0]);
   });
 
   removeBtn.addEventListener('click', clearFile);
+  generateBtn.addEventListener('click', handleGenerate);
 
-  dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+  dropZone.addEventListener('dragover', e => {
+    if (!uploadEnabled) return;
+    e.preventDefault();
+    dropZone.classList.add('drag-over');
+  });
   dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
   dropZone.addEventListener('drop', e => {
     e.preventDefault();
     dropZone.classList.remove('drag-over');
+    if (!uploadEnabled) return;
     if (e.dataTransfer.files[0]) setFile(e.dataTransfer.files[0]);
   });
 
   async function handleGenerate() {
+    if (!uploadEnabled || !sessionId) {
+      lockUpload('No purchase found on this browser. Choose a plan to generate manuals.');
+      return;
+    }
     if (!selectedFile) return;
+    clearUploadError();
     generateBtn.disabled = true;
     generateBtn.textContent = 'Uploading...';
     progressWrap.classList.add('visible');
     progressFill.style.width = '20%';
     progressLabel.textContent = 'Uploading...';
 
-        // Use FormData to send file directly (handles binary ACD/ZIP files correctly)
-            const formData = new FormData();
-            formData.append('file', selectedFile);
-            formData.append('brand', '');
-            formData.append('sections', JSON.stringify([]));
+    const formData = new FormData();
+    formData.append('file', selectedFile);
+    formData.append('brand', '');
+    formData.append('sections', JSON.stringify([]));
+    formData.append('session_id', sessionId);
 
-            progressFill.style.width = '40%';
-            progressLabel.textContent = 'Analysing ladder logic…';
+    progressFill.style.width = '40%';
+    progressLabel.textContent = 'Analysing ladder logic\u2026';
 
-            try {
-                                const res = await fetch('https://manualforge-backend-production.up.railway.app/generate-manual', {
-                                      method: 'POST',
-                                      body: formData
-                        });
+    try {
+      const res = await fetch(API_BASE + '/generate-manual', {
+        method: 'POST',
+        headers: { 'X-Session-Id': sessionId },
+        body: formData
+      });
 
-                        progressFill.style.width = '90%';
-                        progressLabel.textContent = 'Building your manual…';
+      progressFill.style.width = '90%';
+      progressLabel.textContent = 'Building your manual\u2026';
 
-                        if (!res.ok) {
-                                      const errText = await res.text();
-                                      throw new Error('Server error ' + res.status + ': ' + errText);
-                        }
+      if (res.status === 402) {
+        resetGenerateUi();
+        showUploadError('This purchase isn\u2019t active, or you\u2019ve used all the manuals on this plan.', true);
+        await verifySession();
+        return;
+      }
 
-                        const blob = await res.blob();
-                        progressFill.style.width = '100%';
-                        progressLabel.textContent = 'Done!';
+      if (!res.ok) {
+        resetGenerateUi();
+        if (res.status === 400) {
+          showUploadError('We couldn\u2019t use that file. Check the format and try again.');
+        } else {
+          showUploadError('We couldn\u2019t generate your manual. Please try again.');
+        }
+        return;
+      }
 
-                        // Auto-download the PDF
-                        const baseName = selectedFile.name.replace(/\.[^.]+$/, '');
-                        const url = URL.createObjectURL(blob);
-                        const a = document.createElement('a');
-                        a.href = url;
-                        a.download = baseName + '-manual.pdf';
-                        a.style.display = 'none';
-                        document.body.appendChild(a);
-                        setTimeout(() => {
-                          a.click();
-                          setTimeout(() => { URL.revokeObjectURL(url); document.body.removeChild(a); }, 1000);
-                        }, 100)
-                        setTimeout(() => URL.revokeObjectURL(url), 10000);
+      const blob = await res.blob();
+      progressFill.style.width = '100%';
+      progressLabel.textContent = 'Done!';
 
-                        // Show success screen
-                        uploadSection.style.display = 'none';
-                        successSub.textContent = 'Your PDF is downloading now. Check your Downloads folder.';
-                        successSection.classList.add('visible');
-            } catch (err) {
-                        generateBtn.disabled = false;
-                        generateBtn.textContent = 'Generate my manual →';
-                        progressFill.style.width = '0%';
-                        progressWrap.classList.remove('visible');
-                        alert('Error generating manual: ' + err.message);
-            }
+      const baseName = selectedFile.name.replace(/\.[^.]+$/, '');
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = baseName + '-manual.pdf';
+      a.style.display = 'none';
+      document.body.appendChild(a);
+      setTimeout(() => {
+        a.click();
+        setTimeout(() => { URL.revokeObjectURL(url); document.body.removeChild(a); }, 1000);
+      }, 100);
+      setTimeout(() => URL.revokeObjectURL(url), 10000);
+
+      const updated = await verifySession({ keepAccessOnError: true });
+      uploadSection.style.display = 'none';
+      let successText = 'Your PDF is downloading now. Check your Downloads folder.';
+      if (updated && updated.remaining === null) successText += ' Unlimited manuals remaining.';
+      else if (updated) successText += ' ' + remainingLabel(updated.remaining) + '.';
+      successSub.textContent = successText;
+      successSection.classList.add('visible');
+    } catch (err) {
+      resetGenerateUi();
+      showUploadError('We couldn\u2019t reach ManualOS. Check your connection and try again.');
+    }
   }
+
+  sessionId = readSessionId();
+  verifySession();
 </script>
 </body>
 </html>
