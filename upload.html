@@ -101,7 +101,7 @@
     .access-banner a{color:var(--amber);font-weight:700;text-decoration:underline;text-underline-offset:.15rem;min-height:3rem;display:inline-flex;align-items:center}
     .access-banner a[hidden]{display:none}
     .access-banner a:hover{color:var(--terra)}
-    html.has-session #access-message{flex:1 1 auto;min-width:0;max-width:calc(100% - 7.5rem);min-height:5.25rem;display:flex;align-items:center}
+    html.has-session #access-message{flex:1 1 auto;min-width:0;max-width:calc(100% - 7.5rem);min-height:3.5rem;display:flex;align-items:center}
     html.has-session #access-pricing-link{flex:0 0 auto}
     html.has-session #payment-welcome{display:grid !important}
     #payment-welcome.is-locked{background:transparent;border-color:transparent;color:inherit}
@@ -160,7 +160,7 @@
           <label class="choice"><input type="radio" name="source" value="cad"> <span>CAD model</span></label>
           <label class="choice"><input type="radio" name="source" value="both"> <span>Both</span></label>
         </div>
-        <p class="hint" id="source-guidance" aria-live="polite"></p>
+        <p class="hint" id="source-guidance" aria-live="polite">Add a PLC program: Rockwell L5X or L5K, PLCopen XML, TwinCAT TcPOU, IEC structured text (ST, SCL, or EXP), a CSV or Excel tag list, or a zip of those. An ACD file is accepted, but the manual will be limited. Export L5X for a complete manual. Up to 25 files, 50 MB each.</p>
       </fieldset>
       <fieldset id="equipment-fields">
         <legend>Equipment details, optional</legend>
@@ -176,7 +176,7 @@
       <div class="upload-box is-disabled" id="drop-zone" aria-disabled="true">
         <div class="upload-icon" aria-hidden="true">&#128193;</div>
         <h2 id="drop-title">Drag and drop files here</h2>
-        <p id="drop-help"></p>
+        <p id="drop-help">L5X, L5K, PLCopen XML, TcPOU, ST, SCL, CSV, XLSX, ACD, or a zip of those.</p>
         <div class="choose-wrap">
           <input class="sr-only" type="file" id="file-input" multiple disabled>
           <label class="btn-primary" for="file-input" id="choose-label">Choose files</label>
@@ -423,7 +423,15 @@
 
   function showAccess(message, options) {
     var opts = options || {};
-    accessMessage.textContent = message;
+    if (opts.hideMessage) {
+      accessMessage.textContent = '';
+      accessMessage.setAttribute('aria-hidden', 'true');
+      accessBanner.removeAttribute('role');
+    } else {
+      accessMessage.textContent = message;
+      accessMessage.removeAttribute('aria-hidden');
+      accessBanner.setAttribute('role', 'status');
+    }
     accessPricingLink.hidden = !opts.showPricing;
     accessBanner.classList.toggle('ok', !!opts.ok);
   }
@@ -487,6 +495,7 @@
     if (welcomeText) welcomeText.textContent = message || '';
     if (paymentWelcome) {
       paymentWelcome.hidden = false;
+      paymentWelcome.setAttribute('role', 'status');
       paymentWelcome.classList.toggle('is-locked', !!locked);
     }
   }
@@ -504,7 +513,7 @@
 
   function lockUpload(message) {
     setUploadEnabled(false);
-    showAccess(message, { showPricing: true, ok: false });
+    showAccess('', { showPricing: true, ok: false, hideMessage: true });
     fillReservedWelcome(message, true);
     if (document.body.dataset.phase !== 'progress' && document.body.dataset.phase !== 'success') setPhase('locked');
   }
@@ -512,7 +521,7 @@
   function applySession(data) {
     if (data.remaining === 0) {
       setUploadEnabled(false);
-      showAccess('Starter credits are used up', { showPricing: true, ok: false });
+      showAccess('', { showPricing: true, ok: false, hideMessage: true });
       fillReservedWelcome('Starter credits are used up', true);
       if (document.body.dataset.phase !== 'progress' && document.body.dataset.phase !== 'success' && document.body.dataset.phase !== 'error') {
         setPhase('locked');

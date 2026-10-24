@@ -414,7 +414,10 @@ async function main() {
     note('jobs=1 does not fall back when /jobs is 404', true);
 
     await page.goto(base + '/upload.html?session_id=cs_test_empty', { waitUntil: 'networkidle0' });
-    await page.waitForFunction(() => document.getElementById('access-message').textContent === 'Starter credits are used up');
+    await page.waitForFunction(() => {
+      const el = document.getElementById('payment-welcome-text');
+      return el && el.textContent === 'Starter credits are used up' && document.body.dataset.phase === 'locked';
+    });
     const emptyState = await page.evaluate(() => {
       const link = document.getElementById('access-pricing-link');
       const msg = document.getElementById('access-message');
@@ -424,6 +427,24 @@ async function main() {
       const mr = msg.getBoundingClientRect();
       const wr = welcome.getBoundingClientRect();
       const ws = getComputedStyle(welcome);
+      const needle = 'Starter credits are used up';
+      const visibleCopies = [];
+      const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+      let node;
+      while ((node = walker.nextNode())) {
+        if (!node.textContent.includes(needle)) continue;
+        const el = node.parentElement;
+        const style = getComputedStyle(el);
+        const rect = el.getBoundingClientRect();
+        if (style.display === 'none' || style.visibility === 'hidden' || rect.height < 1) continue;
+        if (el.closest('[aria-hidden="true"]')) continue;
+        visibleCopies.push(el.id || el.className);
+      }
+      const live = [...document.querySelectorAll('[role="status"]')].filter((el) => {
+        if (el.hidden) return false;
+        const style = getComputedStyle(el);
+        return style.display !== 'none' && style.visibility !== 'hidden' && (el.innerText || '').includes(needle);
+      }).map((el) => el.id);
       return {
         pricing: !link.hidden && lr.height > 20 && getComputedStyle(link).visibility !== 'hidden',
         aligned: Math.abs((mr.top + mr.height / 2) - (lr.top + lr.height / 2)) < 8,
@@ -432,10 +453,14 @@ async function main() {
         welcomeHidden: welcome.hidden,
         welcomeShown: ws.display !== 'none' && ws.visibility !== 'hidden' && wr.height > 60,
         welcomeText: welcomeText ? welcomeText.textContent : '',
+        topLine: msg.textContent,
+        topHidden: msg.getAttribute('aria-hidden') === 'true',
+        visibleCopies,
+        live,
         phase: document.body.dataset.phase,
       };
     });
-    if (!emptyState.pricing || !emptyState.aligned || !emptyState.inputDisabled || !emptyState.generateDisabled || emptyState.welcomeHidden || !emptyState.welcomeShown || emptyState.welcomeText !== 'Starter credits are used up' || /Payment confirmed/.test(emptyState.welcomeText) || emptyState.phase !== 'locked') {
+    if (!emptyState.pricing || !emptyState.aligned || !emptyState.inputDisabled || !emptyState.generateDisabled || emptyState.welcomeHidden || !emptyState.welcomeShown || emptyState.welcomeText !== 'Starter credits are used up' || /Payment confirmed/.test(emptyState.welcomeText) || emptyState.topLine.trim() || !emptyState.topHidden || emptyState.visibleCopies.length !== 1 || emptyState.live.length !== 1 || emptyState.live[0] !== 'payment-welcome' || emptyState.phase !== 'locked') {
       throw new Error('0-credit state ' + JSON.stringify(emptyState));
     }
     await shoot(page, 'no_credits', '#access-banner');
@@ -617,18 +642,41 @@ async function main() {
         const mr = msg.getBoundingClientRect();
         const wr = welcome.getBoundingClientRect();
         const ws = getComputedStyle(welcome);
+        const needle = welcomeText ? welcomeText.textContent : '';
+        const visibleCopies = [];
+        const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+        let node;
+        while ((node = walker.nextNode())) {
+          if (!needle || !node.textContent.includes(needle)) continue;
+          const el = node.parentElement;
+          const style = getComputedStyle(el);
+          const rect = el.getBoundingClientRect();
+          if (style.display === 'none' || style.visibility === 'hidden' || rect.height < 1) continue;
+          if (el.closest('[aria-hidden="true"]')) continue;
+          visibleCopies.push(el.id || el.className);
+        }
+        const live = [...document.querySelectorAll('[role="status"]')].filter((el) => {
+          if (el.hidden) return false;
+          const style = getComputedStyle(el);
+          return style.display !== 'none' && style.visibility !== 'hidden' && needle && (el.innerText || '').includes(needle);
+        }).map((el) => el.id);
         return {
           message: msg.textContent,
+          topHidden: msg.getAttribute('aria-hidden') === 'true',
           pricing: !link.hidden && lr.height > 20,
           aligned: Math.abs((mr.top + mr.height / 2) - (lr.top + lr.height / 2)) < 8,
           welcomeShown: ws.display !== 'none' && ws.visibility !== 'hidden' && wr.height > 60,
-          welcomeText: welcomeText ? welcomeText.textContent : '',
+          welcomeHidden: welcome.hidden,
+          welcomeText: needle,
           hasSession: document.documentElement.classList.contains('has-session'),
+          visibleCopies,
+          live,
         };
       });
-      if (!pattern.test(state.message)) throw new Error(label + ' message ' + state.message);
+      if (!pattern.test(state.welcomeText)) throw new Error(label + ' message ' + state.welcomeText);
+      if (state.message.trim() || !state.topHidden) throw new Error(label + ' duplicated top line ' + JSON.stringify(state));
       if (!state.pricing || !state.aligned) throw new Error(label + ' pricing ' + JSON.stringify(state));
-      if (!state.welcomeShown || state.welcomeText !== state.message || !state.hasSession) {
+      if (state.welcomeHidden || !state.welcomeShown || !state.hasSession || state.visibleCopies.length !== 1 || state.live.length !== 1 || state.live[0] !== 'payment-welcome') {
         throw new Error(label + ' welcome ' + JSON.stringify(state));
       }
       await runAxe(page, label);
