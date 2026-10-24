@@ -132,6 +132,7 @@ async function main() {
     nocredit: path.join(fixtureDir, 'nocredit.L5X'),
     legacy: path.join(fixtureDir, 'legacy.L5X'),
     drop: path.join(fixtureDir, 'drop.L5X'),
+    legacyStep: path.join(fixtureDir, 'legacy.step'),
     exp: path.join(fixtureDir, 'routine.exp'),
     zip: path.join(fixtureDir, 'drawings.zip'),
     long: path.join(fixtureDir, 'VeryLongProgramNameForTheMobileFileListCheck.L5X'),
@@ -150,6 +151,7 @@ async function main() {
   await writeFile(fixtures.nocredit, '<RSLogix5000Content></RSLogix5000Content>');
   await writeFile(fixtures.legacy, '<RSLogix5000Content></RSLogix5000Content>');
   await writeFile(fixtures.drop, '<RSLogix5000Content></RSLogix5000Content>');
+  await writeFile(fixtures.legacyStep, 'ISO-10303-21;\n');
   await writeFile(fixtures.exp, 'PROGRAM Main\nEND_PROGRAM');
   await writeFile(fixtures.zip, 'PK');
   await writeFile(fixtures.long, '<RSLogix5000Content></RSLogix5000Content>');
@@ -193,16 +195,51 @@ async function main() {
     page.on('console', (msg) => {
       const text = msg.text();
       if (msg.type() !== 'error') return;
-      if (/favicon|Failed to load resource/i.test(text)) return;
+      if (/favicon|Failed to load resource|net::ERR/i.test(text)) return;
       pageErrors.push(text);
     });
 
+    await page.setCacheEnabled(false);
     await page.setViewport({ width: 412, height: 823, deviceScaleFactor: 1.75, isMobile: true });
-    await openUpload(page, base, '?session_id=cs_test_local');
-    await new Promise((resolve) => setTimeout(resolve, 600));
-    const cls = await page.evaluate(() => window.__cls || 0);
-    if (cls >= 0.1) throw new Error('mobile CLS ' + cls);
-    note('mobile layout shift stays under 0.1', true, cls.toFixed(3));
+    async function measureCls(query, label) {
+      if (!query) {
+        await page.goto(base + '/upload.html', { waitUntil: 'domcontentloaded' });
+        await page.evaluate(() => localStorage.clear());
+      }
+      const client = await page.createCDPSession();
+      await client.send('Network.enable');
+      await client.send('Network.emulateNetworkConditions', {
+        offline: false,
+        latency: 500,
+        downloadThroughput: 40 * 1024,
+        uploadThroughput: 40 * 1024,
+      });
+      try {
+        await page.goto(base + '/upload.html' + query, { waitUntil: 'domcontentloaded', timeout: 20000 });
+        await page.waitForFunction(() => {
+          const phase = document.body.dataset.phase;
+          return phase === 'ready' || phase === 'locked';
+        }, { timeout: 15000 });
+        await new Promise((resolve) => setTimeout(resolve, 600));
+        const cls = await page.evaluate(() => window.__cls || 0);
+        if (cls >= 0.1) throw new Error(label + ' mobile CLS ' + cls.toFixed(3));
+        note('mobile CLS under 0.1: ' + label, true, cls.toFixed(3));
+      } finally {
+        await client.send('Network.emulateNetworkConditions', {
+          offline: false,
+          latency: 0,
+          downloadThroughput: -1,
+          uploadThroughput: -1,
+        }).catch(() => {});
+        await client.detach().catch(() => {});
+      }
+    }
+    await measureCls('?session_id=cs_test_local', 'starter');
+    await measureCls('?session_id=cs_test_pro', 'pro');
+    await measureCls('?session_id=cs_test_empty', 'zero-credit');
+    await measureCls('?session_id=cs_test_invalid', 'invalid session');
+    await measureCls('', 'no session');
+    await measureCls('?session_id=cs_test_drop', 'network error');
     await page.setViewport({ width: 1280, height: 1000, deviceScaleFactor: 1 });
 
     await openUpload(page, base, '?session_id=cs_test_local');
@@ -283,6 +320,7 @@ async function main() {
     if (Number(percent) < 40) throw new Error('percent ' + percent);
     const generatingLabel = await page.$eval('#generate-btn', (el) => el.textContent);
     if (generatingLabel !== 'Generating…') throw new Error('button during analyze: ' + generatingLabel);
+    await runAxe(page, 'progress');
     await shoot(page, 'generating', '#generate-btn');
     await shoot(page, 'progress', '#progress-wrap');
     note('progress shows the analyzing stage', true, stageText + ' / ' + generatingLabel);
@@ -307,6 +345,9 @@ async function main() {
     }
     if (last.files.join(',') !== 'hold.L5X,model.step') throw new Error('posted files ' + last.files.join(','));
     if (!(await page.$eval('#payment-welcome', (el) => el.hidden))) throw new Error('welcome stayed after jobs success');
+    const successHeading = await page.$eval('#success-title', (el) => el.tagName);
+    if (successHeading !== 'H1') throw new Error('success title is ' + successHeading);
+    await runAxe(page, 'success');
     await shoot(page, 'success', '#success-section');
     note('success shows coverage, warning, and a PDF download', true);
 
@@ -317,6 +358,7 @@ async function main() {
     alertText = await page.$eval('#upload-error', (el) => el.innerText);
     if (!/did not use a credit/i.test(alertText) || !/equipment data/i.test(alertText)) throw new Error('422: ' + alertText);
     if (!(await page.$eval('#payment-welcome', (el) => el.hidden))) throw new Error('welcome stayed after 422');
+    await runAxe(page, 'error');
     await shoot(page, 'error', '#upload-error');
     note('422 tells the user the file did not use a credit', true);
 
@@ -375,16 +417,25 @@ async function main() {
     await page.waitForFunction(() => document.getElementById('access-message').textContent === 'Starter credits are used up');
     const emptyState = await page.evaluate(() => {
       const link = document.getElementById('access-pricing-link');
-      const rect = link.getBoundingClientRect();
+      const msg = document.getElementById('access-message');
+      const welcome = document.getElementById('payment-welcome');
+      const welcomeText = document.getElementById('payment-welcome-text');
+      const lr = link.getBoundingClientRect();
+      const mr = msg.getBoundingClientRect();
+      const wr = welcome.getBoundingClientRect();
+      const ws = getComputedStyle(welcome);
       return {
-        pricing: !link.hidden && rect.height > 20 && getComputedStyle(link).visibility !== 'hidden',
+        pricing: !link.hidden && lr.height > 20 && getComputedStyle(link).visibility !== 'hidden',
+        aligned: Math.abs((mr.top + mr.height / 2) - (lr.top + lr.height / 2)) < 8,
         inputDisabled: document.getElementById('file-input').disabled,
         generateDisabled: document.getElementById('generate-btn').disabled,
-        welcomeHidden: document.getElementById('payment-welcome').hidden,
+        welcomeHidden: welcome.hidden,
+        welcomeShown: ws.display !== 'none' && ws.visibility !== 'hidden' && wr.height > 60,
+        welcomeText: welcomeText ? welcomeText.textContent : '',
         phase: document.body.dataset.phase,
       };
     });
-    if (!emptyState.pricing || !emptyState.inputDisabled || !emptyState.generateDisabled || !emptyState.welcomeHidden || emptyState.phase !== 'locked') {
+    if (!emptyState.pricing || !emptyState.aligned || !emptyState.inputDisabled || !emptyState.generateDisabled || emptyState.welcomeHidden || !emptyState.welcomeShown || emptyState.welcomeText !== 'Starter credits are used up' || /Payment confirmed/.test(emptyState.welcomeText) || emptyState.phase !== 'locked') {
       throw new Error('0-credit state ' + JSON.stringify(emptyState));
     }
     await shoot(page, 'no_credits', '#access-banner');
@@ -394,6 +445,7 @@ async function main() {
     await openUpload(page, base, '?session_id=cs_test_pro');
     const pro = await page.$eval('#access-message', (el) => el.textContent);
     if (!/Pro plan/.test(pro) || !/Unlimited/.test(pro)) throw new Error(pro);
+    await runAxe(page, 'pro session');
     note('pro session shows unlimited manuals', true);
 
     await openUpload(page, base);
@@ -464,6 +516,25 @@ async function main() {
     await shoot(page, 'cad_only', '#upload-error');
     note('CAD-only legacy fallback stops before upload', true);
 
+    const beforeAutoCad = (await requests(base)).length;
+    await openUpload(page, base, '?session_id=cs_test_local');
+    await page.click('input[value="cad"]');
+    await addFile(page, fixtures.legacyStep);
+    await page.click('#generate-btn');
+    await waitPhase(page, 'error');
+    const autoCad = await page.$eval('#upload-error', (el) => el.innerText);
+    if (!autoCad.includes('Nothing was processed and no credit was used.')) throw new Error('auto cad: ' + autoCad);
+    if (/Nothing was uploaded/.test(autoCad)) throw new Error('auto cad still says uploaded: ' + autoCad);
+    const autoCadCalls = (await requests(base)).slice(beforeAutoCad);
+    const autoJobs = autoCadCalls.filter((entry) => entry.path === '/jobs');
+    const autoLegacy = autoCadCalls.filter((entry) => entry.path === '/generate-manual');
+    if (autoJobs.length !== 1 || autoJobs[0].status !== 404) throw new Error('auto cad jobs ' + JSON.stringify(autoJobs));
+    if (autoLegacy.length) throw new Error('auto cad still called generate-manual');
+    if ((await page.$eval('#generate-btn', (el) => el.textContent)) !== 'Generate my manual') {
+      throw new Error('auto cad button stuck');
+    }
+    note('auto-mode CAD-only says nothing was processed and does not call generate-manual', true);
+
     await openUpload(page, base, '?session_id=cs_test_local&jobs=0');
     await page.click('input[value="both"]');
     await addFile(page, fixtures.step);
@@ -482,10 +553,12 @@ async function main() {
     await page.click('#generate-btn');
     await page.waitForFunction(() => {
       const noteEl = document.getElementById('mode-note');
+      const button = document.getElementById('generate-btn');
       return document.body.dataset.phase === 'progress'
         && !noteEl.hidden
         && /line\.L5X/.test(noteEl.textContent)
-        && /were not used/.test(noteEl.textContent);
+        && /were not used/.test(noteEl.textContent)
+        && button.textContent === 'Generating…';
     }, { timeout: 8000 });
     const noteDuring = await page.evaluate(() => {
       const el = document.getElementById('mode-note');
@@ -527,6 +600,46 @@ async function main() {
       throw new Error('legacy note hidden on error ' + JSON.stringify(noteOnError));
     }
     note('legacy note stays visible when generation fails', true);
+
+    async function expectLocked(query, pattern, label) {
+      if (!query) {
+        await page.goto(base + '/upload.html', { waitUntil: 'domcontentloaded' });
+        await page.evaluate(() => localStorage.clear());
+      }
+      await page.goto(base + '/upload.html' + query, { waitUntil: 'domcontentloaded', timeout: 20000 });
+      await page.waitForFunction(() => document.body.dataset.phase === 'locked', { timeout: 8000 });
+      const state = await page.evaluate(() => {
+        const link = document.getElementById('access-pricing-link');
+        const msg = document.getElementById('access-message');
+        const welcome = document.getElementById('payment-welcome');
+        const welcomeText = document.getElementById('payment-welcome-text');
+        const lr = link.getBoundingClientRect();
+        const mr = msg.getBoundingClientRect();
+        const wr = welcome.getBoundingClientRect();
+        const ws = getComputedStyle(welcome);
+        return {
+          message: msg.textContent,
+          pricing: !link.hidden && lr.height > 20,
+          aligned: Math.abs((mr.top + mr.height / 2) - (lr.top + lr.height / 2)) < 8,
+          welcomeShown: ws.display !== 'none' && ws.visibility !== 'hidden' && wr.height > 60,
+          welcomeText: welcomeText ? welcomeText.textContent : '',
+          hasSession: document.documentElement.classList.contains('has-session'),
+        };
+      });
+      if (!pattern.test(state.message)) throw new Error(label + ' message ' + state.message);
+      if (!state.pricing || !state.aligned) throw new Error(label + ' pricing ' + JSON.stringify(state));
+      if (!state.welcomeShown || state.welcomeText !== state.message || !state.hasSession) {
+        throw new Error(label + ' welcome ' + JSON.stringify(state));
+      }
+      await runAxe(page, label);
+      note(label + ' locks upload without an empty welcome gap', true);
+    }
+    await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 1 });
+    await expectLocked('?session_id=cs_test_invalid', /isn.t active/, 'invalid session');
+    await shoot(page, 'invalid_session', '#access-banner');
+    await expectLocked('?session_id=cs_test_drop', /couldn.t check your purchase/, 'network error');
+    await shoot(page, 'network_error', '#access-banner');
+    await expectLocked('', /No purchase found/, 'no session');
 
     await page.setViewport({ width: 1280, height: 1000, deviceScaleFactor: 1 });
     await openUpload(page, base);
