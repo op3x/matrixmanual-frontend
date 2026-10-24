@@ -1,76 +1,91 @@
 <!DOCTYPE html>
-<!-- ManualOS upload page v2 - real API call enabled -->
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Upload Your PLC File – ManualOS</title>
-  <link rel="preconnect" href="htthps://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,700;1,9..144,700&family=Spline+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Upload a PLC file — ManualOS</title>
+  <meta name="description" content="Upload a PLC export after checkout. ManualOS checks your plan and remaining manuals, then generates a plain-English PDF.">
+  <meta name="robots" content="noindex">
+  <link rel="canonical" href="https://manualos.com/upload.html">
+  <link rel="icon" href="/favicon.ico" sizes="32x32">
+  <meta name="theme-color" content="#fdf6ed">
+  <link rel="preconnect" href="https://manualforge-backend-production.up.railway.app" crossorigin>
   <style>
-    :root { --cream:#fdf6ed;--cream-deep:#f5e9d6;--amber:#d97706;--amberh-light:#fbbf24;--amber-pale:#fef3c7;--terra:#b45309;--charcoal:#1c1917;--warm-gray:#57534e;--radius-lg:16px }
-    *,::before,::after{box-sizing:border-box;margin:0;padding:0}
-    body{font-family:"Spline Sans",system-ui,sans-serif;background:var(--cream);color:var(--charcoal);line-height:1.65;-webkit-font-smoothing:antialiased;min-height:100vh;display:flex;flex-direction:column}
-    nav{position:sticky;top:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:16px 48px;background:rgba(253,246,237,.88);backdrop-filter:blur(12px);border-bottom:1px solid rgba(217,119,6,.12)}
-    .nav-logo{font-family:Fraunces,serif;font-size:1.2rem;font-weight:700;color:var(--charcoal);text-decoration:none;display:flex;align-items:center;gap:10px}
+    :root { --cream:#fdf6ed;--cream-deep:#f5e9d6;--amber:#9a3412;--amber-light:#c2410c;--amber-pale:#fef3c7;--terra:#7c2d12;--charcoal:#1c1917;--warm-gray:#57534e;--radius-lg:16px }
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;background:var(--cream);color:var(--charcoal);line-height:1.65;-webkit-font-smoothing:antialiased;min-height:100vh;display:flex;flex-direction:column}
+    :focus-visible{outline:3px solid #1c1917;outline-offset:3px}
+    .skip-link{position:absolute;left:.75rem;top:-3rem;background:#1c1917;color:#fff;padding:.7rem 1rem;z-index:20;border-radius:.4rem;text-decoration:none}
+    .skip-link:focus{top:.5rem}
+    header{position:sticky;top:0;z-index:100;background:rgba(253,246,237,.94);border-bottom:1px solid rgba(154,52,18,.18)}
+    nav{display:flex;align-items:center;justify-content:space-between;gap:.75rem;flex-wrap:wrap;padding:.5rem 1rem}
+    .nav-logo{font-family:Georgia,"Iowan Old Style",serif;font-size:1.2rem;font-weight:700;color:var(--charcoal);text-decoration:none;display:flex;align-items:center;gap:10px;min-height:3rem}
     .nav-logo-icon{width:36px;height:36px;background:var(--amber);border-radius:10px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:1.1rem}
-    .nav-back{font-size:.9rem;font-weight:600;color:var(--warm-gray);text-decoration:none;display:flex;align-items:center;gap:6px;transition:color .2s}
-    .nav-back:hover{color:var(--amber)}
-    main{flex:1;max-width:700px;margin:56px auto 80px;padding:0 24px;width:100%}
-    .page-eyebrow{font-size:.78rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--amber);margin-bottom:10px}
-    .page-title{font-family:Fraunces,serif;font-size:2.4rem;font-weight:700;color:var(--charcoal);line-height:1.15;margin-bottom:10px}
-    .page-sub{color:var(--warm-gray);margin-bottom:40px;font-size:1.05rem}
-    .upload-box{border:2px dashed rgba(217,119,6,.35);border-radius:var(--radius-lg);padding:52px 40px;text-align:center;background:#fff;cursor:pointer;transition:border-color .2s,box-shadow .2s}
-    .upload-box:hover,.upload-box.drag-over{border-color:var(--amber);background:#fffbf5;box-shadow:0 4px 24px rgba(217,119,6,.12)}
-    .upload-icon{font-size:3.2rem;margin-bottom:18px}
+    .nav-back{font-size:.95rem;font-weight:700;color:var(--amber);text-decoration:none;display:inline-flex;align-items:center;min-height:3rem;padding:.4rem .2rem}
+    .nav-back:hover{color:var(--terra)}
+    main{flex:1;max-width:700px;margin:2rem auto 4rem;padding:0 1rem;width:100%}
+    .page-eyebrow{font-size:.875rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--amber);margin-bottom:10px}
+    .page-title{font-family:Georgia,"Iowan Old Style",serif;font-size:clamp(1.8rem,5vw,2.4rem);font-weight:700;color:var(--charcoal);line-height:1.15;margin-bottom:10px}
+    .page-sub{color:var(--warm-gray);margin-bottom:1.5rem;font-size:1.05rem}
+    .upload-box{border:2px dashed rgba(154,52,18,.45);border-radius:var(--radius-lg);padding:2rem 1.25rem;text-align:center;background:#fff;transition:border-color .2s,box-shadow .2s}
+    .upload-box:hover,.upload-box.drag-over{border-color:var(--amber);background:#fffbf5;box-shadow:0 4px 24px rgba(154,52,18,.12)}
+    .upload-icon{font-size:2.4rem;margin-bottom:14px}
     .upload-box h2{font-size:1.2rem;font-weight:700;margin-bottom:8px}
-    .upload-box p{color:var(--warm-gray);font-size:.92rem;margin-bottom:28px}
+    .upload-box p{color:var(--warm-gray);font-size:.95rem;margin-bottom:1.2rem}
     .upload-box input[type="file"]{display:none}
-    .btn-primary{background:var(--amber);color:#fff;border:none;padding:14px 32px;border-radius:12px;font-size:1rem;font-weight:700;cursor:pointer;transition:background .2s,transform .1s;display:inline-block}
+    .btn-primary{background:var(--amber);color:#fff;border:none;padding:.75rem 1.4rem;border-radius:12px;font-size:1rem;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;min-height:3rem;font-family:inherit}
     .btn-primary:hover{background:var(--terra)}
-    .btn-primary:active{transform:scale(.97)}
-    .btn-primary:disabled{background:#ccc;cursor:not-allowed;transform:none}
-    .file-info{margin-top:20px;padding:14px 20px;background:var(--amber-pale);border-radius:12px;display:none;align-items:center;gap:12px;font-size:.95rem}
+    .btn-primary:disabled{background:#57534e;color:#fff;cursor:not-allowed}
+    .file-info{margin-top:20px;padding:14px 16px;background:var(--amber-pale);border-radius:12px;display:none;align-items:center;gap:12px;font-size:.95rem}
     .file-info.visible{display:flex}
-    .file-info-name{font-weight:600;flex:1}
-    .file-info-remove{background:none;border:none;cursor:pointer;color:var(--warm-gray);font-size:1.1rem;padding:4px}
+    .file-info-name{font-weight:600;flex:1;min-width:0;overflow-wrap:anywhere}
+    .file-info-remove{background:none;border:none;cursor:pointer;color:var(--charcoal);font-size:1.1rem;min-width:3rem;min-height:3rem}
     .progress-wrap{margin-top:16px;display:none}
     .progress-wrap.visible{display:block}
-    .progress-bar{height:6px;background:var(--cream-deep);border-radius:3px;overflow:hidden}
-    .progress-fill{height:100%;background:linear-gradient(90deg,var(--amber),var(--amber-light));border-radius:3px;width:0%;transition:width .4s ease}
-    .progress-label{font-size:.82rem;color:var(--warm-gray);margin-top:8px}
+    progress#progress-fill{width:100%;height:8px;border:0;border-radius:3px;color:var(--amber);accent-color:var(--amber)}
+    .progress-label{font-size:.95rem;color:var(--warm-gray);margin-top:8px}
     .generate-btn-wrap{margin-top:24px;display:none}
     .generate-btn-wrap.visible{display:block}
-    .success-section{display:none;text-align:center;padding:60px 24px}
+    .success-section{display:none;text-align:center;padding:2.5rem 1rem}
     .success-section.visible{display:block}
-    .success-icon{font-size:3.5rem;margin-bottom:20px}
-    .success-title{font-family:Fraunces,serif;font-size:2rem;font-weight:700;margin-bottom:14px}
-    .success-sub{color:var(--warm-gray);font-size:1.05rem;margin-bottom:32px}
-    .btn-outline{background:transparent;color:var(--amber);border:2px solid var(--amber);padding:12px 28px;border-radius:12px;font-size:.95rem;font-weight:600;cursor:pointer;transition:all .2s;text-decoration:none;display:inline-block}
+    .success-icon{font-size:2.5rem;margin-bottom:16px}
+    .success-title{font-family:Georgia,"Iowan Old Style",serif;font-size:clamp(1.6rem,4vw,2rem);font-weight:700;margin-bottom:14px}
+    .success-sub{color:var(--warm-gray);font-size:1.05rem;margin-bottom:1.4rem}
+    .btn-outline{background:transparent;color:var(--amber);border:2px solid var(--amber);padding:.7rem 1.2rem;border-radius:12px;font-size:.95rem;font-weight:700;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;min-height:3rem}
     .btn-outline:hover{background:var(--amber);color:#fff}
-    .platforms{margin-top:40px;padding:24px;background:var(--cream-deep);border-radius:var(--radius-lg)}
-    .platforms-label{font-size:.75rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--warm-gray);margin-bottom:14px}
+    .platforms{margin-top:40px;padding:24px 16px;background:var(--cream-deep);border-radius:var(--radius-lg)}
+    .platforms-label{font-size:.875rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--warm-gray);margin-bottom:14px}
     .platform-tags{display:flex;flex-wrap:wrap;gap:8px}
-    .platform-tag{font-size:.82rem;padding:6px 14px;border-radius:20px;border:1px solid rgba(217,119,6,.25);color:var(--warm-gray);background:#fff}
-    .access-banner{margin-bottom:28px;padding:14px 18px;border-radius:12px;background:#fff;border:1px solid rgba(217,119,6,.25);font-size:.95rem;color:var(--charcoal);display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center}
+    .platform-tag{font-size:.875rem;padding:.45rem .8rem;border-radius:20px;border:1px solid rgba(154,52,18,.35);color:var(--charcoal);background:#fff}
+    .access-banner{margin-bottom:1.2rem;padding:14px 16px;border-radius:12px;background:#fff;border:1px solid rgba(154,52,18,.35);font-size:.95rem;color:var(--charcoal);display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center}
     .access-banner.ok{background:var(--amber-pale)}
-    .access-banner a{color:var(--amber);font-weight:700;text-decoration:none}
+    .access-banner a{color:var(--amber);font-weight:700;text-decoration:underline;text-underline-offset:.15rem;min-height:3rem;display:inline-flex;align-items:center}
+    .access-banner a[hidden]{display:none}
     .access-banner a:hover{color:var(--terra)}
-    .upload-box.is-disabled{opacity:.6;cursor:not-allowed;pointer-events:none}
-    .upload-box.is-disabled .btn-primary{background:#a8a29e}
-    .upload-box.is-disabled h2,.upload-box.is-disabled p{color:#a8a29e}
-    .upload-error{margin-top:16px;padding:14px 18px;border-radius:12px;background:#fff;border:1px solid rgba(180,83,9,.35);color:#92400e;font-size:.92rem;display:none}
+    .upload-box.is-disabled{cursor:not-allowed;background:#faf7f2;pointer-events:none}
+    .upload-box.is-disabled .btn-primary{background:#57534e}
+    .upload-error{margin-top:16px;padding:14px 16px;border-radius:12px;background:#fff;border:2px solid rgba(154,52,18,.45);color:#7c2d12;font-size:.95rem;font-weight:600;display:none}
     .upload-error.visible{display:block}
     .upload-error a{color:var(--amber);font-weight:700}
+    .payment-welcome{margin:0 0 16px;padding:14px 16px;border-radius:12px;background:#ecfdf3;border:2px solid #166534;color:#14532d;font-weight:700}
+    .payment-welcome[hidden]{display:none}
+    @media (max-width:768px){
+      main{margin:1.5rem auto 3rem}
+      .upload-box{padding:1.5rem 1rem}
+    }
   </style>
 </head>
 <body>
+<a class="skip-link" href="#main">Skip to content</a>
+<header>
 <nav>
-  <a class="nav-logo" href="/"><span class="nav-logo-icon">M</span>ManualOS</a>
-  <a class="nav-back" href="/">&#8592; Back to home</a>
+  <a class="nav-logo" href="/"><span class="nav-logo-icon" aria-hidden="true">M</span>ManualOS</a>
+  <a class="nav-back" href="/#pricing">&#8592; Back to pricing</a>
 </nav>
-<main>
-  <div id="access-banner" class="access-banner" role="status">
+</header>
+<main id="main" tabindex="-1">
+  <p id="payment-welcome" class="payment-welcome" role="status" aria-live="polite" hidden></p>
+  <div id="access-banner" class="access-banner" role="status" aria-live="polite">
     <span id="access-message">Checking your access…</span>
     <a id="access-pricing-link" href="/#pricing" hidden>View pricing</a>
   </div>
@@ -79,26 +94,26 @@
     <h1 class="page-title">Upload your PLC file</h1>
     <p class="page-sub">Drop your ladder logic file below. We&#8217;ll decode every rung and generate a plain-English operator manual in minutes.</p>
     <div class="upload-box is-disabled" id="drop-zone" aria-disabled="true">
-      <div class="upload-icon">&#128193;</div>
+      <div class="upload-icon" aria-hidden="true">&#128193;</div>
       <h2>Drag &amp; drop your file here</h2>
       <p>Supports .L5X, .ACD, .zap15, .gx3, .cxp, .xml and all major PLC export formats</p>
       <label class="btn-primary" for="file-input">Choose file</label>
       <input type="file" id="file-input" accept=".l5x,.acd,.zap15,.gx3,.cxp,.xml,.zip" disabled>
     </div>
     <div class="file-info" id="file-info">
-      <span>&#128196;</span>
+      <span aria-hidden="true">&#128196;</span>
       <span class="file-info-name" id="file-name"></span>
-      <button class="file-info-remove" id="remove-file" title="Remove file">&#10005;</button>
+      <button class="file-info-remove" id="remove-file" type="button" aria-label="Remove file">&#10005;</button>
     </div>
     <div class="progress-wrap" id="progress-wrap">
-      <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+      <progress id="progress-fill" max="100" value="0" aria-labelledby="progress-label"></progress>
       <p class="progress-label" id="progress-label">Uploading...</p>
     </div>
     <div class="generate-btn-wrap" id="generate-btn-wrap">
       <button class="btn-primary" id="generate-btn" type="button" disabled>Generate my manual &#8594;</button>
     </div>
-    <div class="upload-error" id="upload-error" role="alert"></div>
-    <div class="platforms" style="margin-top:40px">
+    <div class="upload-error" id="upload-error" role="alert" aria-live="assertive"></div>
+    <div class="platforms">
       <p class="platforms-label">Supported Platforms</p>
       <div class="platform-tags">
         <span class="platform-tag">Allen-Bradley L5X / ACD</span>
@@ -110,8 +125,8 @@
     </div>
   </div>
   <div class="success-section" id="success-section">
-    <div class="success-icon">&#9889;</div>
-    <h2 class="success-title">Your manual is ready!</h2>
+    <div class="success-icon" aria-hidden="true">&#9889;</div>
+    <h1 class="success-title">Your manual is ready</h1>
     <p class="success-sub" id="success-sub">Your PDF is downloading now. Check your Downloads folder.</p>
     <a class="btn-outline" href="/" id="back-btn">Back to home</a>
   </div>
@@ -123,6 +138,7 @@
   let selectedFile = null;
   let sessionId = '';
   let uploadEnabled = false;
+  let sessionFromQuery = false;
 
   const dropZone = document.getElementById('drop-zone');
   const fileInput = document.getElementById('file-input');
@@ -141,6 +157,7 @@
   const accessMessage = document.getElementById('access-message');
   const accessPricingLink = document.getElementById('access-pricing-link');
   const uploadError = document.getElementById('upload-error');
+  const paymentWelcome = document.getElementById('payment-welcome');
 
   function formatSize(bytes) {
     if (bytes < 1024) return bytes + ' B';
@@ -197,10 +214,15 @@
     uploadError.textContent = '';
   }
 
+  function setProgress(pct) {
+    progressFill.value = pct;
+  }
+
   function readSessionId() {
     const params = new URLSearchParams(window.location.search);
     const fromQuery = (params.get('session_id') || '').trim();
     if (fromQuery) {
+      sessionFromQuery = true;
       try { localStorage.setItem(SESSION_STORAGE_KEY, fromQuery); } catch (err) {}
       return fromQuery;
     }
@@ -215,6 +237,10 @@
   function applySession(data) {
     setUploadEnabled(true);
     showAccess(planLabel(data.plan) + ' plan \u00b7 ' + remainingLabel(data.remaining), { showPricing: false, ok: true });
+    if (sessionFromQuery && paymentWelcome) {
+      paymentWelcome.textContent = 'Payment confirmed. You are on the ' + planLabel(data.plan) + ' plan, with ' + remainingLabel(data.remaining) + '. Upload a PLC file below when you are ready.';
+      paymentWelcome.hidden = false;
+    }
   }
 
   async function verifySession(options) {
@@ -255,7 +281,7 @@
     generateBtnWrap.classList.add('visible');
     generateBtn.disabled = false;
     progressWrap.classList.remove('visible');
-    progressFill.style.width = '0%';
+    setProgress(0);
   }
 
   function clearFile() {
@@ -269,7 +295,7 @@
   function resetGenerateUi() {
     generateBtn.disabled = !uploadEnabled || !selectedFile;
     generateBtn.textContent = 'Generate my manual \u2192';
-    progressFill.style.width = '0%';
+    setProgress(0);
     progressWrap.classList.remove('visible');
   }
 
@@ -303,7 +329,7 @@
     generateBtn.disabled = true;
     generateBtn.textContent = 'Uploading...';
     progressWrap.classList.add('visible');
-    progressFill.style.width = '20%';
+    setProgress(20);
     progressLabel.textContent = 'Uploading...';
 
     const formData = new FormData();
@@ -312,7 +338,7 @@
     formData.append('sections', JSON.stringify([]));
     formData.append('session_id', sessionId);
 
-    progressFill.style.width = '40%';
+    setProgress(40);
     progressLabel.textContent = 'Analysing ladder logic\u2026';
 
     try {
@@ -322,7 +348,7 @@
         body: formData
       });
 
-      progressFill.style.width = '90%';
+      setProgress(90);
       progressLabel.textContent = 'Building your manual\u2026';
 
       if (res.status === 402) {
@@ -343,7 +369,7 @@
       }
 
       const blob = await res.blob();
-      progressFill.style.width = '100%';
+      setProgress(100);
       progressLabel.textContent = 'Done!';
 
       const baseName = selectedFile.name.replace(/\.[^.]+$/, '');
