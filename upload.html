@@ -101,12 +101,17 @@
     .access-banner a{color:var(--amber);font-weight:700;text-decoration:underline;text-underline-offset:.15rem;min-height:3rem;display:inline-flex;align-items:center}
     .access-banner a[hidden]{display:none}
     .access-banner a:hover{color:var(--terra)}
-    html.has-session .access-banner{align-items:flex-start;align-content:flex-start}
-    html.has-session #payment-welcome[hidden]{display:block !important;visibility:hidden}
+    html.has-session #access-message{flex:1 1 auto;min-width:0;max-width:calc(100% - 7.5rem);min-height:5.25rem;display:flex;align-items:center}
+    html.has-session #access-pricing-link{flex:0 0 auto}
+    html.has-session #payment-welcome{display:grid !important}
+    #payment-welcome.is-locked{background:transparent;border-color:transparent;color:inherit}
     .access-banner .payment-welcome{flex:1 0 100%;margin:.75rem 0 0}
+    .welcome-sizer,.welcome-text{grid-area:1/1}
+    .welcome-sizer{visibility:hidden}
+    .welcome-text{align-self:start}
     .upload-box.is-disabled{background:#faf7f2}
     .upload-box.is-disabled .btn-primary{background:#57534e;border-color:#57534e}
-    .payment-welcome{margin:0 0 16px;padding:14px 16px;border-radius:12px;background:#ecfdf3;border:2px solid #166534;color:#14532d;font-weight:700}
+    .payment-welcome{display:none;margin:0 0 16px;padding:14px 16px;border-radius:12px;background:#ecfdf3;border:2px solid #166534;color:#14532d;font-weight:700}
     .noscript{margin-bottom:1rem}
     @media (min-width:720px){
       .source-options{grid-template-columns:repeat(3,1fr)}
@@ -125,7 +130,7 @@
     #source-picker,#file-list,#progress-wrap,#upload-error,#success-section,#export-help,#mode-note,#access-banner,#generate-btn{scroll-margin-top:5rem}
   </style>
   <script>
-    if (/[?&]session_id=/.test(location.search)) document.documentElement.classList.add('has-session');
+    document.documentElement.classList.add('has-session');
   </script>
 </head>
 <body data-phase="checking">
@@ -141,7 +146,7 @@
   <div id="access-banner" class="access-banner" role="status">
     <span id="access-message">Checking your access…</span>
     <a id="access-pricing-link" href="/#pricing" hidden>View pricing</a>
-    <p id="payment-welcome" class="payment-welcome" role="status" hidden>Payment confirmed. You are on the Starter plan, with 3 manuals remaining. Upload a PLC program, a CAD model, or both when you are ready.</p>
+    <p id="payment-welcome" class="payment-welcome" role="status" hidden><span class="welcome-sizer" aria-hidden="true">Payment confirmed. You are on the Starter plan, with 12 manuals remaining. Upload a PLC program, a CAD model, or both when you are ready.</span><span id="payment-welcome-text" class="welcome-text"></span></p>
   </div>
   <div id="upload-section">
     <p class="page-eyebrow">Generate a manual</p>
@@ -195,11 +200,11 @@
   <p class="mode-note" id="mode-note" role="status" hidden></p>
   <section class="success-section" id="success-section" tabindex="-1" hidden>
     <p class="success-icon" aria-hidden="true">&#9889;</p>
-    <h2 class="success-title" id="success-title">Your manual is ready</h2>
+    <h1 class="success-title" id="success-title">Your manual is ready</h1>
     <p class="success-sub" id="success-sub"></p>
     <p class="coverage" id="coverage" hidden></p>
     <div id="warning-block" hidden>
-      <h3 class="warning-title">Notes on this manual</h3>
+      <h2 class="warning-title">Notes on this manual</h2>
       <ul class="warnings" id="warnings"></ul>
     </div>
     <div class="success-actions">
@@ -468,7 +473,22 @@
 
   function dismissWelcome() {
     if (paymentWelcome) paymentWelcome.hidden = true;
+    var welcomeText = document.getElementById('payment-welcome-text');
+    if (welcomeText) welcomeText.textContent = '';
     document.documentElement.classList.remove('has-session');
+  }
+
+  function fillReservedWelcome(message, locked) {
+    if (!document.documentElement.classList.contains('has-session')) {
+      dismissWelcome();
+      return;
+    }
+    var welcomeText = document.getElementById('payment-welcome-text');
+    if (welcomeText) welcomeText.textContent = message || '';
+    if (paymentWelcome) {
+      paymentWelcome.hidden = false;
+      paymentWelcome.classList.toggle('is-locked', !!locked);
+    }
   }
 
   function readSessionId() {
@@ -485,6 +505,7 @@
   function lockUpload(message) {
     setUploadEnabled(false);
     showAccess(message, { showPricing: true, ok: false });
+    fillReservedWelcome(message, true);
     if (document.body.dataset.phase !== 'progress' && document.body.dataset.phase !== 'success') setPhase('locked');
   }
 
@@ -492,7 +513,7 @@
     if (data.remaining === 0) {
       setUploadEnabled(false);
       showAccess('Starter credits are used up', { showPricing: true, ok: false });
-      dismissWelcome();
+      fillReservedWelcome('Starter credits are used up', true);
       if (document.body.dataset.phase !== 'progress' && document.body.dataset.phase !== 'success' && document.body.dataset.phase !== 'error') {
         setPhase('locked');
       }
@@ -503,13 +524,12 @@
     if (document.body.dataset.phase !== 'progress' && document.body.dataset.phase !== 'success' && document.body.dataset.phase !== 'error') {
       setPhase('ready');
     }
-    if (sessionFromQuery && paymentWelcome && paymentWelcome.hidden) {
+    if (sessionFromQuery && paymentWelcome) {
       var planName = planLabel(data.plan);
       var detail = data.remaining === null
         ? 'Payment confirmed. You are on the ' + planName + ' plan, with unlimited manuals.'
         : 'Payment confirmed. You are on the ' + planName + ' plan, with ' + remainingLabel(data.remaining) + '.';
-      paymentWelcome.textContent = detail + ' Upload a PLC program, a CAD model, or both when you are ready.';
-      paymentWelcome.hidden = false;
+      fillReservedWelcome(detail + ' Upload a PLC program, a CAD model, or both when you are ready.', false);
     }
   }
 
@@ -916,7 +936,9 @@
       resetProgress();
       setBusy(false);
       generateBtn.textContent = 'Generate my manual';
-      showUploadError('CAD models need the new generator, which isn\u2019t live yet. Nothing was uploaded and no credit was used.');
+      showUploadError('CAD models need the new generator, which isn\u2019t live yet. ' + (becauseMissing
+        ? 'Nothing was processed and no credit was used.'
+        : 'Nothing was uploaded and no credit was used.'));
       return;
     }
     document.body.dataset.api = 'legacy';
@@ -925,6 +947,7 @@
       note += ' Only ' + file.name + ' was sent. The other files were not used and did not use a credit.';
     }
     showModeNote(note);
+    generateBtn.textContent = 'Generating\u2026';
     showProgress(becauseMissing
       ? 'The new generator isn’t deployed yet. Generating from one file…'
       : 'Generating your manual…', null);

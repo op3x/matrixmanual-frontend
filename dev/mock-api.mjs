@@ -118,7 +118,7 @@ function scenarioOf(filenames) {
   if (name === 'unknown.l5x') return '415';
   if (name === 'empty.l5x') return '422';
   if (name === 'down.l5x') return '503';
-  if (name === 'legacy.l5x') return '404';
+  if (name === 'legacy.l5x' || name === 'legacy.step') return '404';
   if (name === 'drop.l5x') return 'drop';
   return 'ok';
 }
@@ -306,6 +306,11 @@ const server = http.createServer(async (req, res) => {
   try {
     if (req.method === 'GET' && url.pathname === '/verify-session') {
       const sessionId = (url.searchParams.get('session_id') || '').trim();
+      if (sessionId === 'cs_test_drop') {
+        requests.push({ method: 'GET', path: '/verify-session', status: 0, files: [], fields: [] });
+        req.socket.destroy();
+        return;
+      }
       requests.push({ method: 'GET', path: '/verify-session', status: 200, files: [], fields: [] });
       if (sessionId === 'cs_test_local') return sendJson(res, 200, { valid: true, plan: 'starter', remaining: 3 });
       if (sessionId === 'cs_test_pro') return sendJson(res, 200, { valid: true, plan: 'pro', remaining: null });
