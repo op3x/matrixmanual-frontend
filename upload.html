@@ -175,7 +175,7 @@
           <label class="choice"><input type="radio" name="source" value="cad"> <span>CAD model</span></label>
           <label class="choice"><input type="radio" name="source" value="both"> <span>Both</span></label>
         </div>
-        <p class="hint" id="source-guidance" aria-live="polite">Add a PLC program: L5X or L5K XML, PLCopen XML, .TcPOU, IEC 61131-3 structured text (ST, SCL, or EXP), a CSV or XLSX tag list, or a zip of those. An ACD file is accepted, but the manual will be limited. Export L5X for a complete manual. Up to 25 files, 50 MB each.</p>
+        <p class="hint" id="source-guidance" aria-live="polite">Add a PLC program: .L5X, .L5K, .scl, .st, .exp, PLCopen .xml, .TcPOU, or a .csv or .xlsx tag list, or a zip of those. A tag-table XML is tags only, not the program. Up to 25 files, 50 MB each.</p>
       </fieldset>
       <fieldset id="equipment-fields">
         <legend>Equipment details, optional</legend>
@@ -191,7 +191,7 @@
       <div class="upload-box is-disabled" id="drop-zone" aria-disabled="true">
         <div class="upload-icon" aria-hidden="true"><span class="doc-mark">FILE</span></div>
         <h2 id="drop-title">Drag and drop files here</h2>
-        <p id="drop-help">L5X, L5K, PLCopen XML, TcPOU, ST, SCL, CSV, XLSX, ACD, or a zip of those.</p>
+        <p id="drop-help">.L5X, .L5K, .scl, .st, .exp, PLCopen .xml, .TcPOU, .csv, .xlsx, or a zip of those.</p>
         <div class="choose-wrap">
           <input class="sr-only" type="file" id="file-input" multiple disabled>
           <label class="btn-primary" for="file-input" id="choose-label">Choose files</label>
@@ -230,44 +230,43 @@
   </section>
   <section class="export-help" id="export-help" aria-labelledby="export-title">
     <h2 id="export-title">How to export your file</h2>
-    <p class="export-intro">Upload the exported program or model, or a zip of those files. PLC program exports: L5X and L5K XML, PLCopen XML, IEC 61131-3 structured text, and .TcPOU. CAD: STEP (.step or .stp), IGES, and DXF. An ACD file is accepted, but the manual is limited. CSV and XLSX tag lists are accepted too.</p>
+    <p class="export-intro">PLC: .L5X, .L5K, .scl, .st, .exp, PLCopen .xml, and .TcPOU. Tag lists: .csv and .xlsx. A tag-table XML is tags only, not the program. CAD: .step and .stp, .iges and .igs, and ASCII .dxf. Archives: a .zip of those files.</p>
     <details class="export">
-      <summary>L5X and L5K XML, and why ACD is limited</summary>
-      <p>Export the controller program as L5X. L5X is an XML export of the program, including ladder. The older L5K text export is the same kind of save, with the L5K type. Upload the .L5X or .L5K file.</p>
-      <p>An .ACD file is the controller project. The rung logic is stored in a proprietary form, so a manual made from ACD alone is incomplete and will say so. Export L5X when you can. Upload an ACD only if you cannot export L5X.</p>
+      <summary>.L5X and .L5K</summary>
+      <p>Export the controller program as .L5X. That file is an XML export of the program, including ladder. The older .L5K text export is the same kind of save, with the .L5K type. Upload the .L5X or .L5K file.</p>
     </details>
     <details class="export">
-      <summary>IEC 61131-3 structured text (SCL, ST, EXP)</summary>
-      <p>Export the blocks as SCL source (.scl). Generate source from the blocks, on a block or on the program blocks folder, and upload the .scl file that command writes. Structured text saved as .st or .exp is also accepted.</p>
+      <summary>.scl, .st, and .exp</summary>
+      <p>Export the blocks as .scl source. Generate source from the blocks, on a block or on the program blocks folder, and upload the .scl file that command writes. Structured text saved as .st or .exp is also accepted.</p>
     </details>
     <details class="export">
-      <summary>TcPOU objects</summary>
+      <summary>.TcPOU</summary>
       <p>Some PLC projects store each object as a .TcPOU file in the PLC project folder. Upload those files, or a zip of that folder. ManualOS reads the program text inside them.</p>
     </details>
     <details class="export">
-      <summary>PLCopen XML</summary>
-      <p>Export PLCopen XML from the project and upload the .xml file. That export is often on the Project menu. Other IEC 61131-3 tools that write PLCopen XML use the same upload.</p>
+      <summary>PLCopen .xml</summary>
+      <p>Export PLCopen XML from the project and upload the .xml file. That export is the program. It is often on the Project menu. A tag-table XML is not this export: it is tags only.</p>
     </details>
     <details class="export">
-      <summary>CSV and XLSX tag lists</summary>
-      <p>A tag list is a spreadsheet. The first row should name the columns, and one column should be the tag name. Address and description columns help. Save the controller tag table as .csv or .xlsx. A tag list has names and comments rather than the control logic, so the manual is shorter than one built from a full program export.</p>
+      <summary>.csv and .xlsx tag lists</summary>
+      <p>A tag list is a spreadsheet. The first row should name the columns, and one column should be the tag name. Address and description columns help. Save the controller tag table as .csv or .xlsx. A tag-table XML is tags only, not the program. A tag list has names and comments rather than the control logic, so the manual is shorter than one built from a full program export.</p>
     </details>
     <details class="export">
-      <summary>STEP, IGES, and DXF</summary>
-      <p>From the CAD tool, use Save As or Export. Choose STEP (.step or .stp), IGES (.iges or .igs), or DXF (.dxf). STEP AP214 and AP242 are both fine. STEP and IGES are the 3D model. DXF is a 2D drawing. You can zip several of them. Native files such as .sldprt, .ipt, or .dwg are not accepted.</p>
+      <summary>.step, .iges, and ASCII .dxf</summary>
+      <p>From the CAD tool, use Save As or Export. Choose STEP (.step or .stp), IGES (.iges or .igs), or ASCII DXF (.dxf). STEP AP214 and AP242 are both fine. STEP and IGES are the 3D model. DXF is a 2D drawing. You can zip several of them.</p>
     </details>
   </section>
   <section class="platforms" aria-labelledby="platforms-label">
     <h2 class="platforms-label" id="platforms-label">Accepted files</h2>
     <ul class="platform-tags">
-      <li>L5X and L5K XML</li>
-      <li>ACD, limited</li>
-      <li>SCL, ST, and EXP</li>
-      <li>TcPOU</li>
-      <li>PLCopen XML</li>
-      <li>CSV and XLSX tag lists</li>
-      <li>STEP, IGES, and DXF</li>
-      <li>Zip of these</li>
+      <li>.L5X and .L5K</li>
+      <li>.scl, .st, and .exp</li>
+      <li>.TcPOU</li>
+      <li>PLCopen .xml</li>
+      <li>.csv and .xlsx tag lists</li>
+      <li>.step, .stp, .iges, .igs</li>
+      <li>ASCII .dxf</li>
+      <li>.zip of these</li>
     </ul>
   </section>
 </main>
@@ -300,12 +299,12 @@
     failed: 'Generation failed'
   };
   var GUIDANCE = {
-    plc: 'Add a PLC program: L5X or L5K XML, PLCopen XML, .TcPOU, IEC 61131-3 structured text (ST, SCL, or EXP), a CSV or XLSX tag list, or a zip of those. An ACD file is accepted, but the manual will be limited. Export L5X for a complete manual. Up to 25 files, 50 MB each.',
-    cad: 'Add a CAD model: STEP (.step or .stp), IGES (.iges or .igs), or DXF, or a zip of those. Native CAD files such as SLDPRT or DWG are not accepted. Up to 25 files, 50 MB each.',
+    plc: 'Add a PLC program: .L5X, .L5K, .scl, .st, .exp, PLCopen .xml, .TcPOU, or a .csv or .xlsx tag list, or a zip of those. A tag-table XML is tags only, not the program. Up to 25 files, 50 MB each.',
+    cad: 'Add a CAD model: STEP (.step or .stp), IGES (.iges or .igs), or ASCII DXF (.dxf), or a zip of those. Up to 25 files, 50 MB each.',
     both: 'Add the PLC program and the CAD model together. They are written up as one manual. You can mix the PLC types above with STEP, IGES, or DXF, including a zip. Up to 25 files, 50 MB each.'
   };
   var DROP_HELP = {
-    plc: 'L5X, L5K, PLCopen XML, TcPOU, ST, SCL, CSV, XLSX, ACD, or a zip of those.',
+    plc: '.L5X, .L5K, .scl, .st, .exp, PLCopen .xml, .TcPOU, .csv, .xlsx, or a zip of those.',
     cad: 'STEP, IGES, DXF, or a zip of those.',
     both: 'PLC exports and CAD models together, or a zip of both.'
   };
