@@ -66,7 +66,7 @@ function sendPdf(res, body, filename) {
 }
 
 function publicJob(job) {
-  return {
+  const body = {
     id: job.id,
     status: job.status,
     progress: job.progress,
@@ -76,6 +76,8 @@ function publicJob(job) {
     createdAt: job.createdAt,
     expiresAt: job.expiresAt,
   };
+  if (job.ignored) body.ignored = job.ignored;
+  return body;
 }
 
 function readBody(req) {
@@ -416,6 +418,63 @@ async function handleJobsPost(req, res) {
     sendJson(res, screened.response[0], screened.response[1]);
     return;
   }
+  const lower = filenames.map((name) => name.toLowerCase());
+  if (lower.includes('again.l5x') && fieldValue(parts, 'confirmDuplicate') !== 'true') {
+    const existingId = 'job_existing';
+    if (!jobs.has(existingId)) {
+      const now = Date.now();
+      jobs.set(existingId, {
+        id: existingId,
+        sessionId: screened.sessionId,
+        filename: 'existing-manual.pdf',
+        status: 'succeeded',
+        progress: { stage: 'done', percent: 100, message: 'Manual is ready' },
+        error: null,
+        warnings: [],
+        coverage: null,
+        createdAt: new Date(now).toISOString(),
+        expiresAt: new Date(now + 24 * 60 * 60 * 1000).toISOString(),
+      });
+      pdfs.set(existingId, PDF);
+    }
+    record(req, { method: 'POST', path: '/jobs', status: 409, files: filenames, fields });
+    sendJson(res, 409, { error: 'Duplicate upload.', code: 'duplicate_upload', jobId: existingId });
+    return;
+  }
+  if (lower.includes('huge.l5x')) {
+    const limit = 25 * 1024 * 1024;
+    record(req, { method: 'POST', path: '/jobs', status: 413, files: filenames, fields });
+    sendJson(res, 413, {
+      error: 'File is too large.',
+      code: 'file_too_large',
+      files: [
+        { name: 'huge.L5X', size: limit + 200000, limit },
+        { name: 'huge.L5X', size: limit + 200000, limit },
+        { name: 'nested/not-chosen.L5X', size: 30 * 1024 * 1024, limit },
+      ],
+    });
+    return;
+  }
+  if (lower.includes('blank.l5x')) {
+    record(req, { method: 'POST', path: '/jobs', status: 422, files: filenames, fields });
+    sendJson(res, 422, {
+      error: 'Empty file.',
+      code: 'empty_file',
+      files: [{ name: 'blank.L5X' }, { name: 'blank.L5X' }, { name: 'nested/empty-inside.L5X' }],
+    });
+    return;
+  }
+  if (lower.includes('many.l5x')) {
+    record(req, { method: 'POST', path: '/jobs', status: 400, files: filenames, fields });
+    sendJson(res, 400, {
+      error: 'Too many files.',
+      code: 'too_many_files',
+      picked: 30,
+      limit: 25,
+      files: [{ name: 'nested/extra-one.L5X' }],
+    });
+    return;
+  }
   const scenario = scenarioOf(filenames);
   if (scenario === 'drop') {
     record(req, { method: 'POST', path: '/jobs', status: 0, files: filenames, fields });
@@ -442,6 +501,12 @@ async function handleJobsPost(req, res) {
     createdAt: new Date(now).toISOString(),
     expiresAt: new Date(now + 24 * 60 * 60 * 1000).toISOString(),
   };
+  if (lower.includes('twin.l5x')) {
+    job.ignored = [
+      { name: 'twin.L5X', duplicateOf: 'other.L5X' },
+      { name: 'nested/copy.L5X' },
+    ];
+  }
   jobs.set(id, job);
   record(req, { method: 'POST', path: '/jobs', status: 202, files: filenames, fields });
   sendJson(res, 202, publicJob(job));
