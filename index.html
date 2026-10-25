@@ -847,16 +847,51 @@ figcaption{padding:.75rem;border-top:1px solid var(--line);color:var(--paper)}
 </footer>
 <script>
 (function () {
-  var API_BASE = 'https://manualforge-backend-production.up.railway.app';
+  var PRODUCTION_API = 'https://manualforge-backend-production.up.railway.app';
   var checkoutError = document.getElementById('checkout-error');
   var buttons = document.querySelectorAll('[data-checkout]');
   var busy = false;
+  var GENERIC_CHECKOUT_ERROR = 'We couldn\u2019t start checkout. Please try again in a moment.';
+
+  function resolveApiBase() {
+    var host = location.hostname;
+    var local = host === 'localhost' || host === '127.0.0.1' || host === '[::1]';
+    if (!local) return PRODUCTION_API;
+    var override = (new URLSearchParams(location.search).get('api') || '').trim();
+    if (override) {
+      try {
+        var url = new URL(override, location.origin);
+        var localHost = url.hostname === 'localhost' || url.hostname === '127.0.0.1' || url.hostname === '[::1]';
+        if ((url.protocol === 'http:' || url.protocol === 'https:') && localHost) return url.origin;
+      } catch (err) {}
+    }
+    return location.origin;
+  }
+
+  function checkoutMessage(data) {
+    var raw = data && data.message;
+    if (typeof raw !== 'string') return '';
+    var text = raw.replace(/\s+/g, ' ').trim();
+    if (!text || text.length > 280 || /[<>]/.test(text)) return '';
+    return text;
+  }
 
   buttons.forEach(function (button) {
     button.addEventListener('click', function () {
       startCheckout(button.getAttribute('data-checkout'), button);
     });
   });
+
+  function stopCheckout(button, originalLabel, message) {
+    busy = false;
+    buttons.forEach(function (el) {
+      el.disabled = false;
+      el.removeAttribute('aria-busy');
+    });
+    button.textContent = originalLabel;
+    checkoutError.textContent = message || GENERIC_CHECKOUT_ERROR;
+    checkoutError.focus();
+  }
 
   async function startCheckout(plan, button) {
     if (busy) return;
@@ -868,25 +903,22 @@ figcaption{padding:.75rem;border-top:1px solid var(--line);color:var(--paper)}
       el.setAttribute('aria-busy', 'true');
     });
     button.textContent = 'Starting checkout\u2026';
+    var data = {};
     try {
-      var res = await fetch(API_BASE + '/create-checkout-session', {
+      var res = await fetch(resolveApiBase() + '/create-checkout-session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ plan: plan })
       });
-      var data = await res.json().catch(function () { return {}; });
-      if (!res.ok || !data || !data.url) throw new Error('checkout failed');
-      window.location.href = data.url;
+      data = await res.json().catch(function () { return {}; });
+      if (res.ok && data && data.url) {
+        window.location.href = data.url;
+        return;
+      }
     } catch (err) {
-      busy = false;
-      buttons.forEach(function (el) {
-        el.disabled = false;
-        el.removeAttribute('aria-busy');
-      });
-      button.textContent = originalLabel;
-      checkoutError.textContent = 'We couldn\u2019t start checkout. Please try again in a moment.';
-      checkoutError.focus();
+      data = {};
     }
+    stopCheckout(button, originalLabel, checkoutMessage(data));
   }
 })();
 </script>

@@ -473,6 +473,45 @@ async function handleJobsPost(req, res) {
     });
     return;
   }
+  if (lower.includes('paused.l5x')) {
+    record(req, { method: 'POST', path: '/jobs', status: 503, files: filenames, fields });
+    sendJson(res, 503, {
+      code: 'generation_paused',
+      message: 'Generation is paused. Please try again later.',
+    });
+    return;
+  }
+  if (lower.includes('quietpause.l5x')) {
+    record(req, { method: 'POST', path: '/jobs', status: 503, files: filenames, fields });
+    sendJson(res, 503, { code: 'generation_paused' });
+    return;
+  }
+  if (lower.includes('badmsg.l5x')) {
+    record(req, { method: 'POST', path: '/jobs', status: 503, files: filenames, fields });
+    sendJson(res, 503, { code: 'generation_paused', message: '<b>paused</b>' });
+    return;
+  }
+  if (lower.includes('largejob.l5x')) {
+    record(req, { method: 'POST', path: '/jobs', status: 413, files: filenames, fields });
+    sendJson(res, 413, {
+      code: 'job_too_large',
+      message: 'This job is too large to generate.',
+    });
+    return;
+  }
+  if (lower.includes('noted.l5x')) {
+    record(req, { method: 'POST', path: '/jobs', status: 413, files: filenames, fields });
+    sendJson(res, 413, {
+      error: 'File is too large.',
+      code: 'file_too_large',
+      message: 'noted.L5X is larger than the upload limit.',
+      files: [
+        { name: 'noted.L5X', size: 30 * 1024 * 1024, limit: 25 * 1024 * 1024 },
+        { name: 'nested/not-chosen.L5X', size: 30 * 1024 * 1024, limit: 25 * 1024 * 1024 },
+      ],
+    });
+    return;
+  }
   const scenario = scenarioOf(filenames);
   if (scenario === 'drop') {
     record(req, { method: 'POST', path: '/jobs', status: 0, files: filenames, fields });
@@ -638,6 +677,14 @@ const server = http.createServer(async (req, res) => {
       }
       record(req, { method: 'GET', path: '/jobs', status: 200 });
       return sendJson(res, 200, { jobs: listJobs(caller.sessionId) });
+    }
+    if (req.method === 'POST' && url.pathname === '/create-checkout-session') {
+      const payload = await readJsonBody(req);
+      const plan = payload && typeof payload.plan === 'string' ? payload.plan.trim() : '';
+      const body = { code: 'checkout_paused' };
+      if (plan !== 'pro') body.message = 'Checkout is paused. Please try again later.';
+      record(req, { method: 'POST', path: '/create-checkout-session', status: 503, fields: [plan || 'missing'] });
+      return sendJson(res, 503, body);
     }
     if (req.method === 'POST' && url.pathname === '/jobs') return await handleJobsPost(req, res);
     if (req.method === 'POST' && url.pathname === '/generate-manual') return await handleLegacy(req, res);

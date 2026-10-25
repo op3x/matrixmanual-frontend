@@ -1193,6 +1193,14 @@
     return text;
   }
 
+  function apiMessage(data) {
+    var raw = data && data.message;
+    if (typeof raw !== 'string') return '';
+    var text = raw.replace(/\s+/g, ' ').trim();
+    if (!text || text.length > 280 || /[<>]/.test(text)) return '';
+    return text;
+  }
+
   function tooManyMessage(data) {
     var picked = Number(data && (data.picked != null ? data.picked : data.count));
     var limit = Number(data && data.limit);
@@ -1235,9 +1243,12 @@
   }
 
   function serverMessages(status, data) {
+    if (status === 429) return { messages: [RATE_LIMIT_MESSAGE], server: '' };
     var code = data && typeof data.code === 'string' ? data.code : '';
     var ignored = ignoredLines(data);
     if (code === 'duplicate_upload') return { duplicate: true, jobId: duplicateJobId(data), messages: [] };
+    var fromApi = apiMessage(data);
+    if (fromApi) return { messages: [fromApi], server: '' };
     if (code === 'file_too_large') {
       var large = uniqueLines(serverEntries(data).map(function (item) {
         var name = chosenName(item.name);
@@ -1292,6 +1303,8 @@
 
   function friendlyHttpError(status, data) {
     if (status === 429) return { message: RATE_LIMIT_MESSAGE, server: '' };
+    var fromApi = apiMessage(data);
+    if (fromApi) return { message: fromApi, server: '' };
     var server = safeServerMessage(data);
     var code = data && typeof data.code === 'string' ? data.code : '';
     if (code === 'too_many_files' || server === 'Upload failed.' || /too many files/i.test(server) || /up to 25 files/i.test(server)) {
