@@ -142,10 +142,10 @@ async function main() {
     if (!html['refunds.html'].includes(phrase)) throw new Error('refunds page missing: ' + phrase);
   }
   if (!html['terms.html'].includes('the credits and access from that purchase end.')) throw new Error('terms missing access-ends sentence');
-  if (!html['terms.html'].includes("access is suspended while a dispute is open, restored if it's decided in ManualOS's favor, and permanently revoked if ManualOS loses it.")) {
-    throw new Error('terms missing chargeback rule');
-  }
-  if (/chargeback|Integrator|at any hour|tel:/i.test(html['refunds.html'])) throw new Error('refunds page includes chargebacks, Integrator, a phone line, or after-hours wording');
+  const chargeback = "access is suspended while a dispute is open, restored if it's decided in ManualOS's favor, and permanently revoked if ManualOS loses it.";
+  if (!html['terms.html'].includes(chargeback)) throw new Error('terms missing chargeback rule');
+  if (!html['refunds.html'].includes(chargeback)) throw new Error('refunds missing chargeback rule');
+  if (/Integrator|at any hour|tel:/i.test(html['refunds.html'])) throw new Error('refunds page includes Integrator, a phone line, or after-hours wording');
   if (!html['refunds.html'].includes('<title>Refunds and cancellation | ManualOS</title>')) throw new Error('refunds title');
   if (!html['refunds.html'].includes('content="Refunds until your first manual is delivered (Starter within 30 days, Pro within the billing period), how to cancel Pro, and why a rejected file never uses a credit."')) throw new Error('refunds meta description');
   if (!html['refunds.html'].includes('href="https://manualos.com/refunds.html"')) throw new Error('refunds canonical');
