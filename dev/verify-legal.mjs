@@ -304,7 +304,7 @@ async function main() {
   if (!html['terms.html'].includes('partly by an AI model')) throw new Error('terms dropped the outside AI model line');
   if (!html['index.html'].includes('Full details are in our <a href="/privacy.html">Privacy Policy</a>.')) throw new Error('homepage privacy link missing');
   if (html['index.html'].includes('at https://manualos.com/privacy.html')) throw new Error('JSON-LD still appends the privacy URL');
-  if (!html['index.html'].includes('Full details are in our Privacy Policy."')) throw new Error('JSON-LD privacy sentence does not end on Privacy Policy');
+  if (!html['index.html'].includes('Full details are in our Privacy Policy. You get the PDF when the job is done.')) throw new Error('JSON-LD FAQ answer does not match the visible FAQ');
   if (!html['terms.html'].includes('ManualOS is a product of Op3x LLC ("ManualOS," "we," "us")')) throw new Error('terms product sentence missing');
   const indexMarkup = html['index.html'].slice(0, html['index.html'].lastIndexOf('<script>'));
   const configJs = await read('checkout-config.js');
