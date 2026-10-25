@@ -116,7 +116,10 @@ async function main() {
     const dateCount = (html[name].match(/\[\[EFFECTIVE_DATE\]\]/g) || []).length;
     const legalCount = (html[name].match(/\[\[OP3X_LEGAL_NAME\]\]/g) || []).length;
     if (addressCount !== 0) throw new Error(name + ' still has the mailing-address placeholder');
-    if (dateCount !== 1) throw new Error(name + ' effective date placeholder count ' + dateCount);
+    if (dateCount !== 0) throw new Error(name + ' still has the effective-date token (' + dateCount + ')');
+    if (!html[name].includes('data-effective-date') || !html[name].includes('src="/effective-date.js"')) {
+      throw new Error(name + ' does not take its effective date from effective-date.js');
+    }
     if (legalCount !== 0) throw new Error(name + ' still has the legal-name placeholder');
     if (!html[name].includes('Op3x LLC')) throw new Error(name + ' missing Op3x LLC');
     if (!html[name].includes('250 Trent Lane, Loves Park, IL 61111')) throw new Error(name + ' missing mailing address');
@@ -168,13 +171,17 @@ async function main() {
   const renewalNotice = 'If you bought before these refund limits applied, the new terms apply from your next renewal, and we will email you at least 14 days before that renewal.';
   const venue = 'Disputes are brought in the state or federal courts serving Winnebago County, Illinois, and you and we consent to their jurisdiction. Either party may bring an individual claim in small-claims court.';
   const deployDateNote = 'The effective date is filled with the production deploy date when this page is merged.';
+  const effectiveDateJs = await read('effective-date.js');
+  const effectiveTokenCount = (effectiveDateJs.match(/\[\[EFFECTIVE_DATE\]\]/g) || []).length;
+  if (effectiveTokenCount !== 1) throw new Error('effective date is not a single edit (' + effectiveTokenCount + ')');
+  if (!effectiveDateJs.includes(deployDateNote)) throw new Error('effective-date.js is not marked as the merge edit');
+  if (!await read('dev/check-effective-date.mjs').then((text) => text.includes('[[EFFECTIVE_DATE]]') && text.includes('process.exit(1)'))) {
+    throw new Error('effective-date check does not fail while the token remains');
+  }
   for (const name of ['terms.html', 'refunds.html']) {
     if (!html[name].includes(turnaround)) throw new Error(name + ' missing refund turnaround');
     if (!html[name].includes(renewalNotice)) throw new Error(name + ' missing renewal notice');
     if (!html[name].includes(venue)) throw new Error(name + ' missing Winnebago venue');
-  }
-  for (const name of ['privacy.html', 'terms.html', 'refunds.html']) {
-    if (!html[name].includes(deployDateNote)) throw new Error(name + ' missing deploy-date note');
   }
   if (/arbitration|class-action waiver|class action waiver|jury waiver/i.test(html['terms.html'] + html['refunds.html'] + html['privacy.html'])) {
     throw new Error('arbitration or class waiver text is present');
@@ -197,6 +204,15 @@ async function main() {
   if (!html['terms.html'].includes('<p data-mp-section hidden>' + mpCancel) || !html['refunds.html'].includes('<p data-mp-section hidden>' + mpCancel)) {
     throw new Error('managed-payments cancel alternative is missing');
   }
+  const emailBackup = '<p><strong>Email backup.</strong> If you cannot use an online option, email <a href="mailto:support@manualos.com?subject=Cancel%20my%20ManualOS%20Pro%20subscription">support@manualos.com</a> and we will cancel it for you.</p>';
+  for (const name of ['terms.html', 'refunds.html']) {
+    const portalAt = html[name].indexOf(cancelCopy);
+    const mpAt = html[name].indexOf('<p data-mp-section hidden>' + mpCancel);
+    const emailAt = html[name].indexOf(emailBackup);
+    if (portalAt < 0 || mpAt < 0 || emailAt < 0 || !(portalAt < mpAt && mpAt < emailAt)) {
+      throw new Error(name + ' cancel order is not portal, then link.com, then email backup');
+    }
+  }
   const cancelPage = html['cancel/index.html'];
   const cancelFormAt = cancelPage.indexOf('id="cancel-form"');
   const cancelLeadAt = cancelPage.indexOf('id="mp-cancel-lead"');
@@ -218,6 +234,12 @@ async function main() {
   if (/To cancel, email/.test(html['terms.html'] + html['refunds.html'])) throw new Error('email-only cancel sentence remains');
   if (/By buying a plan or uploading files, you agree to them/.test(html['terms.html'])) throw new Error('browsewrap sentence remains');
   if (!html['terms.html'].includes('You accept them when you check the box at checkout')) throw new Error('terms assent sentence missing');
+  if (/doing business as/i.test(html['terms.html'])) throw new Error('terms still says doing business as');
+  const footerLine = '© 2026 Op3x LLC. ManualOS is a product of Op3x LLC.';
+  for (const name of ['index.html', 'privacy.html', 'terms.html', 'refunds.html', 'support.html', 'cancel/index.html']) {
+    if (!html[name].includes('<p class="legal">' + footerLine + '</p>')) throw new Error(name + ' footer is not the Op3x product line');
+  }
+  if (!html['terms.html'].includes('ManualOS is a product of Op3x LLC ("ManualOS," "we," "us")')) throw new Error('terms product sentence missing');
   const indexMarkup = html['index.html'].slice(0, html['index.html'].lastIndexOf('<script>'));
   const configJs = await read('checkout-config.js');
   const resellerNote = 'Your purchase is processed by our authorized reseller, which is the merchant of record. ManualOS is provided by Op3x LLC.';
@@ -233,8 +255,11 @@ async function main() {
   if (!html['index.html'].includes('termsAccepted: true') || /termsConsent/.test(html['index.html'])) throw new Error('checkout payload must send termsAccepted and not termsConsent');
   if (!html['index.html'].includes("getAttribute('data-checkout-config')")) throw new Error('Pay stays enabled before checkout config settles');
   if (/while managed payments are on/.test(html['terms.html'] + html['refunds.html'])) throw new Error('managed-payments jargon remains');
-  if (!html['terms.html'].includes('Changes apply to purchases made after the effective date.')) throw new Error('terms missing effective-date sentence');
-  if (!html['terms.html'].includes('Changes apply from your first renewal at least 14 days after we email you about them')) throw new Error('terms missing renewal-change sentence');
+  if (html['terms.html'].includes('Changes apply to purchases made after the effective date.')) throw new Error('terms still has the contradicting effective-date sentence');
+  if (!html['terms.html'].includes('Changes apply from your first renewal at least 14 days after we email you about them.')) throw new Error('terms changes clause missing');
+  const smsRecords = 'Opt-outs are kept indefinitely, and consent records are kept for 5 years after the last message or the opt-out, whichever is later.';
+  if (!html['privacy.html'].includes(smsRecords)) throw new Error('privacy missing SMS records sentence');
+  if (/until you opt out or ask us to delete it/.test(html['privacy.html'])) throw new Error('old SMS retention sentence remains');
   if (/<strong>\s*Open items\./.test(html['privacy.html'] + html['terms.html'] + html['refunds.html'])) throw new Error('Open items box is still visible');
   if (!html['privacy.html'].includes('<p data-mp-section hidden>' + privacyMp + '</p>')) throw new Error('privacy missing Link merchant-of-record sentence');
   const aiRetention = 'Our AI model provider deletes the text we send it, and what it returns, within 30 days, unless it must keep it longer to enforce its usage policy or to comply with the law.';

@@ -79,9 +79,8 @@ code{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:.88em}
     <div class="titleblock">
       <span>Doc no. LEGAL-01 · Privacy</span>
       <span>Rev A</span>
-      <span>Eff. <span class="placeholder">[[EFFECTIVE_DATE]]</span></span>
+      <span>Eff. <span class="placeholder" data-effective-date></span></span>
     </div>
-    <!-- Delete at merge. The effective date is filled with the production deploy date when this page is merged. -->
     <h1>Privacy policy</h1>
     <p class="lede">ManualOS turns PLC program files and CAD files into equipment manuals. This page explains what we collect, what happens to your files, and who else handles them. ManualOS is operated by Op3x LLC ("we", "us").</p>
     <div class="callout">
@@ -174,7 +173,7 @@ code{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:.88em}
       <li><strong>Data sent to the AI provider:</strong> Our AI model provider deletes the text we send it, and what it returns, within 30 days, unless it must keep it longer to enforce its usage policy or to comply with the law.</li>
       <li><strong>Purchase records:</strong> held by the payment processor for as long as it, and the law, require.</li>
       <li><strong>Your checkout reference:</strong> kept in your browser until you clear it.</li>
-      <li><strong>Text-message opt-in:</strong> kept so we can send the messages you agreed to and honor STOP, until you opt out or ask us to delete it.</li>
+      <li><strong>Text-message consent:</strong> Opt-outs are kept indefinitely, and consent records are kept for 5 years after the last message or the opt-out, whichever is later.</li>
       <!-- restore 90-day wording when backend retention PR ships -->
       <li><strong>Support threads, recordings, and transcripts:</strong> We delete support threads, recordings and transcripts as soon as practicable once they're no longer needed.</li>
       <li><strong>Hosting logs:</strong> 30 days.</li>
@@ -237,9 +236,10 @@ code{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:.88em}
       <a href="/refunds.html">Refunds</a>
       <a href="mailto:support@manualos.com">support@manualos.com</a>
     </nav>
-    <p class="legal">© 2026 ManualOS. manualos.com</p>
+    <p class="legal">© 2026 Op3x LLC. ManualOS is a product of Op3x LLC.</p>
   </div>
 </footer>
+<script src="/effective-date.js"></script>
 <script src="/checkout-config.js"></script>
 </body>
 </html>
