@@ -112,10 +112,11 @@ async function main() {
     const addressCount = (html[name].match(/\[\[OP3X_MAILING_ADDRESS\]\]/g) || []).length;
     const dateCount = (html[name].match(/\[\[EFFECTIVE_DATE\]\]/g) || []).length;
     const legalCount = (html[name].match(/\[\[OP3X_LEGAL_NAME\]\]/g) || []).length;
-    if (addressCount !== 1) throw new Error(name + ' address placeholder count ' + addressCount);
+    if (addressCount !== 0) throw new Error(name + ' still has the mailing-address placeholder');
     if (dateCount !== 1) throw new Error(name + ' effective date placeholder count ' + dateCount);
-    if (legalCount !== 2) throw new Error(name + ' legal name placeholder count ' + legalCount);
-    if (/Op3x LLC/.test(html[name])) throw new Error(name + ' still names the legal entity');
+    if (legalCount !== 0) throw new Error(name + ' still has the legal-name placeholder');
+    if (!html[name].includes('Op3x LLC')) throw new Error(name + ' missing Op3x LLC');
+    if (!html[name].includes('250 Trent Lane, Loves Park, IL 61111')) throw new Error(name + ' missing mailing address');
     if (/\[MAILING ADDRESS\]|\[EFFECTIVE DATE\]/.test(html[name])) throw new Error(name + ' still uses an old placeholder');
   }
   const reach = 'Billing and complaint calls and texts can reach the owner at any hour, including after hours.';
