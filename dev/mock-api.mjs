@@ -319,6 +319,28 @@ const server = http.createServer(async (req, res) => {
       if (sessionId === 'cs_test_empty') return sendJson(res, 200, { valid: true, plan: 'starter', remaining: 0 });
       return sendJson(res, 200, { valid: false, plan: null, remaining: null });
     }
+    if (req.method === 'POST' && url.pathname === '/api/support/sms-consent') {
+      const raw = await readBody(req);
+      let body = null;
+      try { body = JSON.parse(raw.toString('utf8') || '{}'); } catch { body = null; }
+      const phone = body && typeof body.phone === 'string' ? body.phone.trim() : '';
+      const version = body && body.consentTextVersion;
+      const source = body && body.source;
+      const keys = body && typeof body === 'object' ? Object.keys(body) : [];
+      const valid = phone && version === 'support-sms-v2' && source === 'website-support-form' && keys.length === 3;
+      requests.push({
+        method: 'POST',
+        path: '/api/support/sms-consent',
+        status: valid ? 200 : 400,
+        files: [],
+        fields: keys,
+        phone,
+        consentTextVersion: version,
+        source,
+      });
+      if (!valid) return sendJson(res, 400, { error: 'Missing phone, consent version, or source.' });
+      return sendJson(res, 200, { ok: true });
+    }
     if (req.method === 'POST' && url.pathname === '/jobs') return await handleJobsPost(req, res);
     if (req.method === 'POST' && url.pathname === '/generate-manual') return await handleLegacy(req, res);
     if (req.method === 'GET' && url.pathname === '/__mock/requests') return sendJson(res, 200, requests);

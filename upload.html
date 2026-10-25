@@ -152,6 +152,15 @@
       *{scroll-behavior:auto !important;transition:none !important}
     }
     #source-picker,#file-list,#progress-wrap,#upload-error,#success-section,#export-help,#mode-note,#access-banner,#generate-btn{scroll-margin-top:5rem}
+    .site-footer{background:var(--ink);color:#f3f0e6;margin-top:auto;border-top:4px solid var(--yellow);padding:1.5rem .85rem 1.75rem}
+    .site-footer a{color:#f3f0e6;text-decoration:none}
+    .site-footer a:hover{color:var(--yellow)}
+    .site-footer a:focus-visible{outline-color:#f3f0e6}
+    .footer-inner{max-width:76rem;margin:0 auto;display:grid;gap:.8rem}
+    .footer-brand{margin:0;font-size:1.15rem;font-weight:600;letter-spacing:-.02em;color:#f3f0e6}
+    .footer-nav{display:flex;flex-wrap:wrap;gap:.15rem .9rem}
+    .footer-nav a{display:inline-flex;align-items:center;min-height:2.75rem;font-weight:600;text-underline-offset:.15em}
+    .legal{margin:0;color:#d9d2c3;font-size:.95rem}
   </style>
   <script>
     document.documentElement.classList.add('has-session');
@@ -184,7 +193,7 @@
           <label class="choice"><input type="radio" name="source" value="cad"> <span>CAD model</span></label>
           <label class="choice"><input type="radio" name="source" value="both"> <span>Both</span></label>
         </div>
-        <p class="hint" id="source-guidance" aria-live="polite">Add a PLC program: .L5X, .L5K, .scl, .st, .exp, PLCopen .xml, .TcPOU, or a .csv or .xlsx tag list, or a zip of those. A tag-table XML is tags only, not the program. Up to 25 files, 50 MB each.</p>
+        <p class="hint" id="source-guidance" aria-live="polite">Add a PLC program: .L5X, .L5K, .scl, .st, .exp, .awl, .acd, PLCopen .xml, .TcPOU, or a .csv or .xlsx tag list, or a zip of those. A tag-table XML is tags only, not the program. Up to 25 files, 50 MB each.</p>
       </fieldset>
       <fieldset id="equipment-fields">
         <legend>Equipment details, optional</legend>
@@ -200,7 +209,7 @@
       <div class="upload-box is-disabled" id="drop-zone" aria-disabled="true">
         <div class="upload-icon" aria-hidden="true"><span class="doc-mark">FILE</span></div>
         <h2 id="drop-title">Drag and drop files here</h2>
-        <p id="drop-help">.L5X, .L5K, .scl, .st, .exp, PLCopen .xml, .TcPOU, .csv, .xlsx, or a zip of those.</p>
+        <p id="drop-help">.L5X, .L5K, .scl, .st, .exp, .awl, .acd, PLCopen .xml, .TcPOU, .csv, .xlsx, or a zip of those.</p>
         <div class="choose-wrap">
           <input class="sr-only" type="file" id="file-input" multiple disabled>
           <label class="btn-primary" for="file-input" id="choose-label">Choose files</label>
@@ -239,14 +248,14 @@
   </section>
   <section class="export-help" id="export-help" aria-labelledby="export-title">
     <h2 id="export-title">How to export your file</h2>
-    <p class="export-intro">PLC: .L5X, .L5K, .scl, .st, .exp, PLCopen .xml, and .TcPOU. Tag lists: .csv and .xlsx. A tag-table XML is tags only, not the program. CAD: .step and .stp, .iges and .igs, and ASCII .dxf. Archives: a .zip of those files.</p>
+    <p class="export-intro">PLC: .L5X, .L5K, .scl, .st, .exp, .awl, .acd, PLCopen .xml, and .TcPOU. Tag lists: .csv and .xlsx. A tag-table XML is tags only, not the program. CAD: .step and .stp, .iges and .igs, .stl, and ASCII .dxf. Archives: a .zip of those files.</p>
     <details class="export">
       <summary>.L5X and .L5K</summary>
       <p>Export the controller program as .L5X. That file is an XML export of the program, including ladder. The older .L5K text export is the same kind of save, with the .L5K type. Upload the .L5X or .L5K file.</p>
     </details>
     <details class="export">
-      <summary>.scl, .st, and .exp</summary>
-      <p>Export the blocks as .scl source. Generate source from the blocks, on a block or on the program blocks folder, and upload the .scl file that command writes. Structured text saved as .st or .exp is also accepted.</p>
+      <summary>.scl, .st, .exp, and .awl</summary>
+      <p>Export the blocks as .scl source. Generate source from the blocks, on a block or on the program blocks folder, and upload the .scl file that command writes. Structured text saved as .st or .exp is also accepted. Statement list saved as .awl is accepted.</p>
     </details>
     <details class="export">
       <summary>.TcPOU</summary>
@@ -261,24 +270,39 @@
       <p>A tag list is a spreadsheet. The first row should name the columns, and one column should be the tag name. Address and description columns help. Save the controller tag table as .csv or .xlsx. A tag-table XML is tags only, not the program. A tag list has names and comments rather than the control logic, so the manual is shorter than one built from a full program export.</p>
     </details>
     <details class="export">
-      <summary>.step, .iges, and ASCII .dxf</summary>
-      <p>From the CAD tool, use Save As or Export. Choose STEP (.step or .stp), IGES (.iges or .igs), or ASCII DXF (.dxf). STEP AP214 and AP242 are both fine. STEP and IGES are the 3D model. DXF is a 2D drawing. You can zip several of them.</p>
+      <summary>.step, .iges, .stl, and ASCII .dxf</summary>
+      <p>From the CAD tool, use Save As or Export. Choose STEP (.step or .stp), IGES (.iges or .igs), STL (.stl), or ASCII DXF (.dxf). STEP AP214 and AP242 are both fine. STEP, IGES, and STL are the 3D model. DXF is a 2D drawing. You can zip several of them.</p>
     </details>
   </section>
   <section class="platforms" aria-labelledby="platforms-label">
     <h2 class="platforms-label" id="platforms-label">Accepted files</h2>
     <ul class="platform-tags">
       <li>.L5X and .L5K</li>
-      <li>.scl, .st, and .exp</li>
+      <li>.scl, .st, .exp, and .awl</li>
+      <li>.acd</li>
       <li>.TcPOU</li>
       <li>PLCopen .xml</li>
       <li>.csv and .xlsx tag lists</li>
-      <li>.step, .stp, .iges, .igs</li>
+      <li>.step, .stp, .iges, .igs, .stl</li>
       <li>ASCII .dxf</li>
       <li>.zip of these</li>
     </ul>
   </section>
 </main>
+<footer class="site-footer">
+  <div class="footer-inner">
+    <p class="footer-brand">ManualOS</p>
+    <nav class="footer-nav" aria-label="Footer">
+      <a href="/">Home</a>
+      <a href="/support.html">Support</a>
+      <a href="/privacy.html">Privacy</a>
+      <a href="/terms.html">Terms</a>
+      <a href="/refunds.html">Refunds</a>
+      <a href="mailto:support@manualos.com">support@manualos.com</a>
+    </nav>
+    <p class="legal">© 2026 ManualOS. manualos.com</p>
+  </div>
+</footer>
 <script>
 (function () {
   // POST /jobs is the preferred upload (async progress, up to 25 files). It is not
@@ -291,8 +315,8 @@
   var SESSION_STORAGE_KEY = 'manualos_session_id';
   var MAX_FILES = 25;
   var MAX_BYTES = 50 * 1024 * 1024;
-  var PLC_EXT = ['l5x', 'l5k', 'xml', 'tcpou', 'st', 'scl', 'exp', 'csv', 'xlsx', 'acd', 'zip'];
-  var CAD_EXT = ['step', 'stp', 'iges', 'igs', 'dxf', 'zip'];
+  var PLC_EXT = ['l5x', 'l5k', 'xml', 'tcpou', 'st', 'scl', 'exp', 'awl', 'csv', 'xlsx', 'acd', 'stl', 'zip'];
+  var CAD_EXT = ['step', 'stp', 'iges', 'igs', 'dxf', 'stl', 'zip'];
   var BLOCKED = {
     gx3: '.gx3 files aren’t accepted. Export a format from the list below, such as CSV or structured text, if the project can produce one.',
     cxp: '.cxp files aren’t accepted.',
@@ -308,13 +332,13 @@
     failed: 'Generation failed'
   };
   var GUIDANCE = {
-    plc: 'Add a PLC program: .L5X, .L5K, .scl, .st, .exp, PLCopen .xml, .TcPOU, or a .csv or .xlsx tag list, or a zip of those. A tag-table XML is tags only, not the program. Up to 25 files, 50 MB each.',
-    cad: 'Add a CAD model: STEP (.step or .stp), IGES (.iges or .igs), or ASCII DXF (.dxf), or a zip of those. Up to 25 files, 50 MB each.',
-    both: 'Add the PLC program and the CAD model together. They are written up as one manual. You can mix the PLC types above with STEP, IGES, or DXF, including a zip. Up to 25 files, 50 MB each.'
+    plc: 'Add a PLC program: .L5X, .L5K, .scl, .st, .exp, .awl, .acd, PLCopen .xml, .TcPOU, or a .csv or .xlsx tag list, or a zip of those. A tag-table XML is tags only, not the program. Up to 25 files, 50 MB each.',
+    cad: 'Add a CAD model: STEP (.step or .stp), IGES (.iges or .igs), STL (.stl), or ASCII DXF (.dxf), or a zip of those. Up to 25 files, 50 MB each.',
+    both: 'Add the PLC program and the CAD model together. They are written up as one manual. You can mix the PLC types above with STEP, IGES, STL, or DXF, including a zip. Up to 25 files, 50 MB each.'
   };
   var DROP_HELP = {
-    plc: '.L5X, .L5K, .scl, .st, .exp, PLCopen .xml, .TcPOU, .csv, .xlsx, or a zip of those.',
-    cad: 'STEP, IGES, DXF, or a zip of those.',
+    plc: '.L5X, .L5K, .scl, .st, .exp, .awl, .acd, PLCopen .xml, .TcPOU, .csv, .xlsx, or a zip of those.',
+    cad: 'STEP, IGES, STL, DXF, or a zip of those.',
     both: 'PLC program files and CAD files together, or a zip of both.'
   };
 
@@ -900,7 +924,7 @@
     var updated = await verifySession({ keepAccessOnError: true });
     var successText = opts.legacy
       ? 'Your PDF is ready. Download it here.'
-      : 'Your PDF is ready. Download it here. This copy stays available for 24 hours.';
+      : 'Your PDF is ready. Download it here. This copy stays on the server for up to 24 hours, then is deleted.';
     if (updated && updated.remaining === null) successText += ' Unlimited manuals remaining.';
     else if (updated) successText += ' ' + remainingLabel(updated.remaining) + '.';
     successSub.textContent = successText;

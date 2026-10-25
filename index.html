@@ -244,7 +244,7 @@ figcaption{padding:.6rem .7rem .75rem;font-size:.92rem;border-top:1px solid var(
           "name": "Which files can I upload?",
           "acceptedAnswer": {
             "@type": "Answer",
-            "text": "PLC: .L5X, .L5K, .scl, .st, .exp, PLCopen .xml, and .TcPOU. Tag lists: .csv and .xlsx. A tag-table XML is tags only, not the program. CAD: .step and .stp, .iges and .igs, and ASCII .dxf. Archives: a .zip of those files."
+            "text": "PLC: .L5X, .L5K, .scl, .st, .exp, .awl, .acd, PLCopen .xml, and .TcPOU. Tag lists: .csv and .xlsx. A tag-table XML is tags only, not the program. CAD: .step and .stp, .iges and .igs, .stl, and ASCII .dxf. Archives: a .zip of those files."
           }
         },
         {
@@ -268,7 +268,7 @@ figcaption{padding:.6rem .7rem .75rem;font-size:.92rem;border-top:1px solid var(
           "name": "Who can see my PLC program?",
           "acceptedAnswer": {
             "@type": "Answer",
-            "text": "ManualOS processes your files to write the manual. Extracted program logic, comments, and part details are sent to a third-party AI model provider to write the manual. We don’t use your files to train models, and our AI provider doesn’t train on API data by default. Uploaded files are processed in memory and never stored. The finished PDF is available to download for 24 hours, then no longer available. Programs are not sold."
+            "text": "ManualOS processes your files to write the manual. Extracted program logic, comments, and part details are sent to a third-party AI model provider to write the manual. We don’t use your files to train models, and our AI provider doesn’t train on API data by default. Uploaded files are processed and deleted when the job finishes and are not kept. The generated PDF stays on the server for up to 24 hours for download, then is deleted. Programs are not sold."
           }
         },
         {
@@ -361,6 +361,8 @@ figcaption{padding:.6rem .7rem .75rem;font-size:.92rem;border-top:1px solid var(
           <li>.SCL</li>
           <li>.ST</li>
           <li>.EXP</li>
+          <li>.AWL</li>
+          <li>.ACD</li>
           <li>.XML</li>
           <li>.TcPOU</li>
           <li>.CSV</li>
@@ -370,6 +372,7 @@ figcaption{padding:.6rem .7rem .75rem;font-size:.92rem;border-top:1px solid var(
           <li>.IGES</li>
           <li>.IGS</li>
           <li>.DXF</li>
+          <li>.STL</li>
           <li>.ZIP</li>
         </ul>
       </div>
@@ -390,7 +393,7 @@ figcaption{padding:.6rem .7rem .75rem;font-size:.92rem;border-top:1px solid var(
   <section class="section" id="formats" aria-labelledby="formats-title">
     <p class="kicker"><span class="idx">02</span> Accepted today</p>
     <h2 id="formats-title">Supported formats</h2>
-    <p class="section-intro">PLC: .L5X, .L5K, .scl, .st, .exp, PLCopen .xml, and .TcPOU. Tag lists: .csv and .xlsx. A tag-table XML is tags only, not the program. CAD: .step and .stp, .iges and .igs, and ASCII .dxf. Archives: a .zip of those files.</p>
+    <p class="section-intro">PLC: .L5X, .L5K, .scl, .st, .exp, .awl, .acd, PLCopen .xml, and .TcPOU. Tag lists: .csv and .xlsx. A tag-table XML is tags only, not the program. CAD: .step and .stp, .iges and .igs, .stl, and ASCII .dxf. Archives: a .zip of those files.</p>
     <div class="table-scroll">
       <table class="spec">
         <caption class="sr-only">Accepted file formats</caption>
@@ -406,13 +409,13 @@ figcaption{padding:.6rem .7rem .75rem;font-size:.92rem;border-top:1px solid var(
           <tr>
             <td>01</td>
             <td>PLC program export</td>
-            <td class="mono">.L5X .L5K</td>
-            <td>XML export, including ladder</td>
+            <td class="mono">.L5X .L5K .ACD</td>
+            <td>XML export, including ladder. A manual from .ACD alone is limited.</td>
           </tr>
           <tr>
             <td>02</td>
             <td>Structured text</td>
-            <td class="mono">.SCL .ST .EXP</td>
+            <td class="mono">.SCL .ST .EXP .AWL</td>
             <td>IEC 61131-3</td>
           </tr>
           <tr>
@@ -436,8 +439,8 @@ figcaption{padding:.6rem .7rem .75rem;font-size:.92rem;border-top:1px solid var(
           <tr>
             <td>06</td>
             <td>CAD</td>
-            <td class="mono">.STEP .STP .IGES .IGS .DXF</td>
-            <td>DXF is ASCII. STEP and IGES are the 3D model. DXF is a 2D drawing.</td>
+            <td class="mono">.STEP .STP .IGES .IGS .DXF .STL</td>
+            <td>DXF is ASCII. STEP, IGES, and STL are the 3D model. DXF is a 2D drawing.</td>
           </tr>
           <tr>
             <td>07</td>
@@ -572,7 +575,7 @@ figcaption{padding:.6rem .7rem .75rem;font-size:.92rem;border-top:1px solid var(
     </ul>
     <div class="privacy">
       <h3>Privacy</h3>
-      <p>ManualOS processes your files to write the manual. Extracted program logic, comments, and part details are sent to a third-party AI model provider to write the manual. We don’t use your files to train models, and our AI provider doesn’t train on API data by default. Uploaded files are processed in memory and never stored. The finished PDF is available to download for 24 hours, then no longer available. Programs are not sold. Card numbers are entered at secure checkout, not on this site.</p>
+      <p>ManualOS processes your files to write the manual. Extracted program logic, comments, and part details are sent to a third-party AI model provider to write the manual. We don’t use your files to train models, and our AI provider doesn’t train on API data by default. Uploaded files are processed and deleted when the job finishes and are not kept. The generated PDF stays on the server for up to 24 hours for download, then is deleted. Programs are not sold. Card numbers are entered at secure checkout, not on this site. <a href="/privacy.html">Privacy policy</a>.</p>
     </div>
   </section>
   <section class="section" id="pricing" aria-labelledby="pricing-title">
@@ -633,7 +636,7 @@ figcaption{padding:.6rem .7rem .75rem;font-size:.92rem;border-top:1px solid var(
     <h2 id="faq-title">Questions</h2>
     <div class="faq-item">
       <h3>Which files can I upload?</h3>
-      <p>PLC: .L5X, .L5K, .scl, .st, .exp, PLCopen .xml, and .TcPOU. Tag lists: .csv and .xlsx. A tag-table XML is tags only, not the program. CAD: .step and .stp, .iges and .igs, and ASCII .dxf. Archives: a .zip of those files.</p>
+      <p>PLC: .L5X, .L5K, .scl, .st, .exp, .awl, .acd, PLCopen .xml, and .TcPOU. Tag lists: .csv and .xlsx. A tag-table XML is tags only, not the program. CAD: .step and .stp, .iges and .igs, .stl, and ASCII .dxf. Archives: a .zip of those files.</p>
     </div>
     <div class="faq-item">
       <h3>What is in a manual?</h3>
@@ -645,7 +648,7 @@ figcaption{padding:.6rem .7rem .75rem;font-size:.92rem;border-top:1px solid var(
     </div>
     <div class="faq-item">
       <h3>Who can see my PLC program?</h3>
-      <p>ManualOS processes your files to write the manual. Extracted program logic, comments, and part details are sent to a third-party AI model provider to write the manual. We don’t use your files to train models, and our AI provider doesn’t train on API data by default. Uploaded files are processed in memory and never stored. The finished PDF is available to download for 24 hours, then no longer available. Programs are not sold.</p>
+      <p>ManualOS processes your files to write the manual. Extracted program logic, comments, and part details are sent to a third-party AI model provider to write the manual. We don’t use your files to train models, and our AI provider doesn’t train on API data by default. Uploaded files are processed and deleted when the job finishes and are not kept. The generated PDF stays on the server for up to 24 hours for download, then is deleted. Programs are not sold.</p>
     </div>
     <div class="faq-item">
       <h3>Can I cancel Pro, and what about refunds?</h3>
@@ -663,6 +666,10 @@ figcaption{padding:.6rem .7rem .75rem;font-size:.92rem;border-top:1px solid var(
       <a href="#pricing">Pricing</a>
       <a href="#faq">FAQ</a>
       <a href="/upload.html">Upload</a>
+      <a href="/support.html">Support</a>
+      <a href="/privacy.html">Privacy</a>
+      <a href="/terms.html">Terms</a>
+      <a href="/refunds.html">Refunds</a>
       <a href="/sitemap.xml">Sitemap</a>
       <a href="mailto:support@manualos.com">support@manualos.com</a>
     </nav>
