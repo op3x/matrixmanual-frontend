@@ -370,15 +370,16 @@ async function main() {
   if (html['index.html'].includes('Full details are in our Privacy Policy. You get the PDF when the job is done.')) throw new Error('JSON-LD FAQ answer appends the extra download sentence');
   if (!html['terms.html'].includes('ManualOS is operated by Op3x LLC ("ManualOS," "we," "us")')) throw new Error('terms operator sentence missing');
   const indexMarkup = html['index.html'].slice(0, html['index.html'].lastIndexOf('<script>'));
-  const autoRenew = 'Renews automatically at $79 plus applicable taxes each month until you cancel. Cancel anytime online: use the one-click cancel email at <a href="/cancel">manualos.com/cancel</a>. Cancelling stops future charges, and you keep Pro until the end of the period you\'ve paid for. Each monthly charge is refundable until that billing period ends, as long as no manual has been delivered in that period, except where the law requires otherwise.';
-  const proConsent = 'I agree to the <a href="https://manualos.com/terms.html">ManualOS Terms</a> and authorize Op3x LLC to charge my card $79/month (USD, plus applicable taxes), renewing automatically each month until I cancel.';
-  const starterConsent = 'I agree to the <a href="https://manualos.com/terms.html">ManualOS Terms</a> and authorize Op3x LLC to make this one-time charge. This isn\'t a subscription.';
-  const starterRefund = '$39 one time for 3 manuals, plus applicable taxes. Full refund within 30 days of purchase, as long as no manual from that purchase has been delivered, except where the law requires otherwise.';
+  const acceptAtCheckout = 'You\'ll accept the <a href="/terms.html">Terms</a> at checkout.';
+  const starterRefund = 'Full refund within 30 days of purchase, as long as no manual from that purchase has been delivered, except where the law requires otherwise.';
+  const proRefund = 'Each monthly charge is refundable until that billing period ends, as long as no manual has been delivered in that period, except where the law requires otherwise.';
+  const autoRenew = 'Renews automatically at $79 plus applicable taxes each month until you cancel. Cancel anytime online: use the one-click cancel email at <a href="/cancel">manualos.com/cancel</a>. Cancelling stops future charges, and you keep Pro until the end of the period you\'ve paid for. ' + proRefund + ' ' + acceptAtCheckout;
+  const starterDisclosure = '$39 one time for 3 manuals, plus applicable taxes. ' + starterRefund + ' ' + acceptAtCheckout;
   const directSeller = 'Op3x LLC is the seller of ManualOS. Op3x LLC processes payments and refunds for these purchases and handles payment disputes.';
   if (/CHECKOUT_SELLER_MODE|MANAGED_PAYMENTS_ON/.test(html['index.html'])) throw new Error('a frontend seller constant is still present');
-  if (!html['index.html'].includes('termsAccepted: true') || /termsConsent/.test(html['index.html'])) throw new Error('checkout payload must send termsAccepted and not termsConsent');
+  if (/termsAccepted|renewalConsent|termsConsent|data-consent|starter-consent|pro-consent/.test(html['index.html'])) throw new Error('pricing cards still collect or send a consent flag');
   if (!html['index.html'].includes("disclosureVersion: 'checkout-tos-v2'")) throw new Error('consent version is not exactly checkout-tos-v2');
-  if (!html['index.html'].includes('button.disabled = !(box && box.checked)')) throw new Error('Buy is not gated only by the checkbox');
+  if (!html['index.html'].includes('button.disabled = false')) throw new Error('Buy is not enabled on load');
   if (/while managed payments are on/.test(html['terms.html'] + html['refunds.html'])) throw new Error('managed-payments jargon remains');
   if (!html['terms.html'].includes('Changes apply to purchases made after the effective date.')) throw new Error('terms missing purchases-after-effective-date sentence');
   if (!html['terms.html'].includes('Changes apply from your first renewal at least 14 days after we email you about them.')) throw new Error('terms changes clause missing');
@@ -397,14 +398,14 @@ async function main() {
   if (/It deletes the data within 30 days|usage policies/.test(html['privacy.html'])) throw new Error('old AI retention line remains');
   if (!html['privacy.html'].includes(emailShare) || !html['privacy.html'].includes(toolShare)) throw new Error('privacy sharing list is missing the email provider or automated tools');
   if (html['index.html'].includes(aiRetention) || html['index.html'].includes(emailShare) || html['index.html'].includes(toolShare)) throw new Error('privacy-only sharing or retention copy is on the homepage');
-  if (!indexMarkup.includes('<label for="pro-consent">' + proConsent + '</label>')) throw new Error('pro checkbox label is not the approved sentence');
-  if (!indexMarkup.includes('<label for="starter-consent">' + starterConsent + '</label>')) throw new Error('starter checkbox label is not the approved sentence');
-  if (!indexMarkup.includes('id="pro-auto-renew">' + autoRenew + '</p>')) throw new Error('pro renewal, cancel, and refund lines are not beside Pay');
-  if (!indexMarkup.includes('id="starter-renew-terms">' + starterRefund + '</p>')) throw new Error('starter refund line is not beside Buy');
-  if (/data-seller-note|data-seller-direct|data-seller-mp|data-statement|merchant of record|authorized reseller|LINK\.COM/i.test(indexMarkup)) throw new Error('reseller or card-statement copy is still on the pricing cards');
+  if (/data-seller-direct|data-seller-mp|data-statement|type="checkbox"|By continuing you agree|authorized reseller|LINK\.COM/.test(indexMarkup)) throw new Error('pricing card still has a consent checkbox, reseller line, or card-statement line');
+  if ((indexMarkup.match(new RegExp(acceptAtCheckout.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g')) || []).length !== 2) throw new Error('each card should say you accept the Terms at checkout');
+  if (!indexMarkup.includes('id="starter-renew-terms">' + starterDisclosure)) throw new Error('starter disclosure is not beside Buy');
+  if (!indexMarkup.includes('id="pro-auto-renew">' + autoRenew)) throw new Error('pro auto-renewal disclosure is not beside Pay');
+  if (/data-seller-note|merchant of record/i.test(indexMarkup)) throw new Error('reseller merchant-of-record note is still on the pricing cards');
   if (/will appear on your card statement/.test(html['index.html'])) throw new Error('old card-statement clause is still in the disclosure');
   if (/plus applicable tax(?!es)/.test(html['index.html'])) throw new Error('checkout still says applicable tax');
-  if (/By continuing you agree|Refundable within 30 days if no manual has been delivered/.test(indexMarkup)) throw new Error('old starter agreement line remains');
+  if (/Refundable within 30 days if no manual has been delivered/.test(indexMarkup)) throw new Error('old starter refund line remains');
   if (!html['index.html'].includes('Starter $39 once · 3 manuals. Pro $79 a month · unlimited. Plus applicable taxes.')) throw new Error('homepage pricing line missing taxes');
   if (!html['index.html'].includes('One-time purchase of 3 manuals, plus applicable taxes.')) throw new Error('starter offer description missing taxes');
   if (!html['index.html'].includes('Monthly subscription with unlimited manuals, plus applicable taxes.')) throw new Error('pro offer description missing taxes');
@@ -421,13 +422,8 @@ async function main() {
   if (/\bStripe\b|bought through Link|Link account/.test(html['index.html'] + html['cancel/index.html'] + html['terms.html'] + html['refunds.html'])) {
     throw new Error('a provider name is in the new copy');
   }
-  for (const id of ['starter-consent', 'pro-consent']) {
-    const tag = (html['index.html'].match(new RegExp('<input[^>]*id="' + id + '"[^>]*>')) || [''])[0];
-    if (!tag) throw new Error('missing ' + id);
-    if (/\schecked\b/.test(tag)) throw new Error(id + ' starts checked');
-    if (!/\srequired\b/.test(tag)) throw new Error(id + ' is not required');
-    if (!html['index.html'].includes('for="' + id + '"')) throw new Error(id + ' has no label');
-  }
+  if (/ticking the box on (?:our|the) site|by ticking the box/.test(html['terms.html'] + html['index.html'])) throw new Error('agreement is still described as a box on the site');
+  if (!html['terms.html'].includes('You accept them when you check the box at checkout')) throw new Error('terms assent sentence missing');
   if (!html['support.html'].includes("var SUPPORT_PHONE_DISPLAY = '';")) throw new Error('phone constant missing or not empty');
   if (/sms-consent|CONSENT_TEXT|text me|API_BASE/i.test(html['support.html'])) throw new Error('support script still posts a text opt-in');
   if (/formspree|getform|basin\.|typeform|google.com\/forms/i.test(html['support.html'])) throw new Error('third-party form service');
@@ -529,78 +525,43 @@ async function main() {
     await runAxe(page, 'support after send');
 
     await page.goto(base + '/index.html#pricing', { waitUntil: 'networkidle0' });
+    const proDisclosure = "Renews automatically at $79 plus applicable taxes each month until you cancel. Cancel anytime online: use the one-click cancel email at manualos.com/cancel. Cancelling stops future charges, and you keep Pro until the end of the period you've paid for. Each monthly charge is refundable until that billing period ends, as long as no manual has been delivered in that period, except where the law requires otherwise. You'll accept the Terms at checkout.";
+    const starterDisclosureText = "$39 one time for 3 manuals, plus applicable taxes. Full refund within 30 days of purchase, as long as no manual from that purchase has been delivered, except where the law requires otherwise. You'll accept the Terms at checkout.";
     const proGate = await page.evaluate(() => {
-      const input = document.getElementById('pro-consent');
-      const label = document.querySelector('label[for="pro-consent"]');
-      input.focus({ focusVisible: true });
-      const style = getComputedStyle(input);
+      const button = document.querySelector('[data-checkout="pro"]');
+      const renewal = document.getElementById('pro-auto-renew');
       return {
-        tied: !!(label && label.htmlFor === 'pro-consent'),
-        checked: input.checked,
-        buttonDisabled: document.querySelector('[data-checkout="pro"]').disabled,
-        outlineStyle: style.outlineStyle,
-        outlineWidth: parseFloat(style.outlineWidth),
-        label: label.textContent.replace(/\s+/g, ' ').trim(),
-        termsHref: label.querySelector('a').href,
-        renewal: document.getElementById('pro-auto-renew').textContent.replace(/\s+/g, ' ').trim(),
-        renewalNextToPay: document.getElementById('pro-auto-renew').nextElementSibling === document.querySelector('[data-checkout="pro"]'),
-        renewalNextToConsent: document.getElementById('pro-auto-renew').previousElementSibling === document.getElementById('pro-consent').closest('.consent-row'),
+        checkbox: document.querySelector('input[type="checkbox"]') !== null,
+        buttonDisabled: button.disabled,
+        renewal: renewal.textContent.replace(/\s+/g, ' ').trim(),
+        starter: document.getElementById('starter-renew-terms').textContent.replace(/\s+/g, ' ').trim(),
+        renewalNextToPay: renewal.nextElementSibling === button,
+        described: button.getAttribute('aria-describedby') === 'pro-auto-renew',
         reseller: document.body.textContent.includes('authorized reseller') || document.body.textContent.includes('LINK.COM'),
       };
     });
-    if (!proGate.tied || proGate.checked || !proGate.buttonDisabled || proGate.reseller) {
-      throw new Error('pro consent gate ' + JSON.stringify(proGate));
+    if (proGate.checkbox || proGate.buttonDisabled || proGate.reseller) {
+      throw new Error('pro buy state ' + JSON.stringify(proGate));
     }
-    if (proGate.outlineStyle === 'none' || !(proGate.outlineWidth > 0)) throw new Error('pro checkbox focus is not visible ' + JSON.stringify(proGate));
-    if (proGate.label !== 'I agree to the ManualOS Terms and authorize Op3x LLC to charge my card $79/month (USD, plus applicable taxes), renewing automatically each month until I cancel.' || proGate.termsHref !== 'https://manualos.com/terms.html') {
-      throw new Error('pro label ' + JSON.stringify(proGate));
+    if (proGate.renewal !== proDisclosure || !proGate.renewalNextToPay || !proGate.described || proGate.starter !== starterDisclosureText) {
+      throw new Error('card disclosure ' + JSON.stringify(proGate));
     }
-    if (proGate.renewal !== "Renews automatically at $79 plus applicable taxes each month until you cancel. Cancel anytime online: use the one-click cancel email at manualos.com/cancel. Cancelling stops future charges, and you keep Pro until the end of the period you've paid for. Each monthly charge is refundable until that billing period ends, as long as no manual has been delivered in that period, except where the law requires otherwise." || !proGate.renewalNextToPay || !proGate.renewalNextToConsent) {
-      throw new Error('pro auto-renewal disclosure ' + JSON.stringify(proGate));
-    }
-    const beforeUnchecked = (await fetch(base + '/__mock/requests').then((res) => res.json())).filter((item) => item.path === '/create-checkout-session').length;
-    await page.evaluate(() => document.querySelector('[data-checkout="pro"]').click());
-    const afterUnchecked = (await fetch(base + '/__mock/requests').then((res) => res.json())).filter((item) => item.path === '/create-checkout-session').length;
-    const stayedDisabled = await page.$eval('[data-checkout="pro"]', (el) => el.disabled && !document.getElementById('pro-consent').checked && location.pathname.endsWith('/index.html'));
-    if (afterUnchecked !== beforeUnchecked || !stayedDisabled) throw new Error('Buy started checkout before the box was ticked');
-    await page.focus('#pro-consent');
-    await page.keyboard.press('Space');
-    const proEnabled = await page.$eval('[data-checkout="pro"]', (el) => !el.disabled && document.getElementById('pro-consent').checked);
-    if (!proEnabled) throw new Error('keyboard did not enable Start Pro');
-    await page.click('#pro-consent');
-    const proDisabledAgain = await page.$eval('[data-checkout="pro"]', (el) => el.disabled && !document.getElementById('pro-consent').checked);
-    if (!proDisabledAgain) throw new Error('clearing the box left Start Pro enabled');
-    await page.keyboard.press('Space');
     const beforeCheckout = (await fetch(base + '/__mock/requests').then((res) => res.json())).filter((item) => item.path === '/create-checkout-session').length;
     await page.click('[data-checkout="pro"]');
     await page.waitForFunction(() => location.pathname.endsWith('/upload.html'));
     const checkout = (await fetch(base + '/__mock/requests').then((res) => res.json())).filter((item) => item.path === '/create-checkout-session').slice(beforeCheckout);
     if (checkout.length !== 1 || checkout[0].status !== 200) throw new Error('checkout response ' + JSON.stringify(checkout));
-    if (checkout[0].plan !== 'pro' || checkout[0].renewalConsent !== true || checkout[0].termsAccepted !== true || checkout[0].termsConsent !== undefined || checkout[0].termsVersion !== 'terms-rev-a-m2' || checkout[0].disclosureVersion !== 'checkout-tos-v2' || !checkout[0].fields.includes('termsAccepted') || checkout[0].fields.includes('termsConsent') || checkout[0].fields.includes('terms_version')) {
+    if (checkout[0].plan !== 'pro' || checkout[0].renewalConsent !== undefined || checkout[0].termsAccepted !== undefined || checkout[0].termsConsent !== undefined || checkout[0].termsVersion !== 'terms-rev-a-m2' || checkout[0].disclosureVersion !== 'checkout-tos-v2' || checkout[0].fields.includes('termsAccepted') || checkout[0].fields.includes('renewalConsent') || checkout[0].fields.includes('termsConsent') || checkout[0].fields.includes('terms_version')) {
       throw new Error('checkout body ' + JSON.stringify(checkout[0]));
     }
 
     await page.goto(base + '/index.html#pricing', { waitUntil: 'networkidle0' });
-    const starterDisabled = await page.$eval('[data-checkout="starter"]', (el) => el.disabled && !document.getElementById('starter-consent').checked);
-    if (!starterDisabled) throw new Error('starter button starts enabled');
-    const starterLabel = await page.$eval('label[for="starter-consent"]', (el) => ({
-      text: el.textContent.replace(/\s+/g, ' ').trim(),
-      href: el.querySelector('a').href,
-    }));
-    if (starterLabel.text !== "I agree to the ManualOS Terms and authorize Op3x LLC to make this one-time charge. This isn't a subscription." || starterLabel.href !== 'https://manualos.com/terms.html') {
-      throw new Error('starter label ' + JSON.stringify(starterLabel));
-    }
-    const beforeStarterClick = (await fetch(base + '/__mock/requests').then((res) => res.json())).filter((item) => item.path === '/create-checkout-session').length;
-    await page.evaluate(() => document.querySelector('[data-checkout="starter"]').click());
-    const afterStarterClick = (await fetch(base + '/__mock/requests').then((res) => res.json())).filter((item) => item.path === '/create-checkout-session').length;
-    if (afterStarterClick !== beforeStarterClick) throw new Error('Buy Starter posted checkout before the box was ticked');
-    await page.click('#starter-consent');
-    const starterEnabled = await page.$eval('[data-checkout="starter"]', (el) => !el.disabled);
-    if (!starterEnabled) throw new Error('ticking the box did not enable Buy Starter');
+    const starterDisabled = await page.$eval('[data-checkout="starter"]', (el) => el.disabled);
+    if (starterDisabled) throw new Error('starter button stayed disabled');
     await page.click('[data-checkout="starter"]');
     await page.waitForFunction(() => location.pathname.endsWith('/upload.html'));
     const starter = (await fetch(base + '/__mock/requests').then((res) => res.json())).filter((item) => item.path === '/create-checkout-session').pop();
-    if (starter.plan !== 'starter' || starter.renewalConsent !== false || starter.termsAccepted !== true || starter.termsConsent !== undefined || starter.disclosureVersion !== 'checkout-tos-v2' || starter.fields.includes('termsConsent') || starter.fields.includes('terms_version')) {
+    if (starter.plan !== 'starter' || starter.renewalConsent !== undefined || starter.termsAccepted !== undefined || starter.termsConsent !== undefined || starter.termsVersion !== 'terms-rev-a-m2' || starter.disclosureVersion !== 'checkout-tos-v2' || starter.fields.includes('termsAccepted') || starter.fields.includes('renewalConsent') || starter.fields.includes('termsConsent') || starter.fields.includes('terms_version')) {
       throw new Error('starter body ' + JSON.stringify(starter));
     }
 
@@ -704,10 +665,12 @@ async function main() {
         if (state.note !== null || state.mpSection !== null || state.statement !== null || state.mpCharge !== null || state.directCharge !== null) {
           throw new Error(where + ' ' + mode + ' visibility ' + JSON.stringify(state));
         }
-        const renewalLine = "Renews automatically at $79 plus applicable taxes each month until you cancel. Cancel anytime online: use the one-click cancel email at manualos.com/cancel. Cancelling stops future charges, and you keep Pro until the end of the period you've paid for. Each monthly charge is refundable until that billing period ends, as long as no manual has been delivered in that period, except where the law requires otherwise.";
-        const starterLine = "Full refund within 30 days of purchase, as long as no manual from that purchase has been delivered, except where the law requires otherwise.";
-        if (!state.text.includes(renewalLine) || !state.text.includes(starterLine)) throw new Error(where + ' missing renewal or refund disclosure');
-        if (!state.text.includes('authorize Op3x LLC to charge my card $79/month (USD, plus applicable taxes)')) throw new Error(where + ' missing pro authorization');
+        const renewalLine = "Renews automatically at $79 plus applicable taxes each month until you cancel. Cancel anytime online: use the one-click cancel email at manualos.com/cancel. Cancelling stops future charges, and you keep Pro until the end of the period you've paid for. Each monthly charge is refundable until that billing period ends, as long as no manual has been delivered in that period, except where the law requires otherwise. You'll accept the Terms at checkout.";
+        if (!state.text.includes(renewalLine)) throw new Error(where + ' missing auto-renewal disclosure');
+        if (!state.text.includes("$39 one time for 3 manuals, plus applicable taxes. Full refund within 30 days of purchase, as long as no manual from that purchase has been delivered, except where the law requires otherwise. You'll accept the Terms at checkout.")) {
+          throw new Error(where + ' missing starter disclosure');
+        }
+        if (state.text.includes('to charge my card') || state.text.includes('By continuing you agree')) throw new Error(where + ' still asks for consent on the card');
         if (/merchant of record|app\.link\.com|authorized reseller|LINK\.COM|link\.com|full online alternative|first manual/i.test(state.text)) throw new Error(where + ' still shows retired copy');
       } else if (where === 'privacy.html') {
         if (state.mpSection !== null) throw new Error(where + ' still has a managed-payments section');
