@@ -145,14 +145,23 @@ async function main() {
     '<strong>Pro:</strong> each monthly charge can be refunded until that billing period ends, as long as no manual has been delivered in that period. Ask before your plan renews.',
     "Once a manual is delivered, that purchase or charge can't be refunded, except where required by law.",
     'from the email address you used at checkout.',
-    "A run that fails, or a file ManualOS can't read, doesn't use a credit.",
+    "If we can't read your files, or the run ends in an error, it doesn't use a credit.",
     "and we'll help.",
-    'Your finished PDF is stored for up to 24 hours so you can download it, then deleted; backup copies are deleted within 28 days. Save your copy.',
   ];
   for (const phrase of refundRule) {
     if (!html['terms.html'].includes(phrase)) throw new Error('terms refund rule diverges: ' + phrase);
     if (!html['refunds.html'].includes(phrase)) throw new Error('refunds page missing: ' + phrase);
   }
+  if (!html['terms.html'].includes('Your finished PDF is stored for up to 24 hours so you can download it, then deleted; backup copies are deleted within 28 days. Save your copy.')) {
+    throw new Error('terms PDF line missing the backup clause');
+  }
+  if (!html['refunds.html'].includes('Your finished PDF is stored for up to 24 hours so you can download it, then deleted. Save your copy.')) {
+    throw new Error('refunds PDF line changed');
+  }
+  if (html['refunds.html'].includes('backup copies are deleted within 28 days')) throw new Error('refunds includes the backup clause');
+  if (/A run that fails|failed run never/.test(Object.values(html).join('\n'))) throw new Error('a page still says every failed run returns a credit');
+  const creditLine = "If we can't read your files, or the run ends in an error, it doesn't use a credit.";
+  if ((html['index.html'].split(creditLine).length - 1) < 2) throw new Error('homepage credit line missing from the FAQ or JSON-LD');
   if (!html['terms.html'].includes('the credits and access from that purchase end.')) throw new Error('terms missing access-ends sentence');
   const chargeback = "access is suspended while a dispute is open, restored if it's decided in ManualOS's favor, and permanently revoked if ManualOS loses it.";
   if (!html['terms.html'].includes(chargeback)) throw new Error('terms missing chargeback rule');
