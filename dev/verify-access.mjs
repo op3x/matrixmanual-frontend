@@ -106,7 +106,7 @@ async function visibleManageCount(page) {
 
 async function openFresh(page, base, query) {
   await page.goto(base + '/upload.html', { waitUntil: 'domcontentloaded' });
-  await page.evaluate(() => localStorage.clear());
+  await page.evaluate(() => { localStorage.clear(); sessionStorage.clear(); });
   await page.goto(base + '/upload.html' + (query || ''), { waitUntil: 'domcontentloaded', timeout: 20000 });
 }
 
@@ -115,6 +115,8 @@ async function main() {
   const index = await readFile(path.join(root, 'index.html'), 'utf8');
   const refunds = await readFile(path.join(root, 'refunds.html'), 'utf8');
   const readme = await readFile(path.join(root, 'README.md'), 'utf8');
+  const upload = await readFile(path.join(root, 'upload.html'), 'utf8');
+  if (!upload.includes('<meta name="referrer" content="no-referrer">')) throw new Error('upload page missing no-referrer');
   const phrase = 'or use Manage subscription on your upload page';
   const indexHits = index.split(phrase).length - 1;
   if (indexHits < 2) throw new Error('pricing/FAQ missing Manage subscription phrase, count ' + indexHits);
@@ -144,6 +146,14 @@ async function main() {
       if (res.status !== 401) throw new Error(label + ' without X-Session-Id returned ' + res.status);
     }
     console.log('PASS job routes reject a missing X-Session-Id');
+    const mineRes = await fetch(base + '/jobs?mine', { headers: { 'X-Session-Id': 'cs_test_local' } });
+    const mineBody = await mineRes.json();
+    if (!mineBody || !Array.isArray(mineBody.jobs)) throw new Error('mine shape ' + JSON.stringify(mineBody));
+    const readyJob = mineBody.jobs.find((job) => job.id === 'job_recent_starter');
+    if (!readyJob || readyJob.pdf_available !== true || readyJob.filename !== 'packer-line.L5X') {
+      throw new Error('mine job ' + JSON.stringify(mineBody));
+    }
+    console.log('PASS /jobs?mine returns {jobs:[...]}');
 
     const page = await browser.newPage();
     const pageErrors = [];
@@ -219,6 +229,23 @@ async function main() {
     const failText = await page.$eval('#access-link-status', (el) => el.textContent);
     if (SENT.test(failText) || failText === LIMITED) throw new Error('error copy ' + failText);
     console.log('PASS email link form explains a send failure');
+
+    async function expectNoMailClaim(email, label) {
+      await openFresh(page, base, '');
+      await page.waitForFunction(() => document.body.dataset.phase === 'locked', { timeout: 8000 });
+      await page.type('#access-email', email);
+      await page.click('#access-link-btn');
+      await page.waitForFunction(() => {
+        const note = document.querySelector('#access-recovery .recovery-note');
+        const form = document.getElementById('access-link-form');
+        return form && form.hidden && note && /support@manualos\.com/.test(note.textContent) && /can.t email the upload link/i.test(note.textContent);
+      }, { timeout: 8000 });
+      const claim = await page.evaluate(() => document.body.innerText);
+      if (SENT.test(claim)) throw new Error(label + ' claimed a link was sent');
+      console.log('PASS ' + label);
+    }
+    await expectNoMailClaim('unconfigured@example.com', 'a 503 hides the email form and points to support');
+    await expectNoMailClaim('nomail@example.com', 'email_configured false does not claim a link was sent');
 
     await openFresh(page, base, '?session_id=cs_test_invalid');
     await page.waitForFunction(() => document.body.dataset.phase === 'locked', { timeout: 8000 });
@@ -359,6 +386,49 @@ async function main() {
     const emptyRecent = await page.evaluate(() => document.getElementById('buyer-access').hidden);
     if (emptyRecent) throw new Error('used-up starter hid recent manuals');
     console.log('PASS a used-up Starter plan still hides Manage subscription');
+
+    await openFresh(page, base, '?session_id=cs_test_local&jobs=0');
+    await page.waitForFunction(() => document.body.dataset.phase === 'ready', { timeout: 8000 });
+    const stripped = new URL(page.url());
+    if (stripped.searchParams.has('session_id')) throw new Error('session id stayed in the address bar ' + page.url());
+    if (stripped.searchParams.get('jobs') !== '0') throw new Error('other query was dropped ' + page.url());
+    const kept = await page.evaluate(() => localStorage.getItem('manualos_session_id'));
+    if (kept !== 'cs_test_local') throw new Error('session was not kept after stripping the url ' + kept);
+    console.log('PASS session id leaves the address bar and stays in browser storage');
+
+    async function expectPortalLock(sessionId, pattern, shotName) {
+      await openFresh(page, base, '?session_id=' + sessionId);
+      await page.waitForFunction(() => {
+        const banner = document.getElementById('payment-issue');
+        const button = document.getElementById('manage-subscription');
+        return document.body.dataset.phase === 'locked' && banner && !banner.hidden && button && banner.contains(button);
+      }, { timeout: 8000 });
+      const state = await page.evaluate(() => {
+        const pricing = document.getElementById('access-pricing-link');
+        const pricingStyle = getComputedStyle(pricing);
+        return {
+          text: document.body.innerText,
+          banner: document.getElementById('payment-issue').innerText,
+          inputDisabled: document.getElementById('file-input').disabled,
+          generateDisabled: document.getElementById('generate-btn').disabled,
+          pricingVisible: !pricing.hidden && pricingStyle.display !== 'none' && pricingStyle.visibility !== 'hidden' && pricing.getBoundingClientRect().height > 2,
+          stored: localStorage.getItem('manualos_session_id'),
+        };
+      });
+      if (!pattern.test(state.banner)) throw new Error(sessionId + ' banner ' + state.banner);
+      if (!/Manage subscription/.test(state.banner)) throw new Error(sessionId + ' missing manage button');
+      if (/Choose a plan/.test(state.text) || state.pricingVisible) throw new Error(sessionId + ' pushed a new purchase ' + JSON.stringify(state));
+      if (!state.inputDisabled || !state.generateDisabled) throw new Error(sessionId + ' left upload enabled');
+      if (state.stored !== sessionId) throw new Error(sessionId + ' storage ' + state.stored);
+      if (await visibleManageCount(page) !== 1) throw new Error(sessionId + ' manage count');
+      await runAxe(page, shotName + ' 1280');
+      await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 1 });
+      await runAxe(page, shotName + ' 390');
+      await shoot(page, shotName, '#payment-issue');
+      console.log('PASS ' + shotName + ' keeps Manage subscription and disables upload');
+    }
+    await expectPortalLock('cs_test_payment_failed', /Your last payment didn.t go through\. Update your card to keep generating manuals\./, 'payment_failed');
+    await expectPortalLock('cs_test_canceled', /Your subscription has ended\. Restart it from Manage subscription\./, 'canceled');
 
     if (pageErrors.length) throw new Error('page errors: ' + pageErrors.join(' | '));
     console.log('PASS no page errors');

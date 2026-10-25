@@ -10,6 +10,7 @@
   <link rel="manifest" href="/site.webmanifest">
   <meta name="description" content="Upload your PLC or CAD files after checkout. ManualOS checks your plan, then writes a plain-English PDF.">
   <meta name="robots" content="noindex">
+  <meta name="referrer" content="no-referrer">
   <link rel="canonical" href="https://manualos.com/upload.html">
   <meta name="theme-color" content="#f3f0e6">
   <link rel="preconnect" href="https://manualforge-backend-production.up.railway.app" crossorigin>
@@ -138,6 +139,7 @@
     .noscript{margin-bottom:1rem}
     .payment-issue{display:flex;flex-wrap:wrap;gap:.65rem .75rem;align-items:center;margin:0 0 1rem;padding:.75rem .85rem;background:var(--sheet);border:1px solid var(--ink);border-left:4px solid #6b2a14}
     .payment-issue > p{margin:0;font-weight:600;flex:1 1 14rem}
+    html.is-portal #access-banner{display:none !important}
     .payment-issue .billing-tools{flex:1 1 auto;margin:0}
     .payment-issue .upload-error{flex:1 0 100%;margin:.2rem 0 0}
     #access-recovery{display:none;margin:0 0 1rem;padding:.75rem .85rem;background:var(--sheet);border:1px solid var(--ink)}
@@ -193,6 +195,9 @@
         var fromQuery = (params.get('session_id') || '').trim();
         var stored = '';
         try { stored = (localStorage.getItem('manualos_session_id') || '').trim(); } catch (err) {}
+        if (!stored) {
+          try { stored = (sessionStorage.getItem('manualos_session_id') || '').trim(); } catch (err) {}
+        }
         if (!fromQuery && !stored) document.documentElement.classList.add('needs-access-link');
       } catch (err) {}
     })();
@@ -209,7 +214,7 @@
 <main id="main" tabindex="-1">
   <noscript><p class="upload-error noscript">ManualOS needs JavaScript to check your purchase and upload files.</p></noscript>
   <div id="payment-issue" class="payment-issue" role="status" hidden>
-    <p>Your last payment didn’t go through. Update your card to keep access.</p>
+    <p id="payment-issue-text">Your last payment didn’t go through. Update your card to keep access.</p>
   </div>
   <div id="access-banner" class="access-banner" role="status">
     <span id="access-message">Checking your access…</span>
@@ -440,6 +445,7 @@
   var accessLinkBtn = document.getElementById('access-link-btn');
   var accessLinkStatus = document.getElementById('access-link-status');
   var paymentIssue = document.getElementById('payment-issue');
+  var paymentIssueText = document.getElementById('payment-issue-text');
   var buyerAccess = document.getElementById('buyer-access');
   var billingHome = document.getElementById('billing-home');
   var billingTools = document.getElementById('billing-tools');
@@ -620,15 +626,34 @@
     }
   }
 
+  function storedSessionId() {
+    try {
+      var localId = (localStorage.getItem(SESSION_STORAGE_KEY) || '').trim();
+      if (localId) return localId;
+    } catch (err) {}
+    try { return (sessionStorage.getItem(SESSION_STORAGE_KEY) || '').trim(); } catch (err) { return ''; }
+  }
+
   function readSessionId() {
     var params = new URLSearchParams(window.location.search);
     var fromQuery = (params.get('session_id') || '').trim();
     if (fromQuery) {
       sessionFromQuery = true;
-      try { localStorage.setItem(SESSION_STORAGE_KEY, fromQuery); } catch (err) {}
+      rememberSession(fromQuery);
+      stripSessionFromUrl();
       return fromQuery;
     }
-    try { return (localStorage.getItem(SESSION_STORAGE_KEY) || '').trim(); } catch (err) { return ''; }
+    return storedSessionId();
+  }
+
+  function stripSessionFromUrl() {
+    try {
+      var url = new URL(window.location.href);
+      if (!url.searchParams.has('session_id')) return;
+      url.searchParams.delete('session_id');
+      var search = url.searchParams.toString();
+      history.replaceState(null, '', url.pathname + (search ? '?' + search : '') + url.hash);
+    } catch (err) {}
   }
 
   function showAccessRecovery(show) {
@@ -637,7 +662,11 @@
 
   function rememberSession(id) {
     if (!id) return;
-    try { localStorage.setItem(SESSION_STORAGE_KEY, id); } catch (err) {}
+    var saved = false;
+    try { localStorage.setItem(SESSION_STORAGE_KEY, id); saved = true; } catch (err) {}
+    if (!saved) {
+      try { sessionStorage.setItem(SESSION_STORAGE_KEY, id); } catch (err) {}
+    }
   }
 
   function hideBilling() {
@@ -659,17 +688,53 @@
     if (buyerAccess) buyerAccess.hidden = false;
   }
 
+  var GRACE_PAYMENT = 'Your last payment didn\u2019t go through. Update your card to keep access.';
+  var PAYMENT_FAILED = 'Your last payment didn\u2019t go through. Update your card to keep generating manuals.';
+  var CANCELED_PLAN = 'Your subscription has ended. Restart it from Manage subscription.';
+
   function applyBilling(data) {
+    document.documentElement.classList.remove('is-portal');
     var pro = String(data && data.plan || '').toLowerCase() === 'pro';
     var issue = !!(pro && data && data.payment_issue === true);
     if (manageBtn) manageBtn.hidden = !pro;
+    if (paymentIssueText && issue) paymentIssueText.textContent = GRACE_PAYMENT;
     if (paymentIssue) paymentIssue.hidden = !issue;
     if (issue && paymentIssue && billingTools) paymentIssue.appendChild(billingTools);
     else if (billingHome && billingTools) billingHome.appendChild(billingTools);
   }
 
+  function portalMessage(data) {
+    var reason = String(data && data.reason || '').toLowerCase();
+    if (reason === 'canceled' || reason === 'cancelled') return CANCELED_PLAN;
+    return PAYMENT_FAILED;
+  }
+
+  function applyPortalLock(data) {
+    rememberSession(sessionId);
+    showAccessRecovery(false);
+    document.documentElement.classList.add('has-session');
+    document.documentElement.classList.add('is-portal');
+    setUploadEnabled(false);
+    var message = portalMessage(data);
+    showAccess('', { showPricing: false, ok: false, hideMessage: true });
+    fillReservedWelcome(message, true);
+    if (paymentIssueText) paymentIssueText.textContent = message;
+    if (paymentIssue) paymentIssue.hidden = false;
+    if (manageBtn) manageBtn.hidden = false;
+    if (paymentIssue && billingTools) paymentIssue.appendChild(billingTools);
+    if (buyerAccess) buyerAccess.hidden = true;
+    if (document.body.dataset.phase !== 'progress' && document.body.dataset.phase !== 'success') setPhase('locked');
+  }
+
+  function sessionIsActive(data) {
+    if (!data) return false;
+    if (data.access === false || data.valid === false) return false;
+    return data.valid === true || data.access === true;
+  }
+
   function lockUpload(message, options) {
     var opts = options || {};
+    document.documentElement.classList.remove('is-portal');
     setUploadEnabled(false);
     showAccess('', { showPricing: true, ok: false, hideMessage: true });
     fillReservedWelcome(message, true);
@@ -681,6 +746,7 @@
   function applySession(data) {
     rememberSession(sessionId);
     showAccessRecovery(false);
+    document.documentElement.classList.remove('is-portal');
     if (data.remaining === 0) {
       hideBilling();
       showBuyerAccess();
@@ -723,10 +789,16 @@
     }
     var data = {};
     try { data = await res.json(); } catch (err) { data = {}; }
-    if (!res.ok || !data.valid) {
-      if (!(keepAccessOnError && !res.ok)) {
-        lockUpload('This purchase isn\u2019t active. Choose a plan to generate manuals.');
+    if (!res.ok) {
+      if (!keepAccessOnError) lockUpload('This purchase isn\u2019t active. Choose a plan to generate manuals.');
+      return null;
+    }
+    if (!sessionIsActive(data)) {
+      if (data.portal === true) {
+        applyPortalLock(data);
+        return data;
       }
+      lockUpload('This purchase isn\u2019t active. Choose a plan to generate manuals.');
       return null;
     }
     await loadRecentManuals();
@@ -1394,11 +1466,12 @@
       return;
     }
     var data = await readJson(res);
-    if (!Array.isArray(data)) {
+    var jobs = Array.isArray(data) ? data : (data && Array.isArray(data.jobs) ? data.jobs : null);
+    if (!jobs) {
       showRecentError('We couldn\u2019t load recent manuals. Refresh the page to try again.');
       return;
     }
-    renderRecent(data);
+    renderRecent(jobs);
   }
 
   async function downloadRecent(button) {
@@ -1444,6 +1517,25 @@
     }
   }
 
+  function emailIsUnavailable(res, data) {
+    if (res && res.status === 503) return true;
+    if (!data || typeof data !== 'object') return false;
+    if (data.email_configured === false || data.mail_configured === false) return true;
+    var code = String(data.reason || data.code || '').toLowerCase();
+    if (code === 'email_not_configured' || code === 'smtp_not_configured' || code === 'mail_not_configured') return true;
+    var error = String(data.error || '').toLowerCase();
+    return error === 'email_not_configured' || error === 'smtp_not_configured' || error === 'mail_not_configured' || /not configured/.test(error);
+  }
+
+  function showEmailUnavailable() {
+    if (accessLinkForm) accessLinkForm.hidden = true;
+    var title = document.getElementById('access-recovery-title');
+    if (title) title.textContent = 'Email support for your upload link';
+    var note = document.querySelector('#access-recovery .recovery-note');
+    if (note) note.textContent = 'We can\u2019t email the upload link right now. Email support@manualos.com and we will send it.';
+    setAccessLinkStatus('', false);
+  }
+
   async function requestAccessLink(event) {
     event.preventDefault();
     if (!accessEmail || !accessLinkBtn || accessLinkBtn.disabled) return;
@@ -1464,6 +1556,10 @@
       var data = await readJson(res);
       if (res.status === 429) {
         setAccessLinkStatus('Too many requests, try again in an hour.', true);
+        return;
+      }
+      if (emailIsUnavailable(res, data)) {
+        showEmailUnavailable();
         return;
       }
       if (res.status === 202 || data.ok === true) {

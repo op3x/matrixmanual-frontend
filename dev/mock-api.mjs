@@ -368,6 +368,12 @@ const server = http.createServer(async (req, res) => {
       if (sessionId === 'cs_test_local') return sendJson(res, 200, { valid: true, plan: 'starter', remaining: 3 });
       if (sessionId === 'cs_test_pro') return sendJson(res, 200, { valid: true, plan: 'pro', remaining: null });
       if (sessionId === 'cs_test_past_due') return sendJson(res, 200, { valid: true, plan: 'pro', remaining: null, payment_issue: true });
+      if (sessionId === 'cs_test_payment_failed') {
+        return sendJson(res, 200, { valid: false, access: false, plan: 'pro', remaining: null, reason: 'payment_failed', portal: true });
+      }
+      if (sessionId === 'cs_test_canceled') {
+        return sendJson(res, 200, { valid: false, access: false, plan: 'pro', remaining: null, reason: 'canceled', portal: true });
+      }
       if (sessionId === 'cs_test_empty') return sendJson(res, 200, { valid: true, plan: 'starter', remaining: 0 });
       return sendJson(res, 200, { valid: false, plan: null, remaining: null });
     }
@@ -377,10 +383,13 @@ const server = http.createServer(async (req, res) => {
       try { body = JSON.parse(raw.toString('utf8') || '{}'); } catch { body = {}; }
       const email = typeof body.email === 'string' ? body.email.trim() : '';
       const lowered = email.toLowerCase();
-      const status = lowered === 'limited@example.com' ? 429 : lowered === 'fail@example.com' ? 500 : 202;
+      const status = lowered === 'limited@example.com' ? 429 : lowered === 'fail@example.com' ? 500 : lowered === 'unconfigured@example.com' ? 503 : 202;
+      const emailConfigured = lowered !== 'nomail@example.com';
       requests.push({ method: 'POST', path: '/access-link', status, files: [], fields: email ? ['email'] : [], email });
       if (status === 429) return sendJson(res, 429, { error: 'Too many requests' });
+      if (status === 503) return sendJson(res, 503, { error: 'email_not_configured' });
       if (status === 500) return sendJson(res, 500, { error: 'Mail service unavailable' });
+      if (!emailConfigured) return sendJson(res, 202, { ok: true, email_configured: false });
       return sendJson(res, 202, { ok: true });
     }
     if (req.method === 'POST' && url.pathname === '/billing-portal') {
@@ -389,7 +398,7 @@ const server = http.createServer(async (req, res) => {
       try { body = JSON.parse(raw.toString('utf8') || '{}'); } catch { body = {}; }
       const sessionId = typeof body.session_id === 'string' ? body.session_id.trim() : '';
       const starter = sessionId === 'cs_test_local' || sessionId === 'cs_test_empty';
-      const pro = sessionId === 'cs_test_pro' || sessionId === 'cs_test_past_due';
+      const pro = sessionId === 'cs_test_pro' || sessionId === 'cs_test_past_due' || sessionId === 'cs_test_payment_failed' || sessionId === 'cs_test_canceled';
       const status = starter ? 400 : pro ? 200 : 402;
       requests.push({ method: 'POST', path: '/billing-portal', status, files: [], fields: ['session_id'], session: sessionId });
       if (status === 400) return sendJson(res, 400, { error: 'Starter has no subscription.' });
@@ -444,7 +453,7 @@ const server = http.createServer(async (req, res) => {
         return job.sessionId === sessionId && Date.parse(job.createdAt) >= cutoff;
       }).sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt)).map(mineView);
       requests.push({ method: 'GET', path: '/jobs?mine', status: 200, files: [], fields: [], session: sessionId });
-      return sendJson(res, 200, list);
+      return sendJson(res, 200, { jobs: list });
     }
     const jobMatch = /^\/jobs\/([^/]+)$/.exec(url.pathname);
     if (req.method === 'GET' && jobMatch) {

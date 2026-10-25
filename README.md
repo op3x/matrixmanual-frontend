@@ -10,7 +10,7 @@ GitHub Pages builds this folder with Jekyll. `_config.yml` excludes `dev/`, so t
 
 The page prefers `POST /jobs` (several files, real progress, then `GET /jobs/:id/pdf`). Production serves `/jobs`. If `POST /jobs` returns **404**, the page falls back to `POST /generate-manual` and sends one file, and it says so on the page. A credit is not used for a file rejected as the wrong format or as having no equipment data.
 
-`GET /jobs/:id`, `GET /jobs/:id/pdf`, and `GET /jobs?mine` send `X-Session-Id`. After a purchase is verified, that session id is stored in the browser and the page lists manuals from the last 24 hours. Pro shows Manage subscription (`POST /billing-portal`). A browser with no purchase can email the upload link (`POST /access-link`). The link is also in the purchase email.
+`GET /jobs/:id`, `GET /jobs/:id/pdf`, and `GET /jobs?mine` send `X-Session-Id`. `GET /jobs?mine` returns `{jobs:[{id,status,created_at,filename,pdf_available}]}` from the last 24 hours. After a purchase is verified, that session id is stored in the browser and removed from the address bar. Pro shows Manage subscription (`POST /billing-portal`), including when a renewal failed or the subscription ended and the portal is still available. A browser with no purchase can email the upload link (`POST /access-link`) when mail is configured. The link is also in the purchase email.
 
 - `?jobs=0` always uses the current single-file generator.
 - `?jobs=1` calls `/jobs` and does not fall back.
