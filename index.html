@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <!-- Headline lives in #hero-title. The title describes the page. -->
 <title>ManualOS | Operator and maintenance manuals from PLC and CAD files</title>
-<meta name="description" content="Upload your PLC or CAD files. PLC program files (.L5X, .L5K, .scl, .st and more) and CAD files (STEP, IGES, DXF). Starter is $39 once for 3 manuals. Pro is $79/month.">
+<meta name="description" content="ManualOS turns your PLC program and CAD files into a plain-English operating and maintenance manual: safety, theory of operation, alarms, troubleshooting and maintenance, in one PDF you can hand over. From $39.">
 <meta name="robots" content="index, follow">
 <link rel="canonical" href="https://manualos.com/">
 <meta property="og:site_name" content="ManualOS">
@@ -13,7 +13,7 @@
 <meta property="og:locale" content="en_US">
 <meta property="og:url" content="https://manualos.com/">
 <meta property="og:title" content="ManualOS — Upload your PLC or CAD files">
-<meta property="og:description" content="Upload your PLC or CAD files. PLC program files (.L5X, .L5K, .scl, .st and more) and CAD files (STEP, IGES, DXF). Starter is $39 once for 3 manuals. Pro is $79/month.">
+<meta property="og:description" content="ManualOS turns your PLC program and CAD files into a plain-English operating and maintenance manual: safety, theory of operation, alarms, troubleshooting and maintenance, in one PDF you can hand over. From $39.">
 <meta property="og:image" content="https://manualos.com/assets/og-image.jpg">
 <meta property="og:image:secure_url" content="https://manualos.com/assets/og-image.jpg">
 <meta property="og:image:type" content="image/jpeg">
@@ -22,7 +22,7 @@
 <meta property="og:image:alt" content="ManualOS. Upload your PLC or CAD files. PLC program files (.L5X, .L5K, .scl, .st and more) and CAD files (STEP, IGES, DXF). Starter is $39 once. Pro is $79 per month. The cover of a 60-page sample for the SAMPLE-A Case Packer, Example Machinery Co. (fictional), document OM-SAMPLE-A-EN, sits beside the title.">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="ManualOS — Upload your PLC or CAD files">
-<meta name="twitter:description" content="Upload your PLC or CAD files. PLC program files (.L5X, .L5K, .scl, .st and more) and CAD files (STEP, IGES, DXF). Starter is $39 once for 3 manuals. Pro is $79/month.">
+<meta name="twitter:description" content="ManualOS turns your PLC program and CAD files into a plain-English operating and maintenance manual: safety, theory of operation, alarms, troubleshooting and maintenance, in one PDF you can hand over. From $39.">
 <meta name="twitter:image" content="https://manualos.com/assets/og-image.jpg">
 <meta name="twitter:image:alt" content="ManualOS. Upload your PLC or CAD files. PLC program files (.L5X, .L5K, .scl, .st and more) and CAD files (STEP, IGES, DXF). Starter is $39 once. Pro is $79 per month. The cover of a 60-page sample for the SAMPLE-A Case Packer, Example Machinery Co. (fictional), document OM-SAMPLE-A-EN, sits beside the title.">
 <link rel="icon" href="/favicon.ico" sizes="32x32">
@@ -110,10 +110,12 @@ a{color:var(--signal-blue)}
 .section-sheet>.status-rail::after{content:"";width:.5625rem;height:.5625rem;margin-top:.4rem;border-radius:50%;background:var(--sheet-accent);box-shadow:0 0 0 .25rem color-mix(in srgb,var(--sheet-accent) 28%,transparent);position:relative;z-index:1}
 .act-stop{--sheet-accent:var(--beacon-amber)}
 .act-method,.act-commit{--sheet-accent:var(--signal-blue)}
+.act-turn{--sheet-accent:var(--signal-blue)}
+.act-turn>.status-rail::after{background:linear-gradient(180deg,var(--beacon-amber),var(--signal-blue))}
 .act-run{--sheet-accent:var(--run-green)}
 .section-sheet>.kicker,.section-sheet>h1,.section-sheet>h2{grid-column:2}
 .section-sheet>h1,.section-sheet>h2{margin:0}
-.kicker{display:flex;align-items:center;gap:.45rem;margin:0 0 .5rem;font-family:var(--mono);font-size:var(--step-small);font-weight:400;letter-spacing:.04em;text-transform:uppercase;color:var(--mist)}
+.kicker{display:flex;flex-wrap:wrap;align-items:center;gap:.45rem;margin:0 0 .5rem;font-family:var(--mono);font-size:var(--step-small);font-weight:400;letter-spacing:.04em;text-transform:uppercase;color:var(--mist)}
 .hero-copy .kicker{margin:0 0 .5rem}
 .idx{display:inline-grid;place-items:center;min-width:1.75rem;height:1.25rem;padding:0 .25rem;background:var(--beacon-amber);color:var(--ink);letter-spacing:0;font-weight:400;text-transform:none}
 .lede,.lede-next,.section-intro,.faq-item p,.pay-note,.hero-note,.hero-price,.privacy p,.need-more{max-width:var(--measure)}
@@ -121,6 +123,23 @@ a{color:var(--signal-blue)}
 .hero-cta{display:flex;flex-wrap:wrap;gap:.75rem;margin:.15rem 0 0}
 .hero-price{margin:0;font-weight:600}
 .hero-note{margin:0;color:var(--mist)}
+.trust-strip{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:.35rem .85rem;color:var(--mist);max-width:var(--measure)}
+.trust-strip li:not(:first-child)::before{content:"· ";color:var(--mist)}
+.hero-film{margin-top:1.5rem}
+.hero-film-frame{position:relative;display:grid;width:100%;aspect-ratio:16/9;overflow:hidden;background:var(--steel);border:1px solid var(--line)}
+.hero-film-poster,.hero-film-video{grid-area:1/1;width:100%;height:100%;min-width:0;min-height:0;object-fit:cover;display:block}
+.hero-film-video[hidden],.hero-film-toggle[hidden]{display:none !important}
+.hero-film-toggle{position:absolute;z-index:2;right:.75rem;bottom:.75rem;min-height:2.75rem;min-width:2.75rem;padding:.45rem .85rem}
+.story-band{max-width:var(--content-max);margin:0 auto;padding:var(--section-space) 1rem 0}
+.story-headline{margin:0;max-width:16em;font-family:var(--sans-strong);font-weight:600;font-size:var(--step-display);line-height:1.08;letter-spacing:-.02em;color:var(--paper);text-wrap:balance}
+.beats{list-style:none;margin:1.5rem 0 0;padding:0;display:grid;gap:1.5rem}
+.beat-icon{display:block;width:1.75rem;height:1.75rem;margin:0 0 .75rem;color:var(--beacon-amber)}
+.beat-icon svg{display:block;width:100%;height:100%}
+.section-cta{margin-top:1.5rem}
+.section-cta a,.instinct-cta a:not(.btn){text-decoration:underline;text-underline-offset:.15em}
+.instinct-cta{margin:1.5rem 0 0}
+.who-strip{margin-top:2.5rem}
+.hero-video-credit{margin:0;color:var(--paper);font-size:inherit;font-weight:400;line-height:1.6;opacity:1}
 .hero-note a,.pay-note a,.need-more a,.faq-item a,.privacy a{color:var(--signal-blue);text-decoration:underline;text-underline-offset:.15em}
 .fan{margin:0;min-width:0}
 .fan-stage{position:relative;height:300px;margin:.15rem 0 .75rem;overflow:hidden;border:1px solid var(--line);background-color:var(--steel);background-image:linear-gradient(to right,color-mix(in srgb,var(--mist) 14%,transparent) 1px,transparent 1px),linear-gradient(to bottom,color-mix(in srgb,var(--mist) 14%,transparent) 1px,transparent 1px);background-size:18px 18px}
@@ -215,6 +234,11 @@ figcaption{padding:.75rem;border-top:1px solid var(--line);color:var(--paper)}
   .plan-cards{grid-template-columns:repeat(12,minmax(0,1fr));align-items:stretch}
   .plan-card{grid-column:span 6}
   .site-footer{padding:2.5rem 1.5rem 3rem}
+  .story-band{padding:var(--section-space) 1.5rem 0}
+  .beats{grid-template-columns:repeat(12,minmax(0,1fr))}
+  .beats li{grid-column:span 4}
+  .who-list{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));column-gap:1.5rem}
+  .who-list li{grid-column:span 4}
 }
 @media(min-width:900px){
   .gallery{grid-template-columns:1fr 1fr 1fr}
@@ -226,6 +250,11 @@ figcaption{padding:.75rem;border-top:1px solid var(--line);color:var(--paper)}
   .nav a:not(.btn){display:none}
   .callouts{display:none}
   .fan-stage{margin-bottom:0}
+  .hero-cta{flex-direction:column;align-items:stretch}
+  .hero-cta .btn{width:100%}
+  .trust-strip{display:grid;gap:.4rem}
+  .trust-strip li:not(:first-child)::before{content:none}
+  .hero-film-video,.hero-film-toggle{display:none !important}
 }
 @media(max-width:639px){
   .gallery .page-extra{display:none}
@@ -233,7 +262,7 @@ figcaption{padding:.75rem;border-top:1px solid var(--line);color:var(--paper)}
 @media(prefers-reduced-motion:reduce){
   html{scroll-behavior:auto}
 }
-</style>>
+</style>
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
@@ -244,7 +273,7 @@ figcaption{padding:.75rem;border-top:1px solid var(--line);color:var(--paper)}
       "name": "ManualOS",
       "url": "https://manualos.com/",
       "email": "support@manualos.com",
-      "description": "Upload your PLC or CAD files. PLC program files (.L5X, .L5K, .scl, .st and more) and CAD files (STEP, IGES, DXF).",
+      "description": "ManualOS turns your PLC program and CAD files into a plain-English operating and maintenance manual: safety, theory of operation, alarms, troubleshooting and maintenance, in one PDF you can hand over. From $39.",
       "logo": {
         "@type": "ImageObject",
         "url": "https://manualos.com/assets/logo.png",
@@ -259,7 +288,7 @@ figcaption{padding:.75rem;border-top:1px solid var(--line);color:var(--paper)}
       "operatingSystem": "Web",
       "url": "https://manualos.com/",
       "image": "https://manualos.com/assets/og-image.jpg",
-      "description": "Upload your PLC or CAD files. PLC program files (.L5X, .L5K, .scl, .st and more) and CAD files (STEP, IGES, DXF).",
+      "description": "ManualOS turns your PLC program and CAD files into a plain-English operating and maintenance manual: safety, theory of operation, alarms, troubleshooting and maintenance, in one PDF you can hand over. From $39.",
       "publisher": { "@id": "https://manualos.com/#organization" },
       "offers": [
         {
@@ -315,7 +344,7 @@ figcaption{padding:.75rem;border-top:1px solid var(--line);color:var(--paper)}
           "name": "Who can see my PLC program?",
           "acceptedAnswer": {
             "@type": "Answer",
-            "text": "ManualOS processes your files to write the manual. Extracted program logic, comments, and part details are sent to a third-party AI model provider to write the manual. We don’t use your files to train models, and our AI provider doesn’t train on API data by default. Uploaded files are processed in memory and never stored. The finished PDF is available to download for 24 hours, then no longer available. Programs are not sold."
+            "text": "ManualOS processes your files to write the manual. Extracted program logic, comments, and part details are sent to a third-party service provider that helps write the manual. We don’t use your files to train models, and that provider doesn’t train on API data by default. Uploaded files are processed and deleted when the job finishes and are not kept. The generated PDF stays on the server for up to 24 hours for download, then is deleted. Programs are not sold."
           }
         },
         {
@@ -357,18 +386,21 @@ figcaption{padding:.75rem;border-top:1px solid var(--line);color:var(--paper)}
       <div class="hero-copy">
       <header class="section-sheet act-stop">
         <span class="status-rail" aria-hidden="true"></span>
-        <p class="kicker"><span class="idx">01</span> For small manufacturers</p>
-        <!-- Headline. This h1 is the wording to change. -->
+        <p class="kicker"><span class="idx">01</span> Built for those of mechanical intelligence</p>
+        <!-- H1 stays the current ranking line. The story headline is the section below the hero. -->
         <h1 id="hero-title">Upload your PLC or CAD files.</h1>
       </header>
-      <p class="lede">PLC program files (.L5X, .L5K, .scl, .st and more) and CAD files (STEP, IGES, DXF).</p>
-      <p class="lede-next">ManualOS writes a plain-English equipment manual from them. Built for maintenance techs and integrators, too.</p>
+      <p class="lede">ManualOS turns your PLC program and CAD files into a plain-English operating and maintenance manual: safety, theory of operation, alarms, troubleshooting and maintenance, in one PDF you can hand over. From $39.</p>
       <div class="hero-cta">
-        <a class="btn btn-primary" href="#pricing">See pricing</a>
-        <a class="btn btn-ghost" href="#sample">View a sample manual</a>
+        <a class="btn btn-primary" href="#pricing">Get 3 manuals for $39</a>
+        <a class="btn btn-ghost" href="#sample">See a sample manual</a>
       </div>
-      <p class="hero-price">Starter $39 once · 3 manuals. Pro $79 a month · unlimited.</p>
-      <p class="hero-note">A .zip of those files is fine. <a href="/upload.html">Already purchased? Upload a file</a>.</p>
+      <ul class="trust-strip">
+        <li>Files are deleted when your job finishes</li>
+        <li>A rejected file doesn’t use a credit</li>
+        <li>Your PDF stays available for 24 hours</li>
+      </ul>
+      <p class="hero-note"><a href="/upload.html">Already purchased? Upload a file</a>.</p>
       </div>
       <figure class="fan">
         <div class="fan-stage" aria-hidden="true">
@@ -399,6 +431,73 @@ figcaption{padding:.75rem;border-top:1px solid var(--line);color:var(--paper)}
         </figcaption>
       </figure>
     </div>
+    <!-- Hero media slot for PR #8 (cursor/home-hero-video-303d). That PR drops
+         .hero-film-poster, .hero-film-video, and .hero-film-toggle into this frame.
+         Below 768px the video and its control stay hidden: poster only,
+         and this page does not request a video. No third-party player. -->
+    <div class="hero-film" id="hero-film">
+      <div class="hero-film-frame"></div>
+    </div>
+  </section>
+  <div class="story-band">
+    <p class="story-headline">Every machine has a fixer. Give every technician the manual.</p>
+  </div>
+  <section class="section" id="problem" aria-labelledby="problem-title">
+    <header class="section-sheet act-stop">
+      <span class="status-rail" aria-hidden="true"></span>
+      <p class="kicker"><span class="idx">02</span></p>
+      <h2 id="problem-title">The line is down. The manual doesn’t exist.</h2>
+    </header>
+    <p class="section-intro">Too many machines ship with a program that works and a manual that doesn’t exist yet.</p>
+    <ul class="beats">
+      <li>
+        <span class="beat-icon" aria-hidden="true"><svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 5h12l4 4v18H8z"/><path d="M20 5v4h4M12 15h8M12 19h8M12 23h5"/></svg></span>
+        <h3>The knowledge is in the program.</h3>
+        <p>Every interlock, alarm and sequence is in there, in a language only the person who wrote it reads fluently.</p>
+      </li>
+      <li>
+        <span class="beat-icon" aria-hidden="true"><svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 9h14v16H6z"/><path d="M10 7h14v16"/><path d="M14 5h14v16"/></svg></span>
+        <h3>The documentation comes last.</h3>
+        <p>At the end of a project, the manual is the line item that slips.</p>
+      </li>
+      <li>
+        <span class="beat-icon" aria-hidden="true"><svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M18.5 6.5a8.5 8.5 0 1 0 7 13.5 7 7 0 1 1-7-13.5z"/></svg></span>
+        <h3>The cost lands on the night shift.</h3>
+        <p>The technician who inherits the machine starts from zero.</p>
+      </li>
+    </ul>
+    <p class="section-cta"><a href="#how">See how ManualOS closes the gap</a></p>
+  </section>
+  <section class="section" id="instinct" aria-labelledby="instinct-title">
+    <header class="section-sheet act-turn">
+      <span class="status-rail" aria-hidden="true"></span>
+      <p class="kicker"><span class="idx">03</span></p>
+      <h2 id="instinct-title">Some people can fix anything. Here’s what they know.</h2>
+    </header>
+    <p class="section-intro">Great technicians don’t guess. They read the machine: what it was told to do, what stopped it, and what has to be true before it runs again.</p>
+    <p class="section-intro">That instinct takes years to build and one shift change to lose, or a retirement, or a contractor who moved on. ManualOS doesn’t replace it. It writes down what the machine already knows, so every technician starts from the program’s logic instead of a blank page.</p>
+    <p class="instinct-cta"><a class="btn btn-primary" href="#how">Put your machine’s logic on paper</a></p>
+    <section class="who-strip" id="who" aria-labelledby="who-title">
+      <h2 id="who-title">Who it’s for</h2>
+      <ul class="who-list">
+        <li>
+          <h3>Small manufacturers</h3>
+          <p>You have the machine and the files, and no one whose job is writing manuals.</p>
+        </li>
+        <li>
+          <h3>Maintenance technicians</h3>
+          <p>You need the equipment explained in plain language, at the machine.</p>
+        </li>
+        <li>
+          <h3>Machine builders and integrators</h3>
+          <p>You’re handing over a cell and need a manual that matches the files you shipped.</p>
+        </li>
+      </ul>
+      <div class="privacy">
+        <h3>Privacy</h3>
+        <p>ManualOS processes your files to write the manual. Extracted program logic, comments, and part details are sent to a third-party service provider that helps write the manual. We don’t use your files to train models, and that provider doesn’t train on API data by default. Uploaded files are processed and deleted when the job finishes and are not kept. The generated PDF stays on the server for up to 24 hours for download, then is deleted. Programs are not sold. Card numbers are entered at secure checkout, not on this site.</p>
+      </div>
+    </section>
   </section>
   <section class="flow" aria-labelledby="flow-title">
     <header class="section-sheet act-method">
@@ -443,7 +542,7 @@ figcaption{padding:.75rem;border-top:1px solid var(--line);color:var(--paper)}
   <section class="section" id="formats" aria-labelledby="formats-title">
     <header class="section-sheet act-method">
       <span class="status-rail" aria-hidden="true"></span>
-      <p class="kicker"><span class="idx">02</span> Accepted today</p>
+      <p class="kicker"><span class="idx">04</span> Accepted today</p>
       <h2 id="formats-title">Supported formats</h2>
     </header>
     <p class="section-intro">PLC: .L5X, .L5K, .scl, .st, .exp, PLCopen .xml, and .TcPOU. Tag lists: .csv and .xlsx. A tag-table XML is tags only, not the program. CAD: .step and .stp, .iges and .igs, and ASCII .dxf. Archives: a .zip of those files.</p>
@@ -508,7 +607,7 @@ figcaption{padding:.75rem;border-top:1px solid var(--line);color:var(--paper)}
   <section class="section" id="how" aria-labelledby="how-title">
     <header class="section-sheet act-method">
       <span class="status-rail" aria-hidden="true"></span>
-      <p class="kicker"><span class="idx">03</span> How it works</p>
+      <p class="kicker"><span class="idx">05</span> How it works</p>
       <h2 id="how-title">From file to manual in three steps</h2>
     </header>
     <p class="section-intro">You upload the file. ManualOS writes the manual.</p>
@@ -542,7 +641,7 @@ figcaption{padding:.75rem;border-top:1px solid var(--line);color:var(--paper)}
   <section class="section" id="sample" aria-labelledby="sample-title">
     <header class="section-sheet act-method">
       <span class="status-rail" aria-hidden="true"></span>
-      <p class="kicker"><span class="idx">04</span> Sample manual</p>
+      <p class="kicker"><span class="idx">06</span> Sample manual</p>
       <h2 id="sample-title">Sample manual</h2>
     </header>
     <p class="section-intro">A 60-page operating and maintenance manual for the SAMPLE-A Case Packer, Example Machinery Co. (fictional), document OM-SAMPLE-A-EN. The machine and data are invented.</p>
@@ -600,7 +699,7 @@ figcaption{padding:.75rem;border-top:1px solid var(--line);color:var(--paper)}
   <section class="section" id="features" aria-labelledby="features-title">
     <header class="section-sheet act-method">
       <span class="status-rail" aria-hidden="true"></span>
-      <p class="kicker"><span class="idx">05</span> What you get</p>
+      <p class="kicker"><span class="idx">07</span> What you get</p>
       <h2 id="features-title">What you get</h2>
     </header>
     <div class="features">
@@ -618,35 +717,10 @@ figcaption{padding:.75rem;border-top:1px solid var(--line);color:var(--paper)}
       </article>
     </div>
   </section>
-  <section class="section" id="who" aria-labelledby="who-title">
-    <header class="section-sheet act-method">
-      <span class="status-rail" aria-hidden="true"></span>
-      <p class="kicker"><span class="idx">06</span> Who it is for</p>
-      <h2 id="who-title">Who it is for</h2>
-    </header>
-    <ul class="who-list">
-      <li>
-        <h3>Small manufacturers</h3>
-        <p>You have a machine and the files for it, and no one on staff whose job is writing manuals.</p>
-      </li>
-      <li>
-        <h3>Maintenance techs</h3>
-        <p>You need the equipment explained in plain language while you are at the machine.</p>
-      </li>
-      <li>
-        <h3>Integrators</h3>
-        <p>You are handing a cell to a customer and need a manual that matches the files you shipped.</p>
-      </li>
-    </ul>
-    <div class="privacy">
-      <h3>Privacy</h3>
-      <p>ManualOS processes your files to write the manual. Extracted program logic, comments, and part details are sent to a third-party AI model provider to write the manual. We don’t use your files to train models, and our AI provider doesn’t train on API data by default. Uploaded files are processed in memory and never stored. The finished PDF is available to download for 24 hours, then no longer available. Programs are not sold. Card numbers are entered at secure checkout, not on this site.</p>
-    </div>
-  </section>
   <section class="section" id="pricing" aria-labelledby="pricing-title">
     <header class="section-sheet act-commit">
       <span class="status-rail" aria-hidden="true"></span>
-      <p class="kicker"><span class="idx">07</span> Pricing</p>
+      <p class="kicker"><span class="idx">08</span> Pricing</p>
       <h2 id="pricing-title">Pricing</h2>
     </header>
     <p class="section-intro">Starter is a one-time purchase of 3 manuals. Pro is a monthly plan you can cancel anytime.</p>
@@ -702,7 +776,7 @@ figcaption{padding:.75rem;border-top:1px solid var(--line);color:var(--paper)}
   <section class="section" id="faq" aria-labelledby="faq-title">
     <header class="section-sheet act-run">
       <span class="status-rail" aria-hidden="true"></span>
-      <p class="kicker"><span class="idx">08</span> Questions</p>
+      <p class="kicker"><span class="idx">09</span> Questions</p>
       <h2 id="faq-title">Questions</h2>
     </header>
     <div class="faq-item">
@@ -719,7 +793,7 @@ figcaption{padding:.75rem;border-top:1px solid var(--line);color:var(--paper)}
     </div>
     <div class="faq-item">
       <h3>Who can see my PLC program?</h3>
-      <p>ManualOS processes your files to write the manual. Extracted program logic, comments, and part details are sent to a third-party AI model provider to write the manual. We don’t use your files to train models, and our AI provider doesn’t train on API data by default. Uploaded files are processed in memory and never stored. The finished PDF is available to download for 24 hours, then no longer available. Programs are not sold.</p>
+      <p>ManualOS processes your files to write the manual. Extracted program logic, comments, and part details are sent to a third-party service provider that helps write the manual. We don’t use your files to train models, and that provider doesn’t train on API data by default. Uploaded files are processed and deleted when the job finishes and are not kept. The generated PDF stays on the server for up to 24 hours for download, then is deleted. Programs are not sold.</p>
     </div>
     <div class="faq-item">
       <h3>Can I cancel Pro, and what about refunds?</h3>
@@ -731,6 +805,7 @@ figcaption{padding:.75rem;border-top:1px solid var(--line);color:var(--paper)}
   <div class="footer-inner">
     <p class="footer-brand">ManualOS</p>
     <p>Plain-English equipment manuals. Upload your PLC or CAD files.</p>
+    <p class="hero-video-credit">Hero video created with Grok.</p>
     <nav class="footer-nav" aria-label="Footer">
       <a href="#how">How it works</a>
       <a href="#sample">Sample</a>
@@ -741,6 +816,7 @@ figcaption{padding:.75rem;border-top:1px solid var(--line);color:var(--paper)}
       <a href="mailto:support@manualos.com">support@manualos.com</a>
     </nav>
     <p class="legal">© 2026 ManualOS. manualos.com</p>
+    <p class="legal">Operated by Op3x LLC</p>
   </div>
 </footer>
 <script>
