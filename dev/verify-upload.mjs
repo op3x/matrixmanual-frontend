@@ -227,7 +227,9 @@ async function assertPreviewApiBehavior(page, base) {
 
   const prodNav = [];
   const onRequest = (req) => {
-    if (req.url().includes('manualforge-backend-production')) prodNav.push(req.url());
+    try {
+      if (new URL(req.url()).hostname === 'manualforge-backend-production.up.railway.app') prodNav.push(req.url());
+    } catch (err) { /* ignore unparseable urls */ }
   };
   page.on('request', onRequest);
   try {
