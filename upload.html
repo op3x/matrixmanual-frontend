@@ -12,7 +12,6 @@
   <meta name="robots" content="noindex">
   <link rel="canonical" href="https://manualos.com/upload.html">
   <meta name="theme-color" content="#f3f0e6">
-  <link rel="preconnect" href="https://manualforge-backend-production.up.railway.app" crossorigin>
   <link rel="preload" href="/assets/fonts/ibm-plex-sans-400.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="/assets/fonts/ibm-plex-sans-600.woff2" as="font" type="font/woff2" crossorigin>
 <style>
@@ -279,15 +278,16 @@
     </ul>
   </section>
 </main>
+<script src="/config.js"></script>
+<script src="/api-base.js"></script>
 <script>
 (function () {
   // POST /jobs is the preferred upload (async progress, up to 25 files). It is not
   // deployed on production yet. When POST /jobs returns 404, this page falls back
   // to POST /generate-manual for the first PLC file so the current site keeps working.
   // ?jobs=0 always uses the current generator. ?jobs=1 never falls back.
-  // On localhost the API is the page origin (see dev/mock-api.mjs). On manualos.com
-  // it is the production API host. A localhost ?api= override must also be local.
-  var PRODUCTION_API = 'https://manualforge-backend-production.up.railway.app';
+  // The API origin comes from api-base.js. manualos.com uses config.js. Every other
+  // host uses ?api=, localStorage manualos_api_base, or http://localhost:8787.
   var SESSION_STORAGE_KEY = 'manualos_session_id';
   var MAX_FILES = 25;
   var MAX_BYTES = 50 * 1024 * 1024;
@@ -318,7 +318,8 @@
     both: 'PLC program files and CAD files together, or a zip of both.'
   };
 
-  var apiBase = resolveApiBase();
+  var apiBase = window.ManualOSApi.resolveApiBase();
+  var previewBlocked = window.ManualOSApi.isProductionBackend(apiBase) && !window.ManualOSApi.isProductionHost();
   var sessionId = '';
   var sessionFromQuery = false;
   var uploadEnabled = false;
@@ -352,21 +353,6 @@
   var warningBlock = document.getElementById('warning-block');
   var warningsEl = document.getElementById('warnings');
   var downloadLink = document.getElementById('download-link');
-
-  function resolveApiBase() {
-    var host = location.hostname;
-    var local = host === 'localhost' || host === '127.0.0.1' || host === '[::1]';
-    if (!local) return PRODUCTION_API;
-    var override = (new URLSearchParams(location.search).get('api') || '').trim();
-    if (override) {
-      try {
-        var url = new URL(override, location.origin);
-        var localHost = url.hostname === 'localhost' || url.hostname === '127.0.0.1' || url.hostname === '[::1]';
-        if ((url.protocol === 'http:' || url.protocol === 'https:') && localHost) return url.origin;
-      } catch (err) {}
-    }
-    return location.origin;
-  }
 
   function jobsMode() {
     var value = new URLSearchParams(location.search).get('jobs');
@@ -567,6 +553,10 @@
 
   async function verifySession(options) {
     var keepAccessOnError = !!(options && options.keepAccessOnError);
+    if (previewBlocked) {
+      lockUpload('This preview would use the production backend, so uploads are turned off. Point it at a test backend.');
+      return null;
+    }
     if (!sessionId) {
       lockUpload('No purchase found on this browser. Choose a plan to generate manuals.');
       return null;
@@ -1030,6 +1020,10 @@
 
   async function handleGenerate() {
     if (busy) return;
+    if (previewBlocked) {
+      lockUpload('This preview would use the production backend, so uploads are turned off. Point it at a test backend.');
+      return;
+    }
     if (!uploadEnabled || !sessionId) {
       lockUpload('No purchase found on this browser. Choose a plan to generate manuals.');
       return;

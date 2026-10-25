@@ -76,8 +76,14 @@ async function shoot(page, name, scrollSelector) {
   await page.setViewport({ width: 1280, height: 1000, deviceScaleFactor: 1 });
 }
 
+function withApi(base, pathAndQuery) {
+  const url = new URL(pathAndQuery, base);
+  if (!url.searchParams.has('api')) url.searchParams.set('api', base);
+  return url.href;
+}
+
 async function openUpload(page, base, query) {
-  await page.goto(`${base}/upload.html${query || '?session_id=cs_test_local'}`, { waitUntil: 'networkidle0' });
+  await page.goto(withApi(base, `/upload.html${query || '?session_id=cs_test_local'}`), { waitUntil: 'networkidle0' });
   await page.waitForFunction(() => document.body.dataset.phase === 'ready', { timeout: 8000 });
 }
 
@@ -152,6 +158,133 @@ async function assertButtonContrast(page, label) {
   note('button text colour differs from its background: ' + label, true);
 }
 
+async function assertPreviewApiDefault(rootDir) {
+  const prodHost = 'manualforge-backend-production.up.railway.app';
+  const [api, config, home, upload] = await Promise.all([
+    readFile(path.join(rootDir, 'api-base.js'), 'utf8'),
+    readFile(path.join(rootDir, 'config.js'), 'utf8'),
+    readFile(path.join(rootDir, 'index.html'), 'utf8'),
+    readFile(path.join(rootDir, 'upload.html'), 'utf8'),
+  ]);
+  const defaults = [...api.matchAll(/LOCAL_API_DEFAULT = '([^']*)'/g)].map((match) => match[1]);
+  if (defaults.length !== 1) throw new Error('expected one LOCAL_API_DEFAULT, got ' + defaults.join(','));
+  if (defaults[0] !== 'http://localhost:8787') throw new Error('localhost default is ' + defaults[0]);
+  if (defaults[0].includes(prodHost)) throw new Error('localhost default is the production backend');
+  if (!/return overrideFromQuery\(\) \|\| overrideFromStorage\(\) \|\| LOCAL_API_DEFAULT;/.test(api)) {
+    throw new Error('non-production fallback is not the local default');
+  }
+  const configured = config.match(/window\.MANUALOS_API_BASE\s*=\s*["']([^"']+)["']/);
+  if (!configured || !configured[1].includes(prodHost)) {
+    throw new Error('production config does not set the production backend explicitly');
+  }
+  for (const [name, text] of [['index.html', home], ['upload.html', upload]]) {
+    if (text.includes(prodHost)) throw new Error(name + ' hardcodes the production backend');
+    if (!text.includes('src="/config.js"') || !text.includes('src="/api-base.js"')) {
+      throw new Error(name + ' does not load the shared API config');
+    }
+  }
+  const checkout = home.slice(home.indexOf('function startCheckout'));
+  const blockAt = checkout.indexOf('checkoutBlockReason');
+  const fetchAt = checkout.indexOf('fetch(');
+  if (blockAt < 0 || fetchAt < 0 || blockAt > fetchAt) {
+    throw new Error('checkout can start before the production-backend guard');
+  }
+  const verify = upload.slice(upload.indexOf('async function verifySession'));
+  const uploadBlock = verify.indexOf('previewBlocked');
+  const uploadFetch = verify.indexOf('fetch(');
+  if (uploadBlock < 0 || uploadFetch < 0 || uploadBlock > uploadFetch) {
+    throw new Error('upload can call the API before the production-backend guard');
+  }
+}
+
+async function assertPreviewApiBehavior(page, base) {
+  const prod = 'https://manualforge-backend-production.up.railway.app';
+  await page.setViewport({ width: 1280, height: 1000, deviceScaleFactor: 1 });
+  await page.goto(base + '/', { waitUntil: 'domcontentloaded' });
+  await page.evaluate(() => localStorage.clear());
+  await page.goto(base + '/', { waitUntil: 'networkidle0' });
+  const home = await page.evaluate(() => ({
+    configured: window.MANUALOS_API_BASE || '',
+    resolved: window.ManualOSApi.resolveApiBase(),
+    banner: (document.getElementById('test-mode-banner') || {}).textContent || '',
+    blocked: window.ManualOSApi.checkoutBlockReason(window.ManualOSApi.resolveApiBase()),
+    previewHosts: ['localhost', '127.0.0.1', 'preview.pages.dev', 'manualos.com.evil.test'].some((host) => window.ManualOSApi.isProductionHost(host)),
+    prodHosts: window.ManualOSApi.isProductionHost('manualos.com') && window.ManualOSApi.isProductionHost('www.manualos.com'),
+    localIsProd: window.ManualOSApi.isProductionBackend('http://localhost:8787'),
+    prodIsProd: window.ManualOSApi.isProductionBackend(window.MANUALOS_API_BASE),
+  }));
+  if (!String(home.configured).includes('manualforge-backend-production.up.railway.app')) {
+    throw new Error('production config was not loaded: ' + home.configured);
+  }
+  if (home.resolved !== 'http://localhost:8787') throw new Error('resolved default ' + home.resolved);
+  if (home.banner !== 'TEST MODE: backend http://localhost:8787') throw new Error('banner ' + home.banner);
+  if (home.blocked) throw new Error('local default blocked checkout');
+  if (home.previewHosts || !home.prodHosts || home.localIsProd || !home.prodIsProd) {
+    throw new Error('host classification ' + JSON.stringify(home));
+  }
+  await shoot(page, 'test_mode_banner', '#test-mode-banner');
+  note('preview defaults to http://localhost:8787 even when production config is loaded', true, home.banner);
+
+  const prodNav = [];
+  const onRequest = (req) => {
+    try {
+      if (new URL(req.url()).hostname === 'manualforge-backend-production.up.railway.app') prodNav.push(req.url());
+    } catch (err) { /* ignore unparseable urls */ }
+  };
+  page.on('request', onRequest);
+  try {
+    await page.goto(base + '/?api=' + encodeURIComponent(prod), { waitUntil: 'networkidle0' });
+    await page.evaluate(() => {
+      window.__checkoutFetches = [];
+      const orig = window.fetch.bind(window);
+      window.fetch = function (url) {
+        window.__checkoutFetches.push(String(url));
+        return orig.apply(window, arguments);
+      };
+    });
+    await page.$eval('[data-checkout="starter"]', (el) => el.scrollIntoView({ block: 'center' }));
+    await page.click('[data-checkout="starter"]');
+    await page.waitForFunction(() => {
+      const el = document.getElementById('checkout-error');
+      return el && /production backend/.test(el.textContent);
+    }, { timeout: 4000 });
+    const blocked = await page.evaluate(() => ({
+      error: document.getElementById('checkout-error').textContent,
+      label: document.querySelector('[data-checkout="starter"]').textContent,
+      fetches: window.__checkoutFetches,
+      apiBlocked: document.documentElement.dataset.apiBlocked,
+    }));
+    if (!/Checkout is blocked/.test(blocked.error)) throw new Error('checkout error ' + blocked.error);
+    if (blocked.label !== 'Buy Starter') throw new Error('button label ' + blocked.label);
+    if (blocked.fetches.length) throw new Error('checkout fetched ' + blocked.fetches.join(','));
+    if (blocked.apiBlocked !== 'production') throw new Error('apiBlocked ' + blocked.apiBlocked);
+    if (prodNav.length) throw new Error('preview requested production ' + prodNav.join(','));
+    await shoot(page, 'checkout_blocked', '#checkout-error');
+    note('checkout refuses the production backend on a preview', true);
+  } finally {
+    page.off('request', onRequest);
+  }
+
+  await page.evaluate((key) => localStorage.setItem(key, 'http://localhost:9999'), 'manualos_api_base');
+  await page.goto(base + '/?api=' + encodeURIComponent('http://127.0.0.1:8787'), { waitUntil: 'domcontentloaded' });
+  const queryWins = await page.evaluate(() => window.ManualOSApi.resolveApiBase());
+  if (queryWins !== 'http://127.0.0.1:8787') throw new Error('query override ' + queryWins);
+  await page.goto(base + '/', { waitUntil: 'domcontentloaded' });
+  const stored = await page.evaluate(() => window.ManualOSApi.resolveApiBase());
+  if (stored !== 'http://localhost:9999') throw new Error('storage override ' + stored);
+  await page.evaluate((key) => localStorage.setItem(key, 'javascript:alert(1)'), 'manualos_api_base');
+  await page.goto(base + '/?api=' + encodeURIComponent('javascript:alert(1)'), { waitUntil: 'domcontentloaded' });
+  const ignored = await page.evaluate(() => window.ManualOSApi.resolveApiBase());
+  if (ignored !== 'http://localhost:8787') throw new Error('non-http override resolved to ' + ignored);
+  await page.evaluate(() => localStorage.clear());
+  note('api overrides accept only http(s), and the query wins over storage', true);
+
+  await page.goto(base + '/upload.html', { waitUntil: 'domcontentloaded' });
+  const uploadBanner = await page.evaluate(() => (document.getElementById('test-mode-banner') || {}).textContent || '');
+  if (uploadBanner !== 'TEST MODE: backend http://localhost:8787') throw new Error('upload banner ' + uploadBanner);
+  note('upload page defaults to the local test backend', true);
+}
+
 async function main() {
   await mkdir(shotDir, { recursive: true });
   const fixtureDir = await mkdtemp(path.join(tmpdir(), 'manualos-files-'));
@@ -223,6 +356,8 @@ async function main() {
   note('headline surfaces do not say export, and each plan has one checkout button', true);
   await assertNoBrandNames(root);
   note('shipped HTML and JS do not name vendors', true);
+  await assertPreviewApiDefault(root);
+  note('localhost default is not the production backend', true, 'http://localhost:8787');
 
   const { child, base } = await startMock();
   const browser = await puppeteer.launch({
@@ -259,10 +394,11 @@ async function main() {
     });
 
     await page.setCacheEnabled(false);
+    await assertPreviewApiBehavior(page, base);
     await page.setViewport({ width: 412, height: 823, deviceScaleFactor: 1.75, isMobile: true });
     async function measureCls(query, label) {
       if (!query) {
-        await page.goto(base + '/upload.html', { waitUntil: 'domcontentloaded' });
+        await page.goto(withApi(base, '/upload.html'), { waitUntil: 'domcontentloaded' });
         await page.evaluate(() => localStorage.clear());
       }
       const client = await page.createCDPSession();
@@ -274,7 +410,7 @@ async function main() {
         uploadThroughput: 40 * 1024,
       });
       try {
-        await page.goto(base + '/upload.html' + query, { waitUntil: 'domcontentloaded', timeout: 20000 });
+        await page.goto(withApi(base, '/upload.html' + query), { waitUntil: 'domcontentloaded', timeout: 20000 });
         await page.waitForFunction(() => {
           const phase = document.body.dataset.phase;
           return phase === 'ready' || phase === 'locked';
@@ -472,7 +608,7 @@ async function main() {
     if (afterForced !== beforeForced) throw new Error('jobs=1 fell back');
     note('jobs=1 does not fall back when /jobs is 404', true);
 
-    await page.goto(base + '/upload.html?session_id=cs_test_empty', { waitUntil: 'networkidle0' });
+    await page.goto(withApi(base, '/upload.html?session_id=cs_test_empty'), { waitUntil: 'networkidle0' });
     await page.waitForFunction(() => {
       const el = document.getElementById('payment-welcome-text');
       return el && el.textContent === 'Starter credits are used up' && document.body.dataset.phase === 'locked';
@@ -569,7 +705,7 @@ async function main() {
     if (unlabeled.length) throw new Error('unlabeled controls: ' + unlabeled.join(', '));
     note('visible controls have labels', true);
 
-    await page.goto(base + '/upload.html?session_id=cs_test_local', { waitUntil: 'networkidle0' });
+    await page.goto(withApi(base, '/upload.html?session_id=cs_test_local'), { waitUntil: 'networkidle0' });
     await page.keyboard.press('Tab');
     const skip = await page.evaluate(() => document.activeElement && document.activeElement.className);
     if (!/skip-link/.test(skip)) throw new Error('first tab was ' + skip);
@@ -691,10 +827,10 @@ async function main() {
 
     async function expectLocked(query, pattern, label) {
       if (!query) {
-        await page.goto(base + '/upload.html', { waitUntil: 'domcontentloaded' });
+        await page.goto(withApi(base, '/upload.html'), { waitUntil: 'domcontentloaded' });
         await page.evaluate(() => localStorage.clear());
       }
-      await page.goto(base + '/upload.html' + query, { waitUntil: 'domcontentloaded', timeout: 20000 });
+      await page.goto(withApi(base, '/upload.html' + query), { waitUntil: 'domcontentloaded', timeout: 20000 });
       await page.waitForFunction(() => document.body.dataset.phase === 'locked', { timeout: 8000 });
       const state = await page.evaluate(() => {
         const link = document.getElementById('access-pricing-link');
