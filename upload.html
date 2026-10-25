@@ -101,6 +101,7 @@
     .export-help{margin-top:2rem}
     .export-help h2{font-size:1.25rem;margin-bottom:.4rem}
     .export-intro{color:var(--ink);margin-bottom:.75rem}
+    .export-intro a{color:var(--ink);font-weight:600;text-decoration:underline;text-underline-offset:.15em}
     details.export{background:var(--sheet);border:1px solid var(--ink);border-radius:0;margin-top:-1px}
     details.export summary{cursor:pointer;font-weight:600;min-height:2.75rem;display:flex;align-items:center;padding:.55rem .8rem}
     details.export p{padding:0 .8rem .85rem;color:var(--ink)}
@@ -151,7 +152,7 @@
     @media (prefers-reduced-motion:reduce){
       *{scroll-behavior:auto !important;transition:none !important}
     }
-    #source-picker,#file-list,#progress-wrap,#upload-error,#success-section,#export-help,#mode-note,#access-banner,#generate-btn{scroll-margin-top:5rem}
+    #source-picker,#file-list,#progress-wrap,#upload-error,#success-section,#export-help,#mode-note,#access-banner,#generate-btn,#accepted-files{scroll-margin-top:5rem}
   </style>
   <script>
     document.documentElement.classList.add('has-session');
@@ -239,7 +240,7 @@
   </section>
   <section class="export-help" id="export-help" aria-labelledby="export-title">
     <h2 id="export-title">How to export your file</h2>
-    <p class="export-intro">PLC: .L5X, .L5K, .scl, .st, .exp, PLCopen .xml, and .TcPOU. Tag lists: .csv and .xlsx. A tag-table XML is tags only, not the program. CAD: .step and .stp, .iges and .igs, and ASCII .dxf. Archives: a .zip of those files.</p>
+    <p class="export-intro">Open a format for the export steps. The formats themselves are in the <a href="#accepted-files">accepted files table</a>.</p>
     <details class="export">
       <summary>.L5X and .L5K</summary>
       <p>Export the controller program as .L5X. That file is an XML export of the program, including ladder. The older .L5K text export is the same kind of save, with the .L5K type. Upload the .L5X or .L5K file.</p>
@@ -265,7 +266,7 @@
       <p>From the CAD tool, use Save As or Export. Choose STEP (.step or .stp), IGES (.iges or .igs), or ASCII DXF (.dxf). STEP AP214 and AP242 are both fine. STEP and IGES are the 3D model. DXF is a 2D drawing. You can zip several of them.</p>
     </details>
   </section>
-  <section class="platforms" aria-labelledby="platforms-label">
+  <section class="platforms" id="accepted-files" aria-labelledby="platforms-label">
     <h2 class="platforms-label" id="platforms-label">Accepted files</h2>
     <ul class="platform-tags">
       <li>.L5X and .L5K</li>
@@ -289,6 +290,8 @@
   // it is the production API host. A localhost ?api= override must also be local.
   var PRODUCTION_API = 'https://manualforge-backend-production.up.railway.app';
   var SESSION_STORAGE_KEY = 'manualos_session_id';
+  var NO_PURCHASE_MESSAGE = 'No purchase found on this browser. Choose a plan to generate manuals.';
+  var INACTIVE_PURCHASE_MESSAGE = 'This purchase isn\u2019t active. Choose a plan to generate manuals.';
   var MAX_FILES = 25;
   var MAX_BYTES = 50 * 1024 * 1024;
   var PLC_EXT = ['l5x', 'l5k', 'xml', 'tcpou', 'st', 'scl', 'exp', 'csv', 'xlsx', 'acd', 'zip'];
@@ -565,10 +568,18 @@
     }
   }
 
+  function purchaseLockMessage(data, res) {
+    var plan = data && typeof data.plan === 'string' ? data.plan.trim() : '';
+    // /verify-session answers 200 for both. plan is null when the id is unknown;
+    // a real starter or pro purchase that is not active still names its plan.
+    if (res.status === 404 || (res.ok && !plan)) return NO_PURCHASE_MESSAGE;
+    return INACTIVE_PURCHASE_MESSAGE;
+  }
+
   async function verifySession(options) {
     var keepAccessOnError = !!(options && options.keepAccessOnError);
     if (!sessionId) {
-      lockUpload('No purchase found on this browser. Choose a plan to generate manuals.');
+      lockUpload(NO_PURCHASE_MESSAGE);
       return null;
     }
     var res;
@@ -581,9 +592,7 @@
     var data = {};
     try { data = await res.json(); } catch (err) { data = {}; }
     if (!res.ok || !data.valid) {
-      if (!(keepAccessOnError && !res.ok)) {
-        lockUpload('This purchase isn\u2019t active. Choose a plan to generate manuals.');
-      }
+      if (!(keepAccessOnError && !res.ok)) lockUpload(purchaseLockMessage(data, res));
       return null;
     }
     applySession(data);
@@ -1031,7 +1040,7 @@
   async function handleGenerate() {
     if (busy) return;
     if (!uploadEnabled || !sessionId) {
-      lockUpload('No purchase found on this browser. Choose a plan to generate manuals.');
+      lockUpload(NO_PURCHASE_MESSAGE);
       return;
     }
     if (!selectedFiles.length) {

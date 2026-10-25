@@ -317,6 +317,8 @@ const server = http.createServer(async (req, res) => {
       if (sessionId === 'cs_test_local') return sendJson(res, 200, { valid: true, plan: 'starter', remaining: 3 });
       if (sessionId === 'cs_test_pro') return sendJson(res, 200, { valid: true, plan: 'pro', remaining: null });
       if (sessionId === 'cs_test_empty') return sendJson(res, 200, { valid: true, plan: 'starter', remaining: 0 });
+      if (sessionId === 'cs_test_canceled') return sendJson(res, 200, { valid: false, plan: 'pro', remaining: null });
+      if (sessionId === 'cs_test_unpaid') return sendJson(res, 200, { valid: false, plan: 'starter', remaining: null });
       return sendJson(res, 200, { valid: false, plan: null, remaining: null });
     }
     if (req.method === 'POST' && url.pathname === '/jobs') return await handleJobsPost(req, res);
