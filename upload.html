@@ -1,20 +1,22 @@
 <!DOCTYPE html>
+<!-- ManualOS upload. Prefers POST /jobs. If that route returns 404, falls back to POST /generate-manual. -->
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Upload a PLC file — ManualOS</title>
-  <meta name="description" content="Upload a PLC export after checkout. ManualOS checks your plan and remaining manuals, then generates a plain-English PDF.">
+  <title>Upload a program or CAD model — ManualOS</title>
+  <link rel="icon" href="/favicon.ico" sizes="32x32">
+  <meta name="description" content="Upload a PLC program, a CAD model, or both after checkout. ManualOS checks your plan, then generates a plain-English PDF.">
   <meta name="robots" content="noindex">
   <link rel="canonical" href="https://manualos.com/upload.html">
-  <link rel="icon" href="/favicon.ico" sizes="32x32">
   <meta name="theme-color" content="#fdf6ed">
   <link rel="preconnect" href="https://manualforge-backend-production.up.railway.app" crossorigin>
   <style>
-    :root { --cream:#fdf6ed;--cream-deep:#f5e9d6;--amber:#9a3412;--amber-light:#c2410c;--amber-pale:#fef3c7;--terra:#7c2d12;--charcoal:#1c1917;--warm-gray:#57534e;--radius-lg:16px }
+    :root { --cream:#fdf6ed;--cream-deep:#f5e9d6;--amber:#9a3412;--amber-light:#c2410c;--amber-pale:#fef3c7;--terra:#7c2d12;--charcoal:#1c1917;--warm-gray:#57534e;--line:#e7d7c3;--radius-lg:16px }
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-    body{font-family:"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;background:var(--cream);color:var(--charcoal);line-height:1.65;-webkit-font-smoothing:antialiased;min-height:100vh;display:flex;flex-direction:column}
+    body{font-family:"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;background:var(--cream);color:var(--charcoal);line-height:1.65;-webkit-font-smoothing:antialiased;min-height:100vh;display:flex;flex-direction:column;overflow-wrap:anywhere}
     :focus-visible{outline:3px solid #1c1917;outline-offset:3px}
+    [hidden]{display:none !important}
     .skip-link{position:absolute;left:.75rem;top:-3rem;background:#1c1917;color:#fff;padding:.7rem 1rem;z-index:20;border-radius:.4rem;text-decoration:none}
     .skip-link:focus{top:.5rem}
     header{position:sticky;top:0;z-index:100;background:rgba(253,246,237,.94);border-bottom:1px solid rgba(154,52,18,.18)}
@@ -23,59 +25,115 @@
     .nav-logo-icon{width:36px;height:36px;background:var(--amber);border-radius:10px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:1.1rem}
     .nav-back{font-size:.95rem;font-weight:700;color:var(--amber);text-decoration:none;display:inline-flex;align-items:center;min-height:3rem;padding:.4rem .2rem}
     .nav-back:hover{color:var(--terra)}
-    main{flex:1;max-width:700px;margin:2rem auto 4rem;padding:0 1rem;width:100%}
+    main{flex:1;max-width:42rem;margin:2rem auto 4rem;padding:0 1rem;width:100%}
     .page-eyebrow{font-size:.875rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--amber);margin-bottom:10px}
-    .page-title{font-family:Georgia,"Iowan Old Style",serif;font-size:clamp(1.8rem,5vw,2.4rem);font-weight:700;color:var(--charcoal);line-height:1.15;margin-bottom:10px}
-    .page-sub{color:var(--warm-gray);margin-bottom:1.5rem;font-size:1.05rem}
+    h1,h2,legend{font-family:Georgia,"Iowan Old Style",serif;color:var(--charcoal);line-height:1.2}
+    .page-title{font-size:clamp(1.8rem,5vw,2.4rem);font-weight:700;margin-bottom:10px}
+    .page-sub{color:var(--warm-gray);margin-bottom:1.25rem;font-size:1.05rem}
+    fieldset{border:0;padding:0;margin:0 0 1.25rem;min-width:0}
+    legend{font-weight:700;font-size:1.2rem;margin-bottom:.7rem;padding:0}
+    .source-options{display:grid;gap:.6rem}
+    .choice{display:flex;align-items:flex-start;gap:.65rem;background:#fff;border:2px solid var(--line);border-radius:12px;padding:.85rem .9rem;min-height:3rem;cursor:pointer;font-weight:700}
+    .choice input{width:1.2rem;height:1.2rem;margin-top:.15rem;accent-color:var(--amber);flex:0 0 auto}
+    .choice.is-selected{border-color:var(--amber);background:var(--amber-pale)}
+    .hint{color:var(--warm-gray);margin-top:.75rem}
+    .fields{display:grid;gap:.75rem}
+    .field{display:block;font-weight:700}
+    .field span{display:block;margin-bottom:.35rem}
+    .field input{width:100%;min-height:3rem;padding:.6rem .75rem;border:2px solid var(--line);border-radius:10px;background:#fff;color:var(--charcoal);font:inherit;font-weight:400}
     .upload-box{border:2px dashed rgba(154,52,18,.45);border-radius:var(--radius-lg);padding:2rem 1.25rem;text-align:center;background:#fff;transition:border-color .2s,box-shadow .2s}
-    .upload-box:hover,.upload-box.drag-over{border-color:var(--amber);background:#fffbf5;box-shadow:0 4px 24px rgba(154,52,18,.12)}
+    .upload-box.drag-over{border-color:var(--amber);background:#fffbf5;box-shadow:0 4px 24px rgba(154,52,18,.12)}
     .upload-icon{font-size:2.4rem;margin-bottom:14px}
     .upload-box h2{font-size:1.2rem;font-weight:700;margin-bottom:8px}
     .upload-box p{color:var(--warm-gray);font-size:.95rem;margin-bottom:1.2rem}
-    .upload-box input[type="file"]{display:none}
-    .btn-primary{background:var(--amber);color:#fff;border:none;padding:.75rem 1.4rem;border-radius:12px;font-size:1rem;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;min-height:3rem;font-family:inherit}
-    .btn-primary:hover{background:var(--terra)}
-    .btn-primary:disabled{background:#57534e;color:#fff;cursor:not-allowed}
-    .file-info{margin-top:20px;padding:14px 16px;background:var(--amber-pale);border-radius:12px;display:none;align-items:center;gap:12px;font-size:.95rem}
-    .file-info.visible{display:flex}
-    .file-info-name{font-weight:600;flex:1;min-width:0;overflow-wrap:anywhere}
-    .file-info-remove{background:none;border:none;cursor:pointer;color:var(--charcoal);font-size:1.1rem;min-width:3rem;min-height:3rem}
-    .progress-wrap{margin-top:16px;display:none}
-    .progress-wrap.visible{display:block}
-    progress#progress-fill{width:100%;height:8px;border:0;border-radius:3px;color:var(--amber);accent-color:var(--amber)}
-    .progress-label{font-size:.95rem;color:var(--warm-gray);margin-top:8px}
-    .generate-btn-wrap{margin-top:24px;display:none}
-    .generate-btn-wrap.visible{display:block}
-    .success-section{display:none;text-align:center;padding:2.5rem 1rem}
-    .success-section.visible{display:block}
-    .success-icon{font-size:2.5rem;margin-bottom:16px}
-    .success-title{font-family:Georgia,"Iowan Old Style",serif;font-size:clamp(1.6rem,4vw,2rem);font-weight:700;margin-bottom:14px}
-    .success-sub{color:var(--warm-gray);font-size:1.05rem;margin-bottom:1.4rem}
-    .btn-outline{background:transparent;color:var(--amber);border:2px solid var(--amber);padding:.7rem 1.2rem;border-radius:12px;font-size:.95rem;font-weight:700;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;min-height:3rem}
+    .choose-wrap{position:relative;display:inline-block}
+    .choose-wrap:focus-within .btn-primary{outline:3px solid #1c1917;outline-offset:3px}
+    .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+    .btn-primary,.btn-outline{font:inherit;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;min-height:3rem;border-radius:12px;font-weight:700;text-decoration:none;padding:.75rem 1.2rem}
+    .btn-primary{background:var(--amber);color:#fff;border:2px solid var(--amber)}
+    .btn-primary:hover{background:var(--terra);border-color:var(--terra);color:#fff}
+    .btn-primary:disabled{background:#57534e;border-color:#57534e;color:#fff;cursor:not-allowed}
+    .btn-outline{background:#fff;color:var(--amber);border:2px solid var(--amber)}
     .btn-outline:hover{background:var(--amber);color:#fff}
-    .platforms{margin-top:40px;padding:24px 16px;background:var(--cream-deep);border-radius:var(--radius-lg)}
-    .platforms-label{font-size:.875rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--warm-gray);margin-bottom:14px}
-    .platform-tags{display:flex;flex-wrap:wrap;gap:8px}
-    .platform-tag{font-size:.875rem;padding:.45rem .8rem;border-radius:20px;border:1px solid rgba(154,52,18,.35);color:var(--charcoal);background:#fff}
+    .file-list{list-style:none;display:flex;flex-direction:column;gap:.5rem;margin:1rem 0 0}
+    .file-list li{display:flex;flex-wrap:wrap;align-items:center;gap:.5rem .75rem;background:var(--amber-pale);border-radius:12px;padding:.45rem .5rem .45rem .9rem}
+    .file-list li.is-invalid{background:#fff;border:2px solid var(--amber)}
+    .file-name{font-weight:700;flex:1 1 10rem;min-width:0}
+    .file-size{color:var(--warm-gray);white-space:nowrap}
+    .file-hint{flex:1 1 100%;color:var(--terra);font-size:.92rem;font-weight:600}
+    .file-remove{background:#fff;border:2px solid var(--line);border-radius:10px;min-height:3rem;min-width:5.5rem;padding:.4rem .8rem;font:inherit;font-weight:700;cursor:pointer;color:var(--charcoal)}
+    .file-remove:hover{border-color:var(--amber);color:var(--amber)}
+    .credit-note{margin:1rem 0 0;color:var(--warm-gray);font-size:.95rem}
+    .generate-btn-wrap{margin-top:1rem}
+    .progress-wrap{margin-top:1rem}
+    .progress-row{display:flex;justify-content:space-between;gap:1rem;align-items:baseline}
+    .progress-label{font-size:.95rem;color:var(--charcoal);font-weight:700}
+    .progress-percent{color:var(--warm-gray);font-weight:700}
+    progress{width:100%;height:.7rem;margin-top:.45rem;border:0;border-radius:999px;color:var(--amber);accent-color:var(--amber);background:var(--cream-deep)}
+    progress::-webkit-progress-bar{background:var(--cream-deep);border-radius:999px}
+    progress::-webkit-progress-value{background:var(--amber);border-radius:999px}
+    progress::-moz-progress-bar{background:var(--amber);border-radius:999px}
+    .upload-error{margin-top:1rem;padding:14px 16px;border-radius:12px;background:#fff;border:2px solid var(--amber);color:var(--terra);font-size:.95rem;font-weight:600}
+    .upload-error ul{margin:0;padding-left:1.15rem}
+    .upload-error li+li{margin-top:.35rem}
+    .upload-error a{color:var(--amber);font-weight:700}
+    .mode-note{margin:1rem 0;padding:14px 16px;border-radius:12px;background:var(--amber-pale);border:1px solid rgba(154,52,18,.35);font-weight:600}
+    .success-section{text-align:center;padding:1.5rem 0 0}
+    .success-icon{font-size:2.5rem;margin-bottom:12px}
+    .success-title{font-size:clamp(1.6rem,4vw,2rem);font-weight:700;margin-bottom:12px}
+    .success-sub{color:var(--warm-gray);font-size:1.05rem;margin-bottom:1rem}
+    .coverage{font-weight:700;margin:0 0 .8rem}
+    .warning-title{font-size:1.05rem;text-align:left;margin:0 0 .4rem}
+    .warnings{text-align:left;margin:0 0 1rem;padding-left:1.2rem}
+    .success-actions{display:flex;flex-wrap:wrap;gap:.75rem;justify-content:center;margin-top:1rem}
+    .export-help{margin-top:2rem}
+    .export-help h2{font-size:1.35rem;margin-bottom:.5rem}
+    .export-intro{color:var(--warm-gray);margin-bottom:.75rem}
+    details.export{background:#fff;border:1px solid var(--line);border-radius:12px;margin-top:.5rem}
+    details.export summary{cursor:pointer;font-weight:700;min-height:3rem;display:flex;align-items:center;padding:.6rem 1rem}
+    details.export p{padding:0 1rem 1rem;color:var(--warm-gray)}
+    .platforms{margin-top:1.5rem;padding:1.25rem 1rem;background:var(--cream-deep);border-radius:var(--radius-lg)}
+    .platforms-label{font-size:.875rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--warm-gray);margin-bottom:.8rem}
+    .platform-tags{display:flex;flex-wrap:wrap;gap:8px;list-style:none}
+    .platform-tags li{font-size:.875rem;padding:.45rem .8rem;border-radius:20px;border:1px solid rgba(154,52,18,.35);color:var(--charcoal);background:#fff}
     .access-banner{margin-bottom:1.2rem;padding:14px 16px;border-radius:12px;background:#fff;border:1px solid rgba(154,52,18,.35);font-size:.95rem;color:var(--charcoal);display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center}
     .access-banner.ok{background:var(--amber-pale)}
     .access-banner a{color:var(--amber);font-weight:700;text-decoration:underline;text-underline-offset:.15rem;min-height:3rem;display:inline-flex;align-items:center}
     .access-banner a[hidden]{display:none}
     .access-banner a:hover{color:var(--terra)}
-    .upload-box.is-disabled{cursor:not-allowed;background:#faf7f2;pointer-events:none}
-    .upload-box.is-disabled .btn-primary{background:#57534e}
-    .upload-error{margin-top:16px;padding:14px 16px;border-radius:12px;background:#fff;border:2px solid rgba(154,52,18,.45);color:#7c2d12;font-size:.95rem;font-weight:600;display:none}
-    .upload-error.visible{display:block}
-    .upload-error a{color:var(--amber);font-weight:700}
-    .payment-welcome{margin:0 0 16px;padding:14px 16px;border-radius:12px;background:#ecfdf3;border:2px solid #166534;color:#14532d;font-weight:700}
-    .payment-welcome[hidden]{display:none}
-    @media (max-width:768px){
-      main{margin:1.5rem auto 3rem}
-      .upload-box{padding:1.5rem 1rem}
+    html.has-session #access-message{flex:1 1 auto;min-width:0;max-width:calc(100% - 7.5rem);min-height:3.5rem;display:flex;align-items:center}
+    html.has-session #access-pricing-link{flex:0 0 auto}
+    html.has-session #payment-welcome{display:grid !important}
+    #payment-welcome.is-locked{background:transparent;border-color:transparent;color:inherit}
+    .access-banner .payment-welcome{flex:1 0 100%;margin:.75rem 0 0}
+    .welcome-sizer,.welcome-text{grid-area:1/1}
+    .welcome-sizer{visibility:hidden}
+    .welcome-text{align-self:start}
+    .upload-box.is-disabled{background:#faf7f2}
+    .upload-box.is-disabled .btn-primary{background:#57534e;border-color:#57534e}
+    .payment-welcome{display:none;margin:0 0 16px;padding:14px 16px;border-radius:12px;background:#ecfdf3;border:2px solid #166534;color:#14532d;font-weight:700}
+    .noscript{margin-bottom:1rem}
+    @media (min-width:720px){
+      .source-options{grid-template-columns:repeat(3,1fr)}
+      .fields{grid-template-columns:1fr 1fr}
     }
+    @media (max-width:480px){
+      main{margin:1.25rem auto 3rem}
+      .upload-box{padding:1.5rem 1rem}
+      .success-actions{flex-direction:column}
+      .success-actions .btn-primary,.success-actions .btn-outline{width:100%}
+      .generate-btn-wrap .btn-primary{width:100%}
+    }
+    @media (prefers-reduced-motion:reduce){
+      *{scroll-behavior:auto !important;transition:none !important}
+    }
+    #source-picker,#file-list,#progress-wrap,#upload-error,#success-section,#export-help,#mode-note,#access-banner,#generate-btn{scroll-margin-top:5rem}
   </style>
+  <script>
+    document.documentElement.classList.add('has-session');
+  </script>
 </head>
-<body>
+<body data-phase="checking">
 <a class="skip-link" href="#main">Skip to content</a>
 <header>
 <nav>
@@ -84,80 +142,225 @@
 </nav>
 </header>
 <main id="main" tabindex="-1">
-  <p id="payment-welcome" class="payment-welcome" role="status" aria-live="polite" hidden></p>
-  <div id="access-banner" class="access-banner" role="status" aria-live="polite">
+  <noscript><p class="upload-error noscript">ManualOS needs JavaScript to check your purchase and upload files.</p></noscript>
+  <div id="access-banner" class="access-banner" role="status">
     <span id="access-message">Checking your access…</span>
     <a id="access-pricing-link" href="/#pricing" hidden>View pricing</a>
+    <p id="payment-welcome" class="payment-welcome" role="status" hidden><span class="welcome-sizer" aria-hidden="true">Payment confirmed. You are on the Starter plan, with 12 manuals remaining. Upload a PLC program, a CAD model, or both when you are ready.</span><span id="payment-welcome-text" class="welcome-text"></span></p>
   </div>
   <div id="upload-section">
-    <p class="page-eyebrow">Step 1 of 1</p>
-    <h1 class="page-title">Upload your PLC file</h1>
-    <p class="page-sub">Drop your ladder logic file below. ManualOS explains the program&#8217;s logic in plain English.</p>
-    <div class="upload-box is-disabled" id="drop-zone" aria-disabled="true">
-      <div class="upload-icon" aria-hidden="true">&#128193;</div>
-      <h2>Drag &amp; drop your file here</h2>
-      <p>Supports .L5X, .ACD, .zap15, .gx3, .cxp, .xml and all major PLC export formats</p>
-      <label class="btn-primary" for="file-input">Choose file</label>
-      <input type="file" id="file-input" accept=".l5x,.acd,.zap15,.gx3,.cxp,.xml,.zip" disabled>
-    </div>
-    <div class="file-info" id="file-info">
-      <span aria-hidden="true">&#128196;</span>
-      <span class="file-info-name" id="file-name"></span>
-      <button class="file-info-remove" id="remove-file" type="button" aria-label="Remove file">&#10005;</button>
-    </div>
-    <div class="progress-wrap" id="progress-wrap">
-      <progress id="progress-fill" max="100" value="0" aria-labelledby="progress-label"></progress>
-      <p class="progress-label" id="progress-label">Uploading...</p>
-    </div>
-    <div class="generate-btn-wrap" id="generate-btn-wrap">
-      <button class="btn-primary" id="generate-btn" type="button" disabled>Generate my manual &#8594;</button>
-    </div>
-    <div class="upload-error" id="upload-error" role="alert" aria-live="assertive"></div>
-    <div class="platforms">
-      <p class="platforms-label">Supported Platforms</p>
-      <div class="platform-tags">
-        <span class="platform-tag">Allen-Bradley L5X / ACD</span>
-        <span class="platform-tag">Siemens TIA Portal</span>
-        <span class="platform-tag">Mitsubishi GX Works</span>
-        <span class="platform-tag">Omron CX-Programmer</span>
-        <span class="platform-tag">Schneider EcoStruxure</span>
+    <p class="page-eyebrow">Generate a manual</p>
+    <h1 class="page-title">Upload your files</h1>
+    <p class="page-sub">Choose a PLC program, a CAD model, or both. ManualOS writes a plain-English operator and maintenance manual from the equipment in the files.</p>
+    <form id="upload-form" novalidate>
+      <fieldset id="source-picker">
+        <legend>What are you uploading?</legend>
+        <div class="source-options">
+          <label class="choice"><input type="radio" name="source" value="plc" checked> <span>PLC program</span></label>
+          <label class="choice"><input type="radio" name="source" value="cad"> <span>CAD model</span></label>
+          <label class="choice"><input type="radio" name="source" value="both"> <span>Both</span></label>
+        </div>
+        <p class="hint" id="source-guidance" aria-live="polite">Add a PLC program: Rockwell L5X or L5K, PLCopen XML, TwinCAT TcPOU, IEC structured text (ST, SCL, or EXP), a CSV or Excel tag list, or a zip of those. An ACD file is accepted, but the manual will be limited. Export L5X for a complete manual. Up to 25 files, 50 MB each.</p>
+      </fieldset>
+      <fieldset id="equipment-fields">
+        <legend>Equipment details, optional</legend>
+        <p class="hint">These go on the manual cover. Leave a field blank to let it be read from the file.</p>
+        <div class="fields">
+          <label class="field"><span>Manufacturer</span><input id="manufacturer_name" name="manufacturer_name" maxlength="200" autocomplete="organization"></label>
+          <label class="field"><span>Product name</span><input id="product_name" name="product_name" maxlength="200" autocomplete="off"></label>
+          <label class="field"><span>Model</span><input id="model" name="model" maxlength="200" autocomplete="off"></label>
+          <label class="field"><span>Document number</span><input id="doc_number" name="doc_number" maxlength="80" autocomplete="off"></label>
+          <label class="field"><span>Revision</span><input id="revision" name="revision" maxlength="40" autocomplete="off"></label>
+        </div>
+      </fieldset>
+      <div class="upload-box is-disabled" id="drop-zone" aria-disabled="true">
+        <div class="upload-icon" aria-hidden="true">&#128193;</div>
+        <h2 id="drop-title">Drag and drop files here</h2>
+        <p id="drop-help">L5X, L5K, PLCopen XML, TcPOU, ST, SCL, CSV, XLSX, ACD, or a zip of those.</p>
+        <div class="choose-wrap">
+          <input class="sr-only" type="file" id="file-input" multiple disabled>
+          <label class="btn-primary" for="file-input" id="choose-label">Choose files</label>
+        </div>
       </div>
+      <ul class="file-list" id="file-list" hidden></ul>
+      <p class="credit-note" id="credit-note">A file we reject — wrong format, or no equipment data in the file — does not use a credit.</p>
+      <div class="generate-btn-wrap">
+        <button class="btn-primary" id="generate-btn" type="submit" disabled>Generate my manual</button>
+      </div>
+    </form>
+    <div class="progress-wrap" id="progress-wrap" hidden>
+      <div class="progress-row">
+        <p class="progress-label" id="progress-label" aria-live="polite"></p>
+        <p class="progress-percent" id="progress-percent" aria-hidden="true"></p>
+      </div>
+      <progress id="progress-fill" max="100" value="0" aria-labelledby="progress-label"></progress>
     </div>
+    <div class="upload-error" id="upload-error" role="alert" tabindex="-1" hidden></div>
   </div>
-  <div class="success-section" id="success-section">
-    <div class="success-icon" aria-hidden="true">&#9889;</div>
-    <h1 class="success-title">Your manual is ready</h1>
-    <p class="success-sub" id="success-sub">Your PDF is downloading now. Check your Downloads folder.</p>
-    <a class="btn-outline" href="/" id="back-btn">Back to home</a>
-  </div>
+  <p class="mode-note" id="mode-note" role="status" hidden></p>
+  <section class="success-section" id="success-section" tabindex="-1" hidden>
+    <p class="success-icon" aria-hidden="true">&#9889;</p>
+    <h1 class="success-title" id="success-title">Your manual is ready</h1>
+    <p class="success-sub" id="success-sub"></p>
+    <p class="coverage" id="coverage" hidden></p>
+    <div id="warning-block" hidden>
+      <h2 class="warning-title">Notes on this manual</h2>
+      <ul class="warnings" id="warnings"></ul>
+    </div>
+    <div class="success-actions">
+      <a class="btn-primary" id="download-link">Download PDF</a>
+      <button class="btn-outline" id="another-btn" type="button">Generate another</button>
+      <a class="btn-outline" id="back-btn" href="/">Back to home</a>
+    </div>
+  </section>
+  <section class="export-help" id="export-help" aria-labelledby="export-title">
+    <h2 id="export-title">How to export your file</h2>
+    <p class="export-intro">Upload the exported program or model, or a zip of those files. ManualOS does not accept Mitsubishi GX Works .gx3 files, Omron CX-Programmer .cxp files, or Siemens .zap15 archives.</p>
+    <details class="export">
+      <summary>Rockwell Studio 5000 (L5X, and why ACD is limited)</summary>
+      <p>In Studio 5000 Logix Designer, open the controller and use File, then Save As. Set the file type to L5X. The older L5K text export is the same Save As command with the L5K type. Upload the .L5X or .L5K file.</p>
+      <p>An .ACD file is the Studio 5000 project. The rung logic is stored in a proprietary form, so a manual made from ACD alone is incomplete and will say so. Export L5X when you can. Upload an ACD only if you cannot export L5X.</p>
+    </details>
+    <details class="export">
+      <summary>Siemens TIA Portal (SCL)</summary>
+      <p>Export the blocks as SCL source (.scl). In TIA Portal the usual command is “Generate source from blocks”, on the block or on the program blocks folder. Upload the .scl file that command writes. A TIA archive (.zap15) is not accepted.</p>
+    </details>
+    <details class="export">
+      <summary>Beckhoff TwinCAT (TcPOU)</summary>
+      <p>TwinCAT stores each PLC object as a .TcPOU file in the PLC project folder. Upload those files, or a zip of that folder. ManualOS reads the program text inside them.</p>
+    </details>
+    <details class="export">
+      <summary>CODESYS and PLCopen XML</summary>
+      <p>Export PLCopen XML from the project and upload the .xml file. In CODESYS 3 that export is on the Project menu. Other IEC 61131-3 tools that write PLCopen XML use the same upload. Structured text saved as .st or .exp is also accepted.</p>
+    </details>
+    <details class="export">
+      <summary>CSV and Excel tag lists</summary>
+      <p>A tag list is a spreadsheet. The first row should name the columns, and one column should be the tag name. Address and description columns help. Save the controller tag table as .csv or .xlsx. A tag list has names and comments rather than the control logic, so the manual is shorter than one built from a full program export.</p>
+    </details>
+    <details class="export">
+      <summary>STEP, IGES, and DXF</summary>
+      <p>From SolidWorks, Inventor, Fusion, Creo, NX, AutoCAD, or a similar tool, use Save As or Export. Choose STEP (.step or .stp), IGES (.iges or .igs), or DXF (.dxf). STEP AP214 and AP242 are both fine. STEP and IGES are the 3D model. DXF is a 2D drawing. You can zip several of them. Native files such as .sldprt, .ipt, or .dwg are not accepted.</p>
+    </details>
+  </section>
+  <section class="platforms" aria-labelledby="platforms-label">
+    <h2 class="platforms-label" id="platforms-label">Accepted files</h2>
+    <ul class="platform-tags">
+      <li>Rockwell L5X and L5K</li>
+      <li>Rockwell ACD, limited</li>
+      <li>Siemens SCL</li>
+      <li>TwinCAT TcPOU</li>
+      <li>PLCopen XML</li>
+      <li>IEC ST and EXP</li>
+      <li>CSV and Excel tag lists</li>
+      <li>STEP, IGES, and DXF</li>
+      <li>Zip of these</li>
+    </ul>
+  </section>
 </main>
 <script>
-  const API_BASE = 'https://manualforge-backend-production.up.railway.app';
-  const SESSION_STORAGE_KEY = 'manualos_session_id';
+(function () {
+  // POST /jobs is the preferred upload (async progress, up to 25 files). It is not
+  // deployed on production yet. When POST /jobs returns 404, this page falls back
+  // to POST /generate-manual for the first PLC file so the current site keeps working.
+  // ?jobs=0 always uses the current generator. ?jobs=1 never falls back.
+  // On localhost the API is the page origin (see dev/mock-api.mjs). On manualos.com
+  // it is the production Railway host. A localhost ?api= override must also be local.
+  var PRODUCTION_API = 'https://manualforge-backend-production.up.railway.app';
+  var SESSION_STORAGE_KEY = 'manualos_session_id';
+  var MAX_FILES = 25;
+  var MAX_BYTES = 50 * 1024 * 1024;
+  var PLC_EXT = ['l5x', 'l5k', 'xml', 'tcpou', 'st', 'scl', 'exp', 'csv', 'xlsx', 'acd', 'zip'];
+  var CAD_EXT = ['step', 'stp', 'iges', 'igs', 'dxf', 'zip'];
+  var BLOCKED = {
+    gx3: 'Mitsubishi GX Works .gx3 files aren’t accepted. Export a format from the list below, such as CSV or structured text, if the project can produce one.',
+    cxp: 'Omron CX-Programmer .cxp files aren’t accepted.',
+    zap15: 'Siemens .zap15 archives aren’t accepted. Export SCL source instead.'
+  };
+  var STAGE_LABELS = {
+    queued: 'Waiting to start',
+    parsing: 'Reading your files',
+    analyzing: 'Describing how the equipment works',
+    assembling: 'Writing the manual',
+    rendering: 'Rendering the PDF',
+    done: 'Manual is ready',
+    failed: 'Generation failed'
+  };
+  var GUIDANCE = {
+    plc: 'Add a PLC program: Rockwell L5X or L5K, PLCopen XML, TwinCAT TcPOU, IEC structured text (ST, SCL, or EXP), a CSV or Excel tag list, or a zip of those. An ACD file is accepted, but the manual will be limited. Export L5X for a complete manual. Up to 25 files, 50 MB each.',
+    cad: 'Add a CAD model: STEP (.step or .stp), IGES (.iges or .igs), or DXF, or a zip of those. Native CAD files such as SLDPRT or DWG are not accepted. Up to 25 files, 50 MB each.',
+    both: 'Add the PLC program and the CAD model together. They are written up as one manual. You can mix the PLC types above with STEP, IGES, or DXF, including a zip. Up to 25 files, 50 MB each.'
+  };
+  var DROP_HELP = {
+    plc: 'L5X, L5K, PLCopen XML, TcPOU, ST, SCL, CSV, XLSX, ACD, or a zip of those.',
+    cad: 'STEP, IGES, DXF, or a zip of those.',
+    both: 'PLC exports and CAD models together, or a zip of both.'
+  };
 
-  let selectedFile = null;
-  let sessionId = '';
-  let uploadEnabled = false;
-  let sessionFromQuery = false;
+  var apiBase = resolveApiBase();
+  var sessionId = '';
+  var sessionFromQuery = false;
+  var uploadEnabled = false;
+  var busy = false;
+  var runToken = 0;
+  var fileSeq = 0;
+  var selectedFiles = [];
+  var downloadUrl = '';
 
-  const dropZone = document.getElementById('drop-zone');
-  const fileInput = document.getElementById('file-input');
-  const fileInfo = document.getElementById('file-info');
-  const fileName = document.getElementById('file-name');
-  const removeBtn = document.getElementById('remove-file');
-  const progressWrap = document.getElementById('progress-wrap');
-  const progressFill = document.getElementById('progress-fill');
-  const progressLabel = document.getElementById('progress-label');
-  const generateBtnWrap = document.getElementById('generate-btn-wrap');
-  const generateBtn = document.getElementById('generate-btn');
-  const uploadSection = document.getElementById('upload-section');
-  const successSection = document.getElementById('success-section');
-  const successSub = document.getElementById('success-sub');
-  const accessBanner = document.getElementById('access-banner');
-  const accessMessage = document.getElementById('access-message');
-  const accessPricingLink = document.getElementById('access-pricing-link');
-  const uploadError = document.getElementById('upload-error');
-  const paymentWelcome = document.getElementById('payment-welcome');
+  var dropZone = document.getElementById('drop-zone');
+  var fileInput = document.getElementById('file-input');
+  var fileList = document.getElementById('file-list');
+  var progressWrap = document.getElementById('progress-wrap');
+  var progressFill = document.getElementById('progress-fill');
+  var progressLabel = document.getElementById('progress-label');
+  var progressPercent = document.getElementById('progress-percent');
+  var generateBtn = document.getElementById('generate-btn');
+  var uploadForm = document.getElementById('upload-form');
+  var uploadSection = document.getElementById('upload-section');
+  var successSection = document.getElementById('success-section');
+  var successSub = document.getElementById('success-sub');
+  var accessBanner = document.getElementById('access-banner');
+  var accessMessage = document.getElementById('access-message');
+  var accessPricingLink = document.getElementById('access-pricing-link');
+  var uploadError = document.getElementById('upload-error');
+  var paymentWelcome = document.getElementById('payment-welcome');
+  var guidance = document.getElementById('source-guidance');
+  var dropHelp = document.getElementById('drop-help');
+  var modeNote = document.getElementById('mode-note');
+  var coverageEl = document.getElementById('coverage');
+  var warningBlock = document.getElementById('warning-block');
+  var warningsEl = document.getElementById('warnings');
+  var downloadLink = document.getElementById('download-link');
+
+  function resolveApiBase() {
+    var host = location.hostname;
+    var local = host === 'localhost' || host === '127.0.0.1' || host === '[::1]';
+    if (!local) return PRODUCTION_API;
+    var override = (new URLSearchParams(location.search).get('api') || '').trim();
+    if (override) {
+      try {
+        var url = new URL(override, location.origin);
+        var localHost = url.hostname === 'localhost' || url.hostname === '127.0.0.1' || url.hostname === '[::1]';
+        if ((url.protocol === 'http:' || url.protocol === 'https:') && localHost) return url.origin;
+      } catch (err) {}
+    }
+    return location.origin;
+  }
+
+  function jobsMode() {
+    var value = new URLSearchParams(location.search).get('jobs');
+    if (value === '0') return 'legacy';
+    if (value === '1') return 'jobs';
+    return 'auto';
+  }
+
+  function setPhase(phase) {
+    document.body.dataset.phase = phase;
+  }
+
+  function setStage(stage) {
+    document.body.dataset.stage = stage || '';
+    progressWrap.dataset.stage = stage || '';
+  }
 
   function formatSize(bytes) {
     if (bytes < 1024) return bytes + ' B';
@@ -165,8 +368,46 @@
     return (bytes / 1048576).toFixed(1) + ' MB';
   }
 
+  function extensionOf(name) {
+    var match = String(name || '').toLowerCase().match(/\.([a-z0-9]+)$/);
+    return match ? match[1] : '';
+  }
+
+  function currentSource() {
+    var checked = document.querySelector('input[name="source"]:checked');
+    return checked ? checked.value : 'plc';
+  }
+
+  function extensionsFor(source) {
+    if (source === 'cad') return CAD_EXT;
+    if (source === 'both') {
+      var all = PLC_EXT.concat(CAD_EXT);
+      var seen = {};
+      return all.filter(function (ext) {
+        if (seen[ext]) return false;
+        seen[ext] = true;
+        return true;
+      });
+    }
+    return PLC_EXT;
+  }
+
+  function acceptAttribute(source) {
+    return extensionsFor(source).map(function (ext) { return '.' + ext; }).join(',');
+  }
+
+  function fitsSource(file, source) {
+    return extensionsFor(source).indexOf(extensionOf(file.name)) !== -1;
+  }
+
+  function sourceNoun(source) {
+    if (source === 'cad') return 'CAD model';
+    if (source === 'both') return 'PLC or CAD';
+    return 'PLC program';
+  }
+
   function planLabel(plan) {
-    const value = String(plan || '').toLowerCase();
+    var value = String(plan || '').toLowerCase();
     if (value === 'starter') return 'Starter';
     if (value === 'pro') return 'Pro';
     return plan ? String(plan) : 'Paid';
@@ -174,53 +415,94 @@
 
   function remainingLabel(remaining) {
     if (remaining === null) return 'Unlimited manuals';
-    const count = Number(remaining);
+    var count = Number(remaining);
     if (!Number.isFinite(count)) return 'Manuals remaining unavailable';
     if (count === 1) return '1 manual remaining';
     return count + ' manuals remaining';
   }
 
   function showAccess(message, options) {
-    const opts = options || {};
-    accessMessage.textContent = message;
+    var opts = options || {};
+    if (opts.hideMessage) {
+      accessMessage.textContent = '';
+      accessMessage.setAttribute('aria-hidden', 'true');
+      accessBanner.removeAttribute('role');
+    } else {
+      accessMessage.textContent = message;
+      accessMessage.removeAttribute('aria-hidden');
+      accessBanner.setAttribute('role', 'status');
+    }
     accessPricingLink.hidden = !opts.showPricing;
     accessBanner.classList.toggle('ok', !!opts.ok);
   }
 
   function setUploadEnabled(enabled) {
     uploadEnabled = enabled;
-    fileInput.disabled = !enabled;
+    fileInput.disabled = !enabled || busy;
     dropZone.classList.toggle('is-disabled', !enabled);
     dropZone.setAttribute('aria-disabled', enabled ? 'false' : 'true');
-    if (!enabled) generateBtn.disabled = true;
+    updateGenerateButton();
   }
 
-  function showUploadError(message, withPricing) {
-    uploadError.textContent = '';
-    uploadError.appendChild(document.createTextNode(message));
-    if (withPricing) {
-      uploadError.appendChild(document.createTextNode(' '));
-      const link = document.createElement('a');
+  function showUploadError(messages, options) {
+    var opts = options || {};
+    var items = (Array.isArray(messages) ? messages : [messages]).filter(Boolean);
+    uploadError.replaceChildren();
+    var list = document.createElement('ul');
+    items.forEach(function (text) {
+      var li = document.createElement('li');
+      li.textContent = text;
+      list.appendChild(li);
+    });
+    uploadError.appendChild(list);
+    if (opts.server) {
+      var extra = document.createElement('p');
+      extra.textContent = opts.server;
+      uploadError.appendChild(extra);
+    }
+    if (opts.pricing) {
+      var line = document.createElement('p');
+      var link = document.createElement('a');
       link.href = '/#pricing';
       link.textContent = 'View pricing';
-      uploadError.appendChild(link);
-      uploadError.appendChild(document.createTextNode('.'));
+      line.appendChild(link);
+      uploadError.appendChild(line);
     }
-    uploadError.classList.add('visible');
+    uploadError.hidden = false;
+    dismissWelcome();
+    if (!opts.keepPhase) setPhase('error');
+    if (!opts.quiet) uploadError.focus();
   }
 
   function clearUploadError() {
-    uploadError.classList.remove('visible');
-    uploadError.textContent = '';
+    uploadError.hidden = true;
+    uploadError.replaceChildren();
   }
 
-  function setProgress(pct) {
-    progressFill.value = pct;
+  function dismissWelcome() {
+    if (paymentWelcome) paymentWelcome.hidden = true;
+    var welcomeText = document.getElementById('payment-welcome-text');
+    if (welcomeText) welcomeText.textContent = '';
+    document.documentElement.classList.remove('has-session');
+  }
+
+  function fillReservedWelcome(message, locked) {
+    if (!document.documentElement.classList.contains('has-session')) {
+      dismissWelcome();
+      return;
+    }
+    var welcomeText = document.getElementById('payment-welcome-text');
+    if (welcomeText) welcomeText.textContent = message || '';
+    if (paymentWelcome) {
+      paymentWelcome.hidden = false;
+      paymentWelcome.setAttribute('role', 'status');
+      paymentWelcome.classList.toggle('is-locked', !!locked);
+    }
   }
 
   function readSessionId() {
-    const params = new URLSearchParams(window.location.search);
-    const fromQuery = (params.get('session_id') || '').trim();
+    var params = new URLSearchParams(window.location.search);
+    var fromQuery = (params.get('session_id') || '').trim();
     if (fromQuery) {
       sessionFromQuery = true;
       try { localStorage.setItem(SESSION_STORAGE_KEY, fromQuery); } catch (err) {}
@@ -231,36 +513,49 @@
 
   function lockUpload(message) {
     setUploadEnabled(false);
-    showAccess(message, { showPricing: true, ok: false });
+    showAccess('', { showPricing: true, ok: false, hideMessage: true });
+    fillReservedWelcome(message, true);
+    if (document.body.dataset.phase !== 'progress' && document.body.dataset.phase !== 'success') setPhase('locked');
   }
 
   function applySession(data) {
+    if (data.remaining === 0) {
+      setUploadEnabled(false);
+      showAccess('', { showPricing: true, ok: false, hideMessage: true });
+      fillReservedWelcome('Starter credits are used up', true);
+      if (document.body.dataset.phase !== 'progress' && document.body.dataset.phase !== 'success' && document.body.dataset.phase !== 'error') {
+        setPhase('locked');
+      }
+      return;
+    }
     setUploadEnabled(true);
     showAccess(planLabel(data.plan) + ' plan \u00b7 ' + remainingLabel(data.remaining), { showPricing: false, ok: true });
+    if (document.body.dataset.phase !== 'progress' && document.body.dataset.phase !== 'success' && document.body.dataset.phase !== 'error') {
+      setPhase('ready');
+    }
     if (sessionFromQuery && paymentWelcome) {
       var planName = planLabel(data.plan);
       var detail = data.remaining === null
         ? 'Payment confirmed. You are on the ' + planName + ' plan, with unlimited manuals.'
         : 'Payment confirmed. You are on the ' + planName + ' plan, with ' + remainingLabel(data.remaining) + '.';
-      paymentWelcome.textContent = detail + ' Upload a PLC file below when you are ready.';
-      paymentWelcome.hidden = false;
+      fillReservedWelcome(detail + ' Upload a PLC program, a CAD model, or both when you are ready.', false);
     }
   }
 
   async function verifySession(options) {
-    const keepAccessOnError = !!(options && options.keepAccessOnError);
+    var keepAccessOnError = !!(options && options.keepAccessOnError);
     if (!sessionId) {
       lockUpload('No purchase found on this browser. Choose a plan to generate manuals.');
       return null;
     }
-    let res;
+    var res;
     try {
-      res = await fetch(API_BASE + '/verify-session?session_id=' + encodeURIComponent(sessionId));
+      res = await fetch(apiBase + '/verify-session?session_id=' + encodeURIComponent(sessionId), { cache: 'no-store' });
     } catch (err) {
       if (!keepAccessOnError) lockUpload('We couldn\u2019t check your purchase just now. Refresh the page, or choose a plan.');
       return null;
     }
-    let data = {};
+    var data = {};
     try { data = await res.json(); } catch (err) { data = {}; }
     if (!res.ok || !data.valid) {
       if (!(keepAccessOnError && !res.ok)) {
@@ -272,139 +567,610 @@
     return data;
   }
 
-  function setFile(file) {
-    if (!uploadEnabled) return;
+  function syncSource() {
+    var source = currentSource();
+    document.querySelectorAll('.choice').forEach(function (label) {
+      var input = label.querySelector('input');
+      label.classList.toggle('is-selected', !!(input && input.checked));
+    });
+    guidance.textContent = GUIDANCE[source] || GUIDANCE.plc;
+    dropHelp.textContent = DROP_HELP[source] || DROP_HELP.plc;
+    fileInput.setAttribute('accept', acceptAttribute(source));
     clearUploadError();
-    if (file.size > 20 * 1024 * 1024) {
-      showUploadError('That file is too large. The maximum upload size is 20 MB.');
+    renderFiles();
+    updateGenerateButton();
+  }
+
+  function rejectReason(file, source) {
+    if (!file) return 'Choose a file.';
+    if (file.size <= 0) return file.name + ' is empty.';
+    if (file.size > MAX_BYTES) return file.name + ' is ' + formatSize(file.size) + '. Each file must be 50 MB or smaller. This did not use a credit.';
+    var ext = extensionOf(file.name);
+    if (BLOCKED[ext]) return BLOCKED[ext] + ' This did not use a credit.';
+    if (!ext || extensionsFor(source).indexOf(ext) === -1) {
+      return file.name + ' isn’t an accepted ' + sourceNoun(source) + ' file. This did not use a credit.';
+    }
+    return '';
+  }
+
+  function addFiles(fileListLike) {
+    if (!uploadEnabled || busy) return;
+    var incoming = Array.prototype.slice.call(fileListLike || []);
+    if (!incoming.length) return;
+    var errors = [];
+    var source = currentSource();
+    incoming.forEach(function (file) {
+      var reason = rejectReason(file, source);
+      if (reason) {
+        errors.push(reason);
+        return;
+      }
+      if (selectedFiles.length >= MAX_FILES) {
+        errors.push('You can add up to 25 files.');
+        return;
+      }
+      var duplicate = selectedFiles.some(function (item) {
+        return item.file.name === file.name && item.file.size === file.size && item.file.lastModified === file.lastModified;
+      });
+      if (duplicate) {
+        errors.push(file.name + ' is already in the list.');
+        return;
+      }
+      fileSeq += 1;
+      selectedFiles.push({ id: String(fileSeq), file: file });
+    });
+    renderFiles();
+    updateGenerateButton();
+    if (errors.length) showUploadError(errors, { keepPhase: true });
+    else clearUploadError();
+  }
+
+  function renderFiles() {
+    var source = currentSource();
+    fileList.replaceChildren();
+    if (!selectedFiles.length) {
+      fileList.hidden = true;
       return;
     }
-    selectedFile = file;
-    fileName.textContent = file.name + ' (' + formatSize(file.size) + ')';
-    fileInfo.classList.add('visible');
-    generateBtnWrap.classList.add('visible');
-    generateBtn.disabled = false;
-    progressWrap.classList.remove('visible');
-    setProgress(0);
+    fileList.hidden = false;
+    selectedFiles.forEach(function (item) {
+      var li = document.createElement('li');
+      var name = document.createElement('span');
+      name.className = 'file-name';
+      name.textContent = item.file.name;
+      var size = document.createElement('span');
+      size.className = 'file-size';
+      size.textContent = formatSize(item.file.size);
+      var remove = document.createElement('button');
+      remove.type = 'button';
+      remove.className = 'file-remove';
+      remove.dataset.remove = item.id;
+      remove.textContent = 'Remove';
+      remove.setAttribute('aria-label', 'Remove ' + item.file.name);
+      remove.disabled = busy;
+      li.appendChild(name);
+      li.appendChild(size);
+      li.appendChild(remove);
+      if (!fitsSource(item.file, source)) {
+        li.classList.add('is-invalid');
+        var hint = document.createElement('span');
+        hint.className = 'file-hint';
+        hint.textContent = 'This file doesn’t match the ' + sourceNoun(source) + ' choice. Remove it, or switch the choice above.';
+        li.appendChild(hint);
+      } else if (extensionOf(item.file.name) === 'acd') {
+        var acd = document.createElement('span');
+        acd.className = 'file-hint';
+        acd.textContent = 'ACD is limited. Export L5X for a complete manual.';
+        li.appendChild(acd);
+      }
+      fileList.appendChild(li);
+    });
   }
 
-  function clearFile() {
-    selectedFile = null;
-    fileInfo.classList.remove('visible');
-    generateBtnWrap.classList.remove('visible');
-    progressWrap.classList.remove('visible');
-    fileInput.value = '';
+  function filesAreAcceptable() {
+    var source = currentSource();
+    return selectedFiles.length > 0 && selectedFiles.every(function (item) { return fitsSource(item.file, source); });
   }
 
-  function resetGenerateUi() {
-    generateBtn.disabled = !uploadEnabled || !selectedFile;
-    generateBtn.textContent = 'Generate my manual \u2192';
-    setProgress(0);
-    progressWrap.classList.remove('visible');
+  function updateGenerateButton() {
+    generateBtn.disabled = busy || !uploadEnabled || !filesAreAcceptable();
   }
 
-  fileInput.addEventListener('change', () => {
-    if (fileInput.files[0]) setFile(fileInput.files[0]);
-  });
+  function canGenerate() {
+    return uploadEnabled && !busy && !!sessionId && filesAreAcceptable();
+  }
 
-  removeBtn.addEventListener('click', clearFile);
-  generateBtn.addEventListener('click', handleGenerate);
+  function setBusy(next) {
+    busy = next;
+    fileInput.disabled = next || !uploadEnabled;
+    document.querySelectorAll('input[name="source"], #equipment-fields input').forEach(function (el) {
+      el.disabled = next;
+    });
+    generateBtn.setAttribute('aria-busy', next ? 'true' : 'false');
+    if (next) generateBtn.disabled = true;
+    else updateGenerateButton();
+    renderFiles();
+    document.body.setAttribute('aria-busy', next ? 'true' : 'false');
+  }
 
-  dropZone.addEventListener('dragover', e => {
-    if (!uploadEnabled) return;
-    e.preventDefault();
-    dropZone.classList.add('drag-over');
-  });
-  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
-  dropZone.addEventListener('drop', e => {
-    e.preventDefault();
-    dropZone.classList.remove('drag-over');
-    if (!uploadEnabled) return;
-    if (e.dataTransfer.files[0]) setFile(e.dataTransfer.files[0]);
-  });
+  function resetProgress() {
+    progressWrap.hidden = true;
+    setStage('');
+    progressLabel.textContent = '';
+    progressPercent.textContent = '';
+    progressFill.value = 0;
+  }
 
-  async function handleGenerate() {
-    if (!uploadEnabled || !sessionId) {
-      lockUpload('No purchase found on this browser. Choose a plan to generate manuals.');
+  function showProgress(message, percent) {
+    progressWrap.hidden = false;
+    if (progressLabel.textContent !== message) progressLabel.textContent = message;
+    if (percent === null) {
+      progressFill.removeAttribute('value');
+      progressPercent.textContent = '';
+    } else {
+      var pct = Math.max(0, Math.min(100, Number(percent) || 0));
+      progressFill.value = pct;
+      progressPercent.textContent = Math.round(pct) + '%';
+    }
+  }
+
+  function safeServerMessage(data) {
+    var raw = data && (data.error || data.message);
+    if (typeof raw !== 'string') return '';
+    var text = raw.replace(/\s+/g, ' ').trim();
+    if (!text || text.length > 280 || /[<>]/.test(text)) return '';
+    return text;
+  }
+
+  function friendlyHttpError(status, data) {
+    var server = safeServerMessage(data);
+    if (status === 402) {
+      return { message: 'There are no manuals left on this plan, or the purchase isn’t active. No credit was used.', pricing: true, server: server };
+    }
+    if (status === 415) {
+      return { message: 'We couldn’t use that file. It isn’t a PLC or CAD format this generator accepts. This did not use a credit.', server: server };
+    }
+    if (status === 422) {
+      return { message: 'We opened that file, but it doesn’t contain equipment data we can turn into a manual. This did not use a credit.', server: server };
+    }
+    if (status === 503) {
+      return { message: 'The manual generator is unavailable right now. This did not use a credit. Please try again in a few minutes.', server: server };
+    }
+    if (status === 400 || status === 413) {
+      return { message: 'We couldn’t use that upload. Check the file type and size, then try again. If it was rejected, it did not use a credit.', server: server };
+    }
+    return { message: 'We couldn’t generate your manual. Please try again.', server: server };
+  }
+
+  function equipmentPairs() {
+    return ['manufacturer_name', 'product_name', 'model', 'doc_number', 'revision'].reduce(function (pairs, key) {
+      var el = document.getElementById(key);
+      var value = el ? el.value.trim() : '';
+      if (value) pairs.push([key, value]);
+      return pairs;
+    }, []);
+  }
+
+  function appendEquipment(formData) {
+    equipmentPairs().forEach(function (pair) { formData.append(pair[0], pair[1]); });
+  }
+
+  function downloadName() {
+    var product = (document.getElementById('product_name').value || '').trim();
+    var base = product || (selectedFiles[0] ? selectedFiles[0].file.name.replace(/\.[^.]+$/, '') : 'manual');
+    var clean = base.replace(/[^\w.\- ()]+/g, '').trim() || 'manual';
+    return clean.slice(0, 80) + '-manual.pdf';
+  }
+
+  function warningLines(list) {
+    if (!Array.isArray(list)) return [];
+    return list.map(function (item) {
+      var text = typeof item === 'string' ? item : (item && typeof item.message === 'string' ? item.message : '');
+      return String(text).replace(/\s+/g, ' ').trim();
+    }).filter(Boolean).slice(0, 20).map(function (text) { return text.slice(0, 500); });
+  }
+
+  function coverageText(coverage) {
+    if (!coverage || typeof coverage !== 'object') return '';
+    var pct = Number(coverage.percent);
+    if (!Number.isFinite(pct)) return '';
+    var text = 'Coverage: ' + pct + '%';
+    var accounted = Number(coverage.accounted);
+    var units = Number(coverage.units);
+    if (Number.isFinite(accounted) && Number.isFinite(units)) {
+      text += ' (' + accounted + ' of ' + units + ' accounted for)';
+    }
+    return text;
+  }
+
+  function paintNotes(warnings, coverage) {
+    var lines = warningLines(warnings);
+    warningsEl.replaceChildren();
+    if (!lines.length) {
+      warningBlock.hidden = true;
+    } else {
+      lines.forEach(function (line) {
+        var li = document.createElement('li');
+        li.textContent = line;
+        warningsEl.appendChild(li);
+      });
+      warningBlock.hidden = false;
+    }
+    var coverageLine = coverageText(coverage);
+    coverageEl.textContent = coverageLine;
+    coverageEl.hidden = !coverageLine;
+  }
+
+  function showModeNote(text) {
+    modeNote.textContent = text || '';
+    modeNote.hidden = !text;
+  }
+
+  async function readJson(res) {
+    try { return await res.json(); } catch (err) { return {}; }
+  }
+
+  function sleep(ms) {
+    return new Promise(function (resolve) { setTimeout(resolve, ms); });
+  }
+
+  function paintJob(job) {
+    var progress = job.progress || {};
+    var stage = progress.stage || job.status || '';
+    setStage(stage);
+    var message = progress.message || STAGE_LABELS[stage] || 'Working on your manual';
+    var percent = progress.percent;
+    showProgress(message, percent === undefined || percent === null ? 0 : percent);
+  }
+
+  async function pollJob(id, token) {
+    var failures = 0;
+    while (token === runToken) {
+      var res;
+      try {
+        res = await fetch(apiBase + '/jobs/' + encodeURIComponent(id), {
+          cache: 'no-store',
+          headers: { 'X-Session-Id': sessionId }
+        });
+        failures = 0;
+      } catch (err) {
+        failures += 1;
+        if (token !== runToken) return null;
+        if (failures >= 2) {
+          showProgress('We lost the connection while checking progress. The manual may still be generating. We’ll keep trying.', null);
+        }
+        await sleep(Math.min(8000, 800 * failures));
+        continue;
+      }
+      if (token !== runToken) return null;
+      if (res.status === 404) {
+        resetProgress();
+        setBusy(false);
+        showUploadError('This job is no longer available. It may have expired after 24 hours.');
+        return null;
+      }
+      var job = await readJson(res);
+      if (!res.ok) {
+        resetProgress();
+        setBusy(false);
+        showUploadError('We couldn’t read progress for this manual. Please try again.');
+        return null;
+      }
+      paintJob(job);
+      if (job.status === 'succeeded' || job.status === 'failed') return job;
+      await sleep(800);
+    }
+    return null;
+  }
+
+  async function savePdfBlob(buffer) {
+    if (downloadUrl) URL.revokeObjectURL(downloadUrl);
+    var blob = new Blob([buffer], { type: 'application/pdf' });
+    downloadUrl = URL.createObjectURL(blob);
+    downloadLink.href = downloadUrl;
+    downloadLink.setAttribute('download', downloadName());
+  }
+
+  async function finishSuccess(options) {
+    var opts = options || {};
+    paintNotes(opts.warnings, opts.coverage);
+    var updated = await verifySession({ keepAccessOnError: true });
+    var successText = opts.legacy
+      ? 'Your PDF is ready. Download it here.'
+      : 'Your PDF is ready. Download it here. This copy stays available for 24 hours.';
+    if (updated && updated.remaining === null) successText += ' Unlimited manuals remaining.';
+    else if (updated) successText += ' ' + remainingLabel(updated.remaining) + '.';
+    successSub.textContent = successText;
+    dismissWelcome();
+    uploadSection.hidden = true;
+    successSection.hidden = false;
+    setBusy(false);
+    setPhase('success');
+    setStage('done');
+    successSection.focus();
+  }
+
+  async function fetchJobPdf(id, token) {
+    var attempt;
+    for (attempt = 0; attempt < 5; attempt += 1) {
+      if (token !== runToken) return false;
+      var res;
+      try {
+        res = await fetch(apiBase + '/jobs/' + encodeURIComponent(id) + '/pdf', {
+          cache: 'no-store',
+          headers: { 'X-Session-Id': sessionId }
+        });
+      } catch (err) {
+        await sleep(600);
+        continue;
+      }
+      if (res.status === 409) {
+        await sleep(600);
+        continue;
+      }
+      if (!res.ok) {
+        var errBody = await readJson(res);
+        showUploadError(res.status === 404
+          ? 'This manual isn’t available. It may have expired after 24 hours.'
+          : (friendlyHttpError(res.status, errBody).message));
+        return false;
+      }
+      var buffer = await res.arrayBuffer();
+      var head = new TextDecoder().decode(buffer.slice(0, 5));
+      if (head !== '%PDF-') {
+        showUploadError('The download wasn’t a PDF. Please try again.');
+        return false;
+      }
+      await savePdfBlob(buffer);
+      return true;
+    }
+    showUploadError('The manual isn’t ready to download yet. Wait a moment and try again.');
+    return false;
+  }
+
+  function networkMessage() {
+    return 'We couldn’t reach ManualOS. Check your connection and try again. If the upload never started, no credit was used.';
+  }
+
+  function firstPlcFile(files) {
+    for (var i = 0; i < files.length; i += 1) {
+      if (PLC_EXT.indexOf(extensionOf(files[i].name)) !== -1) return files[i];
+    }
+    return null;
+  }
+
+  async function startLegacy(token, filesToSend, becauseMissing) {
+    var file = firstPlcFile(filesToSend);
+    if (!file) {
+      resetProgress();
+      setBusy(false);
+      generateBtn.textContent = 'Generate my manual';
+      showUploadError('CAD models need the new generator, which isn\u2019t live yet. ' + (becauseMissing
+        ? 'Nothing was processed and no credit was used.'
+        : 'Nothing was uploaded and no credit was used.'));
       return;
     }
-    if (!selectedFile) return;
-    clearUploadError();
-    generateBtn.disabled = true;
-    generateBtn.textContent = 'Uploading...';
-    progressWrap.classList.add('visible');
-    setProgress(20);
-    progressLabel.textContent = 'Uploading...';
-
-    const formData = new FormData();
-    formData.append('file', selectedFile);
-    formData.append('brand', '');
+    document.body.dataset.api = 'legacy';
+    var note = 'The multi-file generator isn’t on this server yet, so this manual uses the current single-file generator.';
+    if (filesToSend.length > 1) {
+      note += ' Only ' + file.name + ' was sent. The other files were not used and did not use a credit.';
+    }
+    showModeNote(note);
+    generateBtn.textContent = 'Generating\u2026';
+    showProgress(becauseMissing
+      ? 'The new generator isn’t deployed yet. Generating from one file…'
+      : 'Generating your manual…', null);
+    var formData = new FormData();
+    formData.append('file', file, file.name);
+    formData.append('brand', (document.getElementById('manufacturer_name').value || '').trim());
     formData.append('sections', JSON.stringify([]));
     formData.append('session_id', sessionId);
-
-    setProgress(40);
-    progressLabel.textContent = 'Analysing ladder logic\u2026';
-
+    appendEquipment(formData);
+    var res;
     try {
-      const res = await fetch(API_BASE + '/generate-manual', {
+      res = await fetch(apiBase + '/generate-manual', {
         method: 'POST',
         headers: { 'X-Session-Id': sessionId },
         body: formData
       });
-
-      setProgress(90);
-      progressLabel.textContent = 'Building your manual\u2026';
-
-      if (res.status === 402) {
-        resetGenerateUi();
-        showUploadError('This purchase isn\u2019t active, or you\u2019ve used all the manuals on this plan.', true);
-        await verifySession();
-        return;
-      }
-
-      if (!res.ok) {
-        resetGenerateUi();
-        if (res.status === 400) {
-          showUploadError('We couldn\u2019t use that file. Check the format and try again.');
-        } else {
-          showUploadError('We couldn\u2019t generate your manual. Please try again.');
-        }
-        return;
-      }
-
-      const blob = await res.blob();
-      setProgress(100);
-      progressLabel.textContent = 'Done!';
-
-      const baseName = selectedFile.name.replace(/\.[^.]+$/, '');
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = baseName + '-manual.pdf';
-      a.style.display = 'none';
-      document.body.appendChild(a);
-      setTimeout(() => {
-        a.click();
-        setTimeout(() => { URL.revokeObjectURL(url); document.body.removeChild(a); }, 1000);
-      }, 100);
-      setTimeout(() => URL.revokeObjectURL(url), 10000);
-
-      const updated = await verifySession({ keepAccessOnError: true });
-      if (paymentWelcome) paymentWelcome.hidden = true;
-      uploadSection.style.display = 'none';
-      let successText = 'Your PDF is downloading now. Check your Downloads folder.';
-      if (updated && updated.remaining === null) successText += ' Unlimited manuals remaining.';
-      else if (updated) successText += ' ' + remainingLabel(updated.remaining) + '.';
-      successSub.textContent = successText;
-      successSection.classList.add('visible');
     } catch (err) {
-      resetGenerateUi();
-      showUploadError('We couldn\u2019t reach ManualOS. Check your connection and try again.');
+      if (token !== runToken) return;
+      resetProgress();
+      setBusy(false);
+      showUploadError(networkMessage());
+      return;
     }
+    if (token !== runToken) return;
+    var type = (res.headers.get('content-type') || '').toLowerCase();
+    if (!res.ok || type.indexOf('pdf') === -1) {
+      var data = await readJson(res);
+      resetProgress();
+      setBusy(false);
+      if (res.status === 402) await verifySession();
+      var mapped = friendlyHttpError(res.status, data);
+      showUploadError(mapped.message, { server: mapped.server, pricing: mapped.pricing });
+      return;
+    }
+    var buffer = await res.arrayBuffer();
+    var head = new TextDecoder().decode(buffer.slice(0, 5));
+    if (head !== '%PDF-') {
+      resetProgress();
+      setBusy(false);
+      showUploadError('The download wasn’t a PDF. Please try again.');
+      return;
+    }
+    await savePdfBlob(buffer);
+    showProgress('Manual is ready', 100);
+    setStage('done');
+    await finishSuccess({ legacy: true });
   }
 
+  async function handleGenerate() {
+    if (busy) return;
+    if (!uploadEnabled || !sessionId) {
+      lockUpload('No purchase found on this browser. Choose a plan to generate manuals.');
+      return;
+    }
+    if (!selectedFiles.length) {
+      showUploadError('Add at least one file.', { keepPhase: true });
+      return;
+    }
+    if (!filesAreAcceptable()) {
+      showUploadError('Remove files that don’t match your PLC or CAD choice, then try again.', { keepPhase: true });
+      return;
+    }
+    clearUploadError();
+    showModeNote('');
+    var token = ++runToken;
+    setBusy(true);
+    setPhase('progress');
+    generateBtn.textContent = 'Uploading…';
+    showProgress('Uploading your files…', 0);
+    var payloadFiles = selectedFiles.map(function (item) { return item.file; });
+    var mode = jobsMode();
+    if (mode === 'legacy') {
+      await startLegacy(token, payloadFiles, false);
+      if (token === runToken) generateBtn.textContent = 'Generate my manual';
+      return;
+    }
+    var formData = new FormData();
+    payloadFiles.forEach(function (file) { formData.append('files', file, file.name); });
+    formData.append('session_id', sessionId);
+    appendEquipment(formData);
+    var res;
+    try {
+      res = await fetch(apiBase + '/jobs', {
+        method: 'POST',
+        headers: { 'X-Session-Id': sessionId },
+        body: formData
+      });
+    } catch (err) {
+      if (token !== runToken) return;
+      resetProgress();
+      setBusy(false);
+      generateBtn.textContent = 'Generate my manual';
+      showUploadError(networkMessage());
+      return;
+    }
+    if (token !== runToken) return;
+    if (res.status === 404 && mode === 'auto') {
+      await startLegacy(token, payloadFiles, true);
+      if (token === runToken) generateBtn.textContent = 'Generate my manual';
+      return;
+    }
+    var data = await readJson(res);
+    if (res.status === 404 && mode === 'jobs') {
+      resetProgress();
+      setBusy(false);
+      generateBtn.textContent = 'Generate my manual';
+      showUploadError('The multi-file generator isn’t available on this server yet. Nothing was charged.');
+      return;
+    }
+    if (res.status !== 202 || !data.id) {
+      resetProgress();
+      setBusy(false);
+      generateBtn.textContent = 'Generate my manual';
+      if (res.status === 402) await verifySession();
+      var mapped = friendlyHttpError(res.status, data);
+      showUploadError(mapped.message, { server: mapped.server, pricing: mapped.pricing });
+      return;
+    }
+    document.body.dataset.api = 'jobs';
+    generateBtn.textContent = 'Generating\u2026';
+    paintJob(data);
+    var job = await pollJob(data.id, token);
+    if (token !== runToken || !job) {
+      generateBtn.textContent = 'Generate my manual';
+      return;
+    }
+    if (job.status === 'failed') {
+      resetProgress();
+      setBusy(false);
+      generateBtn.textContent = 'Generate my manual';
+      var reason = safeServerMessage({ error: job.error }) || 'Please try again.';
+      showUploadError('The manual couldn’t be finished. ' + reason + ' The credit for this attempt is returned.');
+      return;
+    }
+    var ready = await fetchJobPdf(job.id, token);
+    generateBtn.textContent = 'Generate my manual';
+    if (!ready) {
+      setBusy(false);
+      return;
+    }
+    await finishSuccess({ warnings: job.warnings, coverage: job.coverage, legacy: false });
+  }
+
+  function resetComposer() {
+    runToken += 1;
+    selectedFiles = [];
+    renderFiles();
+    clearUploadError();
+    showModeNote('');
+    resetProgress();
+    paintNotes([], null);
+    if (downloadUrl) URL.revokeObjectURL(downloadUrl);
+    downloadUrl = '';
+    downloadLink.removeAttribute('href');
+    successSection.hidden = true;
+    uploadSection.hidden = false;
+    generateBtn.textContent = 'Generate my manual';
+    setBusy(false);
+    setPhase(uploadEnabled ? 'ready' : 'locked');
+    var firstRadio = document.querySelector('input[name="source"]');
+    if (firstRadio) firstRadio.focus();
+  }
+
+  fileInput.addEventListener('change', function () {
+    addFiles(fileInput.files);
+    fileInput.value = '';
+  });
+
+  fileList.addEventListener('click', function (event) {
+    var button = event.target.closest('[data-remove]');
+    if (!button || busy) return;
+    var id = button.getAttribute('data-remove');
+    selectedFiles = selectedFiles.filter(function (item) { return item.id !== id; });
+    renderFiles();
+    updateGenerateButton();
+    clearUploadError();
+  });
+
+  uploadForm.addEventListener('submit', function (event) {
+    event.preventDefault();
+    handleGenerate();
+  });
+
+  document.querySelectorAll('input[name="source"]').forEach(function (input) {
+    input.addEventListener('change', syncSource);
+  });
+
+  ['dragenter', 'dragover'].forEach(function (type) {
+    dropZone.addEventListener(type, function (event) {
+      if (!uploadEnabled || busy) return;
+      event.preventDefault();
+      dropZone.classList.add('drag-over');
+    });
+  });
+  dropZone.addEventListener('dragleave', function (event) {
+    if (dropZone.contains(event.relatedTarget)) return;
+    dropZone.classList.remove('drag-over');
+  });
+  dropZone.addEventListener('drop', function (event) {
+    event.preventDefault();
+    dropZone.classList.remove('drag-over');
+    if (!uploadEnabled || busy) return;
+    addFiles(event.dataTransfer && event.dataTransfer.files);
+  });
+
+  document.getElementById('another-btn').addEventListener('click', function () {
+    resetComposer();
+    verifySession({ keepAccessOnError: true });
+  });
+
+  syncSource();
   sessionId = readSessionId();
   verifySession();
+})();
 </script>
 </body>
 </html>
