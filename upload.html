@@ -890,7 +890,7 @@
       if (res.status === 404) {
         resetProgress();
         setBusy(false);
-        showUploadError('This job is no longer available. It may have expired after 24 hours.');
+        showUploadError('This manual isn’t available. Manuals are deleted 24 hours after they’re made. Generate it again from your files.');
         return null;
       }
       var job = await readJson(res);
@@ -921,7 +921,7 @@
     var updated = await verifySession({ keepAccessOnError: true });
     var successText = opts.legacy
       ? 'Your PDF is ready. Download it here.'
-      : 'Your PDF is ready. Download it here. This copy stays available for 24 hours.';
+      : 'Your PDF is ready. Download it right away, because it’s deleted 24 hours after it’s made.';
     if (updated && updated.remaining === null) successText += ' Unlimited manuals remaining.';
     else if (updated) successText += ' ' + remainingLabel(updated.remaining) + '.';
     successSub.textContent = successText;
@@ -955,7 +955,7 @@
       if (!res.ok) {
         var errBody = await readJson(res);
         showUploadError(res.status === 404
-          ? 'This manual isn’t available. It may have expired after 24 hours.'
+          ? 'This manual isn’t available. Manuals are deleted 24 hours after they’re made. Generate it again from your files.'
           : (friendlyHttpError(res.status, errBody).message));
         return false;
       }
