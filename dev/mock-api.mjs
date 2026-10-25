@@ -13,9 +13,32 @@ const PDF = Buffer.from('%PDF-1.4\n1 0 obj<<>>endobj\ntrailer<<>>\n%%EOF\n');
 const jobs = new Map();
 const pdfs = new Map();
 const holds = new Map();
+const tokens = new Map();
 const requests = [];
 const configWaiters = [];
 const checkoutConfig = { managedPayments: true, fail: false, hold: false, portalFail: false, accessFail: false, portalStatus: 0, accessStatus: 0 };
+
+const REFUND_MESSAGE = 'This purchase was refunded, so it can no longer generate manuals. Contact support@manualos.com.';
+const SESSIONS = {
+  cs_test_local: { valid: true, plan: 'starter', remaining: 3, billingIssue: false },
+  cs_test_pro: { valid: true, plan: 'pro', remaining: null, billingIssue: false },
+  cs_test_empty: { valid: true, plan: 'starter', remaining: 0, billingIssue: false },
+  cs_test_past_due: { valid: true, plan: 'pro', remaining: null, billingIssue: true },
+  cs_test_compat: { valid: true, plan: 'starter', remaining: 3, billingIssue: false, compat: true },
+  cs_test_canceled: { blocked: 403, plan: 'pro', error: 'This purchase is not active.', code: 'purchase_inactive' },
+  cs_test_refunded: { blocked: 403, plan: 'starter', error: REFUND_MESSAGE, code: 'purchase_inactive', pdfStatus: 402 },
+};
+const FIELD_LIMITS = {
+  manufacturer_name: 200,
+  product_name: 200,
+  model: 200,
+  brand: 200,
+  manufacturer_address: 200,
+  doc_number: 80,
+  language: 80,
+  revision: 40,
+  date: 40,
+};
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -31,11 +54,12 @@ function sendJson(res, status, body) {
   res.end(payload);
 }
 
-function sendPdf(res, body) {
+function sendPdf(res, body, filename) {
+  const name = String(filename || 'manualos-manual.pdf').replace(/"/g, '');
   res.writeHead(200, {
     'Content-Type': 'application/pdf',
     'Content-Length': body.length,
-    'Content-Disposition': 'attachment; filename="manual.pdf"',
+    'Content-Disposition': `attachment; filename="${name}"`,
     'Cache-Control': 'no-store',
   });
   res.end(body);
@@ -125,8 +149,139 @@ function scenarioOf(filenames) {
   return 'ok';
 }
 
-function sessionAllowed(sessionId) {
-  return sessionId === 'cs_test_local' || sessionId === 'cs_test_pro';
+function record(req, entry) {
+  requests.push({
+    method: entry.method,
+    path: entry.path,
+    status: entry.status,
+    files: entry.files || [],
+    fields: entry.fields || [],
+    authorization: String(req.headers.authorization || ''),
+    sessionHeader: String(req.headers['x-session-id'] || ''),
+  });
+}
+
+function bearerValue(req) {
+  const match = /^Bearer\s+(\S+)/i.exec(String(req.headers.authorization || '').trim());
+  return match ? match[1] : '';
+}
+
+function lookupToken(token) {
+  const row = tokens.get(token);
+  if (!row || row.revoked) return null;
+  if (Date.parse(row.expiresAt) <= Date.now()) return null;
+  return row;
+}
+
+function resolveCaller(req, parts) {
+  const bearer = bearerValue(req);
+  if (bearer) {
+    const row = lookupToken(bearer);
+    if (!row) return { error: 'token' };
+    return { sessionId: row.sessionId };
+  }
+  const header = String(req.headers['x-session-id'] || '').trim();
+  const formPart = parts && parts.find((part) => part.name === 'session_id' && !part.filename);
+  const form = formPart ? formPart.body.toString('utf8').trim() : '';
+  const sessionId = header || form;
+  if (!sessionId) return { error: 'missing' };
+  return { sessionId };
+}
+
+function fieldValue(parts, name) {
+  const part = parts.find((item) => item.name === name && !item.filename);
+  return part ? part.body.toString('utf8').trim() : '';
+}
+
+function fieldLengthError(parts) {
+  for (const [name, max] of Object.entries(FIELD_LIMITS)) {
+    const value = fieldValue(parts, name);
+    if (value.length > max) {
+      return { error: `${name} must be at most ${max} characters.`, code: 'field_too_long' };
+    }
+  }
+  return null;
+}
+
+function downloadFilename(product, manufacturer) {
+  const source = String(product || manufacturer || '').normalize('NFKD');
+  const slug = source
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 60)
+    .replace(/-+$/g, '');
+  return `${slug || 'manualos'}-manual.pdf`;
+}
+
+function generationBlock(sessionId) {
+  const row = SESSIONS[sessionId];
+  if (!row) return [404, { error: 'No purchase was found for this session.', code: 'purchase_not_found' }];
+  if (row.pdfStatus === 402) return [402, { error: row.error }];
+  if (row.blocked) return [row.blocked, { error: row.error, code: row.code }];
+  if (row.remaining === 0) return [402, { error: 'Starter credits are used up.' }];
+  return null;
+}
+
+function accessView(sessionId) {
+  const row = SESSIONS[sessionId];
+  if (!row || row.blocked) {
+    return {
+      valid: false,
+      plan: row && row.plan ? row.plan : null,
+      remaining: null,
+      billingIssue: false,
+    };
+  }
+  return {
+    valid: true,
+    plan: row.plan,
+    remaining: row.remaining,
+    billingIssue: !!row.billingIssue,
+  };
+}
+
+function mintToken(sessionId) {
+  const view = accessView(sessionId);
+  const accessToken = `tok_${sessionId}_${Math.random().toString(16).slice(2)}`;
+  const expiresAt = new Date(Date.now() + 7200 * 1000).toISOString();
+  tokens.set(accessToken, { sessionId, expiresAt, revoked: false });
+  return {
+    access_token: accessToken,
+    token_type: 'Bearer',
+    expires_in: 7200,
+    expires_at: expiresAt,
+    ...view,
+  };
+}
+
+function listJobs(sessionId) {
+  return [...jobs.values()]
+    .filter((job) => job.sessionId === sessionId && job.status === 'succeeded' && pdfs.has(job.id))
+    .filter((job) => {
+      const expiresAt = Date.parse(job.expiresAt);
+      return !Number.isFinite(expiresAt) || expiresAt > Date.now();
+    })
+    .sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt))
+    .map((job) => ({
+      id: job.id,
+      status: job.status,
+      createdAt: job.createdAt,
+      expiresAt: job.expiresAt,
+      filename: job.filename,
+      download_path: `/jobs/${job.id}/pdf`,
+    }));
+}
+
+function authorizeJobRead(req) {
+  const caller = resolveCaller(req, null);
+  if (caller.error === 'token') {
+    return { failure: [401, { error: 'Access token is invalid or expired.', code: 'access_token_invalid' }] };
+  }
+  if (caller.error === 'missing') {
+    return { failure: [404, { error: 'Job not found or expired.' }] };
+  }
+  return { sessionId: caller.sessionId };
 }
 
 function errorForScenario(scenario) {
@@ -226,26 +381,48 @@ async function serveStatic(req, res, urlPath) {
   }
 }
 
+function screenUpload(req, parts, filenames) {
+  const caller = resolveCaller(req, parts);
+  if (caller.error === 'token') {
+    return { response: [401, { error: 'Access token is invalid or expired.', code: 'access_token_invalid' }] };
+  }
+  if (caller.error === 'missing') {
+    return { response: [402, { error: 'Payment required. Provide session_id in the form body or the X-Session-Id header.' }] };
+  }
+  if (filenames.some((name) => name.toLowerCase() === 'counted.l5x') || filenames.length > 25) {
+    return { response: [400, { error: 'Too many files. Send at most 25.', code: 'too_many_files' }] };
+  }
+  if (filenames.some((name) => name.toLowerCase() === 'overlimit.l5x')) {
+    return { response: [400, { error: 'Upload failed.' }] };
+  }
+  const lengthError = fieldLengthError(parts);
+  if (lengthError) return { response: [400, lengthError] };
+  const blocked = generationBlock(caller.sessionId);
+  if (blocked) return { response: blocked };
+  return { sessionId: caller.sessionId };
+}
+
 async function handleJobsPost(req, res) {
   const body = await readBody(req);
   const parts = parseMultipart(body, req.headers['content-type']);
   const files = parts.filter((part) => part.filename);
   const fields = parts.filter((part) => part.name && !part.filename).map((part) => part.name);
   const filenames = files.map((part) => part.filename);
-  const session = (
-    parts.find((part) => part.name === 'session_id')?.body.toString('utf8')
-    || req.headers['x-session-id']
-    || ''
-  ).trim();
-  const scenario = !sessionAllowed(session) ? '402' : scenarioOf(filenames);
+  const screened = screenUpload(req, parts, filenames);
+  if (screened.response) {
+    record(req, { method: 'POST', path: '/jobs', status: screened.response[0], files: filenames, fields });
+    sendJson(res, screened.response[0], screened.response[1]);
+    return;
+  }
+  const scenario = scenarioOf(filenames);
   if (scenario === 'drop') {
-    requests.push({ method: 'POST', path: '/jobs', status: 0, files: filenames, fields });
+    record(req, { method: 'POST', path: '/jobs', status: 0, files: filenames, fields });
     req.socket.destroy();
     return;
   }
   const immediate = errorForScenario(scenario);
   if (immediate) {
-    requests.push({ method: 'POST', path: '/jobs', status: immediate[0], files: filenames, fields });
+    record(req, { method: 'POST', path: '/jobs', status: immediate[0], files: filenames, fields });
     sendJson(res, immediate[0], immediate[1]);
     return;
   }
@@ -253,6 +430,8 @@ async function handleJobsPost(req, res) {
   const id = 'job_' + Math.random().toString(16).slice(2, 14);
   const job = {
     id,
+    sessionId: screened.sessionId,
+    filename: downloadFilename(fieldValue(parts, 'product_name'), fieldValue(parts, 'manufacturer_name')),
     status: 'queued',
     progress: { stage: 'queued', percent: 0, message: 'Waiting to start' },
     error: null,
@@ -262,7 +441,7 @@ async function handleJobsPost(req, res) {
     expiresAt: new Date(now + 24 * 60 * 60 * 1000).toISOString(),
   };
   jobs.set(id, job);
-  requests.push({ method: 'POST', path: '/jobs', status: 202, files: filenames, fields });
+  record(req, { method: 'POST', path: '/jobs', status: 202, files: filenames, fields });
   sendJson(res, 202, publicJob(job));
   runJob(job, scenario).catch(() => {
     job.status = 'failed';
@@ -276,28 +455,30 @@ async function handleLegacy(req, res) {
   const parts = parseMultipart(body, req.headers['content-type']);
   const files = parts.filter((part) => part.filename).map((part) => part.filename);
   const fields = parts.filter((part) => part.name && !part.filename).map((part) => part.name);
-  const session = (
-    parts.find((part) => part.name === 'session_id')?.body.toString('utf8')
-    || req.headers['x-session-id']
-    || ''
-  ).trim();
-  const scenario = !sessionAllowed(session) ? '402' : scenarioOf(files);
+  const screened = screenUpload(req, parts, files);
+  if (screened.response) {
+    record(req, { method: 'POST', path: '/generate-manual', status: screened.response[0], files, fields });
+    sendJson(res, screened.response[0], screened.response[1]);
+    return;
+  }
+  const scenario = scenarioOf(files);
   if (scenario === 'drop') {
-    requests.push({ method: 'POST', path: '/generate-manual', status: 0, files, fields });
+    record(req, { method: 'POST', path: '/generate-manual', status: 0, files, fields });
     req.socket.destroy();
     return;
   }
   const immediate = errorForScenario(scenario === '404' ? 'ok' : scenario);
   if (immediate && scenario !== '404') {
-    requests.push({ method: 'POST', path: '/generate-manual', status: immediate[0], files, fields });
+    record(req, { method: 'POST', path: '/generate-manual', status: immediate[0], files, fields });
     sendJson(res, immediate[0], immediate[1]);
     return;
   }
-  requests.push({ method: 'POST', path: '/generate-manual', status: 200, files, fields });
+  record(req, { method: 'POST', path: '/generate-manual', status: 200, files, fields });
+  const filename = downloadFilename(fieldValue(parts, 'product_name'), fieldValue(parts, 'manufacturer_name'));
   res.writeHead(200, {
     'Content-Type': 'application/pdf',
     'Content-Length': PDF.length,
-    'Content-Disposition': 'attachment; filename="manual.pdf"',
+    'Content-Disposition': `attachment; filename="${filename.replace(/"/g, '')}"`,
     Deprecation: 'true',
     Link: '</jobs>; rel="successor-version"',
     'Cache-Control': 'no-store',
@@ -305,21 +486,89 @@ async function handleLegacy(req, res) {
   res.end(PDF);
 }
 
+async function readJsonBody(req) {
+  const body = await readBody(req);
+  if (!body.length) return {};
+  try { return JSON.parse(body.toString('utf8')); } catch { return null; }
+}
+
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url || '/', 'http://127.0.0.1');
   try {
-    if (req.method === 'GET' && url.pathname === '/verify-session') {
-      const sessionId = (url.searchParams.get('session_id') || '').trim();
+    if (req.method === 'POST' && url.pathname === '/access-token') {
+      const payload = await readJsonBody(req);
+      if (payload === null) {
+        record(req, { method: 'POST', path: '/access-token', status: 400 });
+        return sendJson(res, 400, { error: 'Invalid request body.' });
+      }
+      const sessionId = String(payload.session_id || '').trim();
       if (sessionId === 'cs_test_drop') {
-        requests.push({ method: 'GET', path: '/verify-session', status: 0, files: [], fields: [] });
+        record(req, { method: 'POST', path: '/access-token', status: 0 });
         req.socket.destroy();
         return;
       }
-      requests.push({ method: 'GET', path: '/verify-session', status: 200, files: [], fields: [] });
-      if (sessionId === 'cs_test_local') return sendJson(res, 200, { valid: true, plan: 'starter', remaining: 3 });
-      if (sessionId === 'cs_test_pro') return sendJson(res, 200, { valid: true, plan: 'pro', remaining: null });
-      if (sessionId === 'cs_test_empty') return sendJson(res, 200, { valid: true, plan: 'starter', remaining: 0 });
-      return sendJson(res, 200, { valid: false, plan: null, remaining: null });
+      if (!sessionId) {
+        record(req, { method: 'POST', path: '/access-token', status: 400 });
+        return sendJson(res, 400, { error: 'session_id is required.' });
+      }
+      const row = SESSIONS[sessionId];
+      if (row && row.compat) {
+        record(req, { method: 'POST', path: '/access-token', status: 503 });
+        return sendJson(res, 503, { error: 'Access tokens are temporarily unavailable.' });
+      }
+      if (!row) {
+        record(req, { method: 'POST', path: '/access-token', status: 404 });
+        return sendJson(res, 404, { error: 'No purchase was found for this session.', code: 'purchase_not_found' });
+      }
+      if (row.blocked) {
+        record(req, { method: 'POST', path: '/access-token', status: row.blocked });
+        return sendJson(res, row.blocked, { error: row.error, code: row.code });
+      }
+      record(req, { method: 'POST', path: '/access-token', status: 200 });
+      return sendJson(res, 200, mintToken(sessionId));
+    }
+    if (req.method === 'POST' && url.pathname === '/access-token/revoke') {
+      const row = tokens.get(bearerValue(req));
+      if (!row || row.revoked || Date.parse(row.expiresAt) <= Date.now()) {
+        record(req, { method: 'POST', path: '/access-token/revoke', status: 401 });
+        return sendJson(res, 401, { error: 'Access token is invalid or expired.', code: 'access_token_invalid' });
+      }
+      row.revoked = true;
+      record(req, { method: 'POST', path: '/access-token/revoke', status: 200 });
+      return sendJson(res, 200, { ok: true });
+    }
+    if (req.method === 'GET' && url.pathname === '/verify-session') {
+      const querySession = (url.searchParams.get('session_id') || '').trim();
+      if (!bearerValue(req) && querySession === 'cs_test_drop') {
+        record(req, { method: 'GET', path: '/verify-session', status: 0 });
+        req.socket.destroy();
+        return;
+      }
+      const bearer = bearerValue(req);
+      if (bearer && !lookupToken(bearer)) {
+        record(req, { method: 'GET', path: '/verify-session', status: 401 });
+        return sendJson(res, 401, { error: 'Access token is invalid or expired.', code: 'access_token_invalid' });
+      }
+      const sessionId = bearer ? lookupToken(bearer).sessionId : querySession;
+      if (!sessionId) {
+        record(req, { method: 'GET', path: '/verify-session', status: 400 });
+        return sendJson(res, 400, { error: 'session_id is required' });
+      }
+      record(req, { method: 'GET', path: '/verify-session', status: 200 });
+      return sendJson(res, 200, accessView(sessionId));
+    }
+    if (req.method === 'GET' && url.pathname === '/jobs') {
+      const caller = resolveCaller(req, null);
+      if (caller.error === 'token') {
+        record(req, { method: 'GET', path: '/jobs', status: 401 });
+        return sendJson(res, 401, { error: 'Access token is invalid or expired.', code: 'access_token_invalid' });
+      }
+      if (caller.error === 'missing') {
+        record(req, { method: 'GET', path: '/jobs', status: 401 });
+        return sendJson(res, 401, { error: 'Authorization is required.', code: 'authorization_required' });
+      }
+      record(req, { method: 'GET', path: '/jobs', status: 200 });
+      return sendJson(res, 200, { jobs: listJobs(caller.sessionId) });
     }
     if (req.method === 'GET' && url.pathname === '/api/checkout-config') {
       if (checkoutConfig.hold) await new Promise((resolve) => { configWaiters.push(resolve); });
@@ -453,18 +702,25 @@ const server = http.createServer(async (req, res) => {
     }
     const jobMatch = /^\/jobs\/([^/]+)$/.exec(url.pathname);
     if (req.method === 'GET' && jobMatch) {
-      const job = jobs.get(jobMatch[1]);
-      if (!job) return sendJson(res, 404, { error: 'Job not found or expired.' });
+      const auth = authorizeJobRead(req);
+      if (auth.failure) return sendJson(res, auth.failure[0], auth.failure[1]);
+      const job = jobs.get(decodeURIComponent(jobMatch[1]));
+      if (!job || job.sessionId !== auth.sessionId) return sendJson(res, 404, { error: 'Job not found or expired.' });
       return sendJson(res, 200, publicJob(job));
     }
     const pdfMatch = /^\/jobs\/([^/]+)\/pdf$/.exec(url.pathname);
     if (req.method === 'GET' && pdfMatch) {
-      const job = jobs.get(pdfMatch[1]);
-      if (!job) return sendJson(res, 404, { error: 'Job not found or expired.' });
+      const auth = authorizeJobRead(req);
+      if (auth.failure) return sendJson(res, auth.failure[0], auth.failure[1]);
+      const job = jobs.get(decodeURIComponent(pdfMatch[1]));
+      if (!job || job.sessionId !== auth.sessionId) return sendJson(res, 404, { error: 'Job not found or expired.' });
+      const owner = SESSIONS[job.sessionId];
+      if (owner && owner.pdfStatus === 402) return sendJson(res, 402, { error: owner.error });
       if (job.status !== 'succeeded') return sendJson(res, 409, { error: 'Manual is not ready.' });
       const pdf = pdfs.get(job.id);
       if (!pdf) return sendJson(res, 404, { error: 'Job not found or expired.' });
-      return sendPdf(res, pdf);
+      record(req, { method: 'GET', path: `/jobs/${job.id}/pdf`, status: 200 });
+      return sendPdf(res, pdf, job.filename);
     }
     if (req.method === 'GET' || req.method === 'HEAD') return await serveStatic(req, res, url.pathname);
     sendJson(res, 404, { error: 'Not found' });

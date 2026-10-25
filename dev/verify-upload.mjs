@@ -78,7 +78,14 @@ async function shoot(page, name, scrollSelector) {
 
 async function openUpload(page, base, query) {
   await page.goto(`${base}/upload.html${query || '?session_id=cs_test_local'}`, { waitUntil: 'networkidle0' });
-  await page.waitForFunction(() => document.body.dataset.phase === 'ready', { timeout: 8000 });
+  await page.waitForFunction(() => {
+    const phase = document.body.dataset.phase;
+    return phase === 'ready' || phase === 'success';
+  }, { timeout: 8000 });
+  if (await page.evaluate(() => document.body.dataset.phase === 'success')) {
+    await page.click('#another-btn');
+    await page.waitForFunction(() => document.body.dataset.phase === 'ready', { timeout: 8000 });
+  }
 }
 
 async function addFile(page, filePath) {
@@ -174,6 +181,7 @@ async function main() {
     exp: path.join(fixtureDir, 'routine.exp'),
     zip: path.join(fixtureDir, 'drawings.zip'),
     long: path.join(fixtureDir, 'VeryLongProgramNameForTheMobileFileListCheck.L5X'),
+    over: path.join(fixtureDir, 'overlimit.L5X'),
   };
   await writeFile(fixtures.line, '<RSLogix5000Content></RSLogix5000Content>');
   await writeFile(fixtures.step, 'ISO-10303-21;\n');
@@ -193,6 +201,13 @@ async function main() {
   await writeFile(fixtures.exp, 'PROGRAM Main\nEND_PROGRAM');
   await writeFile(fixtures.zip, 'PK');
   await writeFile(fixtures.long, '<RSLogix5000Content></RSLogix5000Content>');
+  await writeFile(fixtures.over, '<RSLogix5000Content></RSLogix5000Content>');
+  const manyFiles = [];
+  for (let i = 0; i < 26; i += 1) {
+    const file = path.join(fixtureDir, `batch-${i}.L5X`);
+    await writeFile(file, '<RSLogix5000Content></RSLogix5000Content>');
+    manyFiles.push(file);
+  }
 
   const html = await readFile(path.join(root, 'upload.html'), 'utf8');
   const index = await readFile(path.join(root, 'index.html'), 'utf8');
@@ -223,6 +238,32 @@ async function main() {
   note('headline surfaces do not say export, and each plan has one checkout button', true);
   await assertNoBrandNames(root);
   note('shipped HTML and JS do not name vendors', true);
+  const copyright = '© 2026 Op3x LLC. ManualOS is a product of Op3x LLC.';
+  for (const name of ['index.html', 'upload.html', '404.html']) {
+    const pageHtml = name === 'index.html' ? index : await readFile(path.join(root, name), 'utf8');
+    const footStart = pageHtml.indexOf('<footer');
+    const footEnd = pageHtml.indexOf('</footer>');
+    const foot = pageHtml.slice(footStart, footEnd);
+    if (!foot.includes(copyright)) throw new Error(name + ' footer copyright');
+    for (const href of ['mailto:support@manualos.com', '/terms.html', '/privacy.html', '/refunds.html']) {
+      if (!foot.includes(href)) throw new Error(name + ' footer missing ' + href);
+    }
+    if (/sitemap\.xml/i.test(foot)) throw new Error(name + ' footer still links the sitemap');
+    const credits = pageHtml.match(/Hero video created with Grok\./g) || [];
+    if (name === 'index.html' && credits.length !== 1) throw new Error('hero credit count ' + credits.length);
+    if (name !== 'index.html' && credits.length) throw new Error(name + ' carries the hero credit');
+  }
+  if (!html.includes('name="referrer" content="no-referrer"')) {
+    throw new Error('upload.html is missing Referrer-Policy no-referrer');
+  }
+  if (/never stored/i.test(index)) throw new Error('homepage still says files are never stored');
+  const retention = (index.match(/kept for 24 hours so you can download it again/g) || []).length;
+  if (retention < 3) throw new Error('retention sentence count ' + retention);
+  const anchorIds = ['how', 'sample', 'pricing', 'faq'];
+  const missingAnchors = anchorIds.filter((id) => !index.includes(`id="${id}"`));
+  if (missingAnchors.length) throw new Error('homepage missing anchors: ' + missingAnchors.join(', '));
+  note('shared footer, referrer policy, and 24-hour PDF retention copy', true);
+  note('homepage keeps #how, #sample, #pricing, and #faq', true);
 
   const { child, base } = await startMock();
   const browser = await puppeteer.launch({
@@ -263,7 +304,7 @@ async function main() {
     async function measureCls(query, label) {
       if (!query) {
         await page.goto(base + '/upload.html', { waitUntil: 'domcontentloaded' });
-        await page.evaluate(() => localStorage.clear());
+        await page.evaluate(() => { localStorage.clear(); sessionStorage.clear(); });
       }
       const client = await page.createCDPSession();
       await client.send('Network.enable');
@@ -399,9 +440,11 @@ async function main() {
     if (pdfHead !== '%PDF-') throw new Error('pdf head ' + pdfHead);
     const posted = (await requests(base)).filter((entry) => entry.path === '/jobs' && entry.status === 202);
     const last = posted[posted.length - 1];
-    for (const field of ['session_id', 'manufacturer_name', 'product_name', 'model', 'doc_number', 'revision']) {
+    for (const field of ['manufacturer_name', 'product_name', 'model', 'doc_number', 'revision']) {
       if (!last.fields.includes(field)) throw new Error('missing field ' + field);
     }
+    if (!/^Bearer \S+/.test(last.authorization || '')) throw new Error('missing bearer ' + JSON.stringify(last));
+    if (last.fields.includes('session_id') || last.sessionHeader) throw new Error('session id was sent with a bearer token');
     if (last.files.join(',') !== 'hold.L5X,model.step') throw new Error('posted files ' + last.files.join(','));
     if (!(await page.$eval('#payment-welcome', (el) => el.hidden))) throw new Error('welcome stayed after jobs success');
     const successHeading = await page.$eval('#success-title', (el) => el.tagName);
@@ -409,6 +452,38 @@ async function main() {
     await runAxe(page, 'success');
     await shoot(page, 'success', '#success-section');
     note('success shows coverage, warning, and a PDF download', true);
+
+    await page.evaluateOnNewDocument(() => {
+      window.__downloadClicks = 0;
+      const orig = HTMLAnchorElement.prototype.click;
+      HTMLAnchorElement.prototype.click = function () {
+        if (this.id === 'download-link') window.__downloadClicks = (window.__downloadClicks || 0) + 1;
+        return orig.apply(this, arguments);
+      };
+    });
+    await page.goto(base + '/upload.html', { waitUntil: 'networkidle0' });
+    await page.waitForFunction(() => document.body.dataset.phase === 'success', { timeout: 8000 });
+    const restored = await page.evaluate(async () => {
+      const link = document.getElementById('download-link');
+      const res = await fetch(link.href);
+      const bytes = new Uint8Array(await res.arrayBuffer());
+      return {
+        clicks: window.__downloadClicks || 0,
+        search: location.search,
+        hidden: document.getElementById('success-section').hidden,
+        download: link.getAttribute('download') || '',
+        head: new TextDecoder().decode(bytes.slice(0, 5)),
+      };
+    });
+    if (restored.clicks !== 0 || /session_id/.test(restored.search) || restored.hidden || restored.head !== '%PDF-' || !/manual\.pdf$/.test(restored.download)) {
+      throw new Error('restored download ' + JSON.stringify(restored));
+    }
+    const restoreLog = await requests(base);
+    const restoreList = [...restoreLog].reverse().find((entry) => entry.method === 'GET' && entry.path === '/jobs' && entry.status === 200);
+    if (!restoreList || !/^Bearer /.test(restoreList.authorization || '')) {
+      throw new Error('job list was not authorized with the bearer token');
+    }
+    note('a return visit restores the PDF for 24 hours without downloading it again', true);
 
     await openUpload(page, base);
     await addFile(page, fixtures.empty);
@@ -536,6 +611,11 @@ async function main() {
     await runAxe(page, 'pro session');
     note('pro session shows unlimited manuals', true);
 
+    await openUpload(page, base, '?session_id=cs_test_past_due');
+    const pastDue = await page.$eval('#access-message', (el) => el.textContent);
+    if (!/Pro plan/.test(pastDue) || !/Payment needs attention\./.test(pastDue)) throw new Error(pastDue);
+    note('a past-due purchase stays entitled and says payment needs attention', true);
+
     await openUpload(page, base);
     await addFile(page, fixtures.exp);
     await page.click('input[value="cad"]');
@@ -555,6 +635,149 @@ async function main() {
     const narrowOverflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
     if (narrowOverflow > 1) throw new Error('long name overflow ' + narrowOverflow);
     note('a long file name does not overflow at 390px', true);
+
+    const uploadTaps = await page.evaluate(() => {
+      return [...document.querySelectorAll('footer a, .nav-back, #sign-out')].filter((el) => !el.hidden && getComputedStyle(el).display !== 'none').map((el) => {
+        const rect = el.getBoundingClientRect();
+        return { text: (el.textContent || '').trim().slice(0, 40), w: Math.round(rect.width), h: Math.round(rect.height) };
+      });
+    });
+    const smallUploadTaps = uploadTaps.filter((item) => item.w < 44 || item.h < 44);
+    if (smallUploadTaps.length) throw new Error('upload tap targets ' + JSON.stringify(smallUploadTaps));
+    note('upload links are at least 44px on a phone', true);
+
+    await page.setViewport({ width: 1280, height: 1000, deviceScaleFactor: 1 });
+    await openUpload(page, base);
+    const formatLists = await page.evaluate(() => {
+      return [...document.querySelectorAll('#source-guidance, #drop-help, .export-intro, .platforms, .platform-tags')]
+        .filter((el) => getComputedStyle(el).display !== 'none')
+        .filter((el) => /\.L5X/i.test(el.textContent))
+        .map((el) => el.id || el.className);
+    });
+    if (formatLists.length !== 1 || formatLists[0] !== 'source-guidance') {
+      throw new Error('accepted formats listed ' + JSON.stringify(formatLists));
+    }
+    note('accepted formats are listed once', true);
+
+    const beforeLimit = (await requests(base)).filter((entry) => entry.path === '/jobs').length;
+    const limitInput = await page.$('#file-input');
+    await limitInput.uploadFile(...manyFiles);
+    await page.evaluate(() => {
+      document.getElementById('file-input').dispatchEvent(new Event('change', { bubbles: true }));
+    });
+    const limitText = await page.$eval('#upload-error', (el) => el.innerText);
+    const listedCount = await page.$$eval('#file-list li', (nodes) => nodes.length);
+    if (!/up to 25 files/i.test(limitText) || /upload failed/i.test(limitText)) {
+      throw new Error('25-file message: ' + limitText);
+    }
+    if (listedCount !== 25) throw new Error('listed ' + listedCount + ' files');
+    const afterLimit = (await requests(base)).filter((entry) => entry.path === '/jobs').length;
+    if (afterLimit !== beforeLimit) throw new Error('selecting 26 files posted a job');
+    note('more than 25 files shows the limit and is not uploaded', true);
+
+    await openUpload(page, base);
+    await addFile(page, fixtures.over);
+    await page.click('#generate-btn');
+    await waitPhase(page, 'error');
+    const overText = await page.$eval('#upload-error', (el) => el.innerText);
+    if (!/up to 25 files/i.test(overText) || /upload failed/i.test(overText)) {
+      throw new Error('server limit message: ' + overText);
+    }
+    note('a generator Upload failed. response is shown as the 25-file limit', true);
+
+    await openUpload(page, base, '?session_id=cs_test_compat');
+    if (/session_id/.test(await page.evaluate(() => location.search))) throw new Error('compat left session_id in the url');
+    await addFile(page, fixtures.line);
+    await page.click('#generate-btn');
+    await waitPhase(page, 'success');
+    const compatLog = await requests(base);
+    const compatPost = [...compatLog].reverse().find((entry) => entry.path === '/jobs' && entry.status === 202 && entry.files.includes('line.L5X'));
+    const compatExchange = [...compatLog].reverse().find((entry) => entry.path === '/access-token' && entry.status === 503);
+    if (!compatPost || !compatPost.fields.includes('session_id') || compatPost.authorization || compatPost.sessionHeader !== 'cs_test_compat' || !compatExchange) {
+      throw new Error('compat credential ' + JSON.stringify({ compatPost, compatExchange: !!compatExchange }));
+    }
+    await page.evaluateOnNewDocument(() => { window.__downloadClicks = 0; });
+    await page.goto(base + '/upload.html', { waitUntil: 'networkidle0' });
+    await page.waitForFunction(() => document.body.dataset.phase === 'success', { timeout: 8000 });
+    const compatRestored = await page.evaluate(() => ({
+      clicks: window.__downloadClicks || 0,
+      token: sessionStorage.getItem('manualos_access_token') || '',
+      local: localStorage.getItem('manualos_session_id') || '',
+    }));
+    if (compatRestored.clicks !== 0 || compatRestored.token || compatRestored.local !== 'cs_test_compat') {
+      throw new Error('compat restore ' + JSON.stringify(compatRestored));
+    }
+    note('session_id still authorizes upload and re-download when access tokens are unavailable', true);
+
+    await page.goto(base + '/upload.html?session_id=cs_test_local', { waitUntil: 'networkidle0' });
+    await page.waitForFunction(() => {
+      const phase = document.body.dataset.phase;
+      return phase === 'ready' || phase === 'success';
+    });
+    if (/session_id/.test(await page.evaluate(() => location.search))) {
+      throw new Error('session_id stayed in the address bar');
+    }
+    await page.goto(base + '/upload.html', { waitUntil: 'networkidle0' });
+    await page.waitForFunction(() => {
+      const phase = document.body.dataset.phase;
+      return phase === 'ready' || phase === 'success';
+    });
+    const storedBox = await page.evaluate(() => {
+      const welcome = document.getElementById('payment-welcome');
+      const style = getComputedStyle(welcome);
+      const rect = welcome.getBoundingClientRect();
+      return {
+        hidden: welcome.hidden,
+        display: style.display,
+        h: rect.height,
+        banner: document.getElementById('access-message').textContent,
+      };
+    });
+    if (!storedBox.hidden || storedBox.display !== 'none' || storedBox.h > 1 || !/Starter plan/.test(storedBox.banner)) {
+      throw new Error('stored session welcome ' + JSON.stringify(storedBox));
+    }
+    note('a stored session does not leave an empty payment box', true);
+
+    await page.goto(base + '/', { waitUntil: 'domcontentloaded' });
+    await page.goto(base + '/upload.html?session_id=cs_test_local', { waitUntil: 'networkidle0' });
+    await page.waitForFunction(() => {
+      const phase = document.body.dataset.phase;
+      return phase === 'ready' || phase === 'success';
+    });
+    await page.click('#sign-out');
+    await page.waitForFunction(() => document.body.dataset.phase === 'locked');
+    const revokeDeadline = Date.now() + 5000;
+    let revoked = null;
+    while (Date.now() < revokeDeadline) {
+      revoked = [...await requests(base)].reverse().find((entry) => entry.path === '/access-token/revoke' && entry.status === 200);
+      if (revoked) break;
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
+    const signedOut = await page.evaluate(() => ({
+      search: location.search,
+      local: localStorage.getItem('manualos_session_id'),
+      token: sessionStorage.getItem('manualos_access_token'),
+      checkout: sessionStorage.getItem('manualos_checkout_session'),
+      text: document.getElementById('payment-welcome-text').textContent,
+    }));
+    if (/session_id/.test(signedOut.search) || signedOut.local || signedOut.token || signedOut.checkout || !/No purchase found/.test(signedOut.text) || !revoked || !/^Bearer /.test(revoked.authorization || '')) {
+      throw new Error('sign out ' + JSON.stringify({ signedOut, revoked: !!revoked }));
+    }
+    await page.goBack();
+    await page.goForward();
+    await page.waitForFunction(() => document.body.dataset.phase === 'locked', { timeout: 8000 });
+    const returned = await page.evaluate(() => ({
+      search: location.search,
+      local: localStorage.getItem('manualos_session_id') || '',
+      token: sessionStorage.getItem('manualos_access_token') || '',
+      checkout: sessionStorage.getItem('manualos_checkout_session') || '',
+      phase: document.body.dataset.phase,
+      text: document.getElementById('payment-welcome-text').textContent,
+    }));
+    if (returned.local || returned.token || returned.checkout || /session_id/.test(returned.search) || returned.phase !== 'locked' || !/No purchase found/.test(returned.text)) {
+      throw new Error('back restored access ' + JSON.stringify(returned));
+    }
+    note('sign out clears the session and Back does not restore it', true);
 
     const unlabeled = await page.evaluate(() => {
       return [...document.querySelectorAll('input, button, select, textarea')].filter((el) => {
@@ -598,7 +821,7 @@ async function main() {
     const cadOnly = await page.$eval('#upload-error', (el) => el.innerText);
     const cadExpected = 'CAD models need the new generator, which isn’t live yet. Nothing was uploaded and no credit was used.';
     if (!cadOnly.includes(cadExpected)) throw new Error('cad only: ' + cadOnly);
-    const cadSent = (await requests(base)).slice(beforeCad).filter((entry) => entry.path === '/generate-manual' || entry.path === '/jobs');
+    const cadSent = (await requests(base)).slice(beforeCad).filter((entry) => entry.method === 'POST' && (entry.path === '/generate-manual' || entry.path === '/jobs'));
     if (cadSent.length) throw new Error('CAD-only legacy sent ' + JSON.stringify(cadSent));
     if (!(await page.$eval('#payment-welcome', (el) => el.hidden))) throw new Error('welcome stayed after CAD-only stop');
     await shoot(page, 'cad_only', '#upload-error');
@@ -614,7 +837,7 @@ async function main() {
     if (!autoCad.includes('Nothing was processed and no credit was used.')) throw new Error('auto cad: ' + autoCad);
     if (/Nothing was uploaded/.test(autoCad)) throw new Error('auto cad still says uploaded: ' + autoCad);
     const autoCadCalls = (await requests(base)).slice(beforeAutoCad);
-    const autoJobs = autoCadCalls.filter((entry) => entry.path === '/jobs');
+    const autoJobs = autoCadCalls.filter((entry) => entry.method === 'POST' && entry.path === '/jobs');
     const autoLegacy = autoCadCalls.filter((entry) => entry.path === '/generate-manual');
     if (autoJobs.length !== 1 || autoJobs[0].status !== 404) throw new Error('auto cad jobs ' + JSON.stringify(autoJobs));
     if (autoLegacy.length) throw new Error('auto cad still called generate-manual');
@@ -692,7 +915,7 @@ async function main() {
     async function expectLocked(query, pattern, label) {
       if (!query) {
         await page.goto(base + '/upload.html', { waitUntil: 'domcontentloaded' });
-        await page.evaluate(() => localStorage.clear());
+        await page.evaluate(() => { localStorage.clear(); sessionStorage.clear(); });
       }
       await page.goto(base + '/upload.html' + query, { waitUntil: 'domcontentloaded', timeout: 20000 });
       await page.waitForFunction(() => document.body.dataset.phase === 'locked', { timeout: 8000 });
@@ -750,7 +973,9 @@ async function main() {
       note(label + ' locks upload without an empty welcome gap', true);
     }
     await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 1 });
-    await expectLocked('?session_id=cs_test_invalid', /isn.t active/, 'invalid session');
+    await expectLocked('?session_id=cs_test_invalid', /wasn.t found/, 'invalid session');
+    await expectLocked('?session_id=cs_test_canceled', /isn.t active/, 'canceled plan');
+    await expectLocked('?session_id=cs_test_refunded', /refunded/, 'refunded purchase');
     await shoot(page, 'invalid_session', '#access-banner');
     await expectLocked('?session_id=cs_test_drop', /couldn.t check your purchase/, 'network error');
     await shoot(page, 'network_error', '#access-banner');
@@ -792,6 +1017,76 @@ async function main() {
     await runAxe(page, 'home 390');
     note('home at 390 keeps one header row, copy before the image, stacked pricing, and two previews', true);
 
+    const menuClosed = await page.evaluate(() => {
+      const toggle = document.querySelector('.nav-toggle');
+      const how = document.querySelector('#primary-menu a[href="#how"]');
+      const toggleBox = toggle.getBoundingClientRect();
+      return {
+        expanded: toggle.getAttribute('aria-expanded'),
+        howVisible: how.getClientRects().length > 0,
+        w: toggleBox.width,
+        h: toggleBox.height,
+      };
+    });
+    if (menuClosed.expanded !== 'false' || menuClosed.howVisible || menuClosed.w < 44 || menuClosed.h < 44) {
+      throw new Error('closed menu ' + JSON.stringify(menuClosed));
+    }
+    await page.click('.nav-toggle');
+    const menuOpen = await page.evaluate(() => {
+      const link = document.querySelector('#primary-menu a[href="#how"]');
+      const box = link.getBoundingClientRect();
+      return {
+        expanded: document.querySelector('.nav-toggle').getAttribute('aria-expanded'),
+        label: document.getElementById('nav-toggle-label').textContent,
+        focused: document.activeElement && document.activeElement.textContent,
+        h: box.height,
+        w: box.width,
+      };
+    });
+    if (menuOpen.expanded !== 'true' || menuOpen.label !== 'Close menu' || !/How it works/.test(menuOpen.focused || '') || menuOpen.h < 44 || menuOpen.w < 44) {
+      throw new Error('open menu ' + JSON.stringify(menuOpen));
+    }
+    await page.keyboard.press('Escape');
+    const menuEsc = await page.evaluate(() => ({
+      expanded: document.querySelector('.nav-toggle').getAttribute('aria-expanded'),
+      active: document.activeElement && document.activeElement.className,
+    }));
+    if (menuEsc.expanded !== 'false' || !/nav-toggle/.test(menuEsc.active || '')) {
+      throw new Error('escape menu ' + JSON.stringify(menuEsc));
+    }
+    await page.keyboard.press('Enter');
+    await page.waitForFunction(() => document.querySelector('.nav-toggle').getAttribute('aria-expanded') === 'true');
+    await page.keyboard.press('Escape');
+    note('phone menu button reveals the section links and Escape returns focus', true);
+
+    const homeTaps = await page.evaluate(() => {
+      const nodes = [
+        document.querySelector('.need-more a'),
+        document.querySelector('.pay-note a'),
+        document.querySelector('.footer-nav a[href="#faq"]'),
+        document.querySelector('.footer-nav a[href^="mailto:"]'),
+        document.querySelector('.faq-item a'),
+      ];
+      return nodes.map((el) => {
+        const rect = el.getBoundingClientRect();
+        return { text: (el.textContent || '').trim().slice(0, 48), w: Math.round(rect.width), h: Math.round(rect.height) };
+      });
+    });
+    const smallHomeTaps = homeTaps.filter((item) => item.w < 44 || item.h < 44);
+    if (smallHomeTaps.length) throw new Error('home tap targets ' + JSON.stringify(smallHomeTaps));
+    note('home links are at least 44 by 44px on a phone', true);
+
+    await page.goto(base + '/?utm_source=ad&utm_medium=cpc&utm_campaign=spring#sample', { waitUntil: 'networkidle0' });
+    const campaignAnchors = await page.evaluate(() => ({
+      hash: location.hash,
+      search: location.search,
+      ids: ['how', 'sample', 'pricing', 'faq'].filter((id) => document.getElementById(id)),
+    }));
+    if (campaignAnchors.hash !== '#sample' || !campaignAnchors.search.includes('utm_campaign=spring') || campaignAnchors.ids.join(',') !== 'how,sample,pricing,faq') {
+      throw new Error('campaign anchor ' + JSON.stringify(campaignAnchors));
+    }
+    note('a /?utm_...#sample link still resolves the homepage anchors', true);
+
     await page.setViewport({ width: 1280, height: 1000, deviceScaleFactor: 1 });
     await page.goto(base + '/', { waitUntil: 'networkidle0' });
     const homeDesktop = await page.evaluate(() => {
@@ -800,22 +1095,23 @@ async function main() {
       const row = figs.filter((el) => Math.abs(el.getBoundingClientRect().top - last.top) < 4);
       const title = document.getElementById('hero-title').getBoundingClientRect();
       const lede = document.querySelector('.lede').getBoundingClientRect();
-      const price = document.querySelector('.hero-price').getBoundingClientRect();
       const cta = document.querySelector('.hero-cta').getBoundingClientRect();
+      const price = document.querySelector('.hero-cta .btn-primary');
+      const priceBox = price ? price.getBoundingClientRect() : { height: 0 };
       return {
         overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
         lastRow: row.length,
         gap: Math.round(lede.top - title.bottom),
-        priceUnderButtons: price.top >= cta.bottom - 2,
+        priceInButton: !!price && /\$39/.test(price.textContent) && priceBox.height > 20 && priceBox.top >= cta.top - 2,
       };
     });
     if (homeDesktop.overflow > 1) throw new Error('home overflow 1280 ' + homeDesktop.overflow);
-    if (homeDesktop.lastRow < 2 || homeDesktop.gap > 40 || !homeDesktop.priceUnderButtons) {
+    if (homeDesktop.lastRow < 2 || homeDesktop.gap > 40 || !homeDesktop.priceInButton) {
       throw new Error('home desktop layout ' + JSON.stringify(homeDesktop));
     }
     await assertButtonContrast(page, 'home 1280');
     await runAxe(page, 'home 1280');
-    note('home at 1280 top-aligns the hero, puts prices under the buttons, and does not leave the last preview alone', true);
+    note('home at 1280 top-aligns the hero, keeps the price on the primary button, and does not leave the last preview alone', true);
 
     if (external.length) throw new Error('external requests: ' + external.join(', '));
     note('no production or Stripe requests', true);
