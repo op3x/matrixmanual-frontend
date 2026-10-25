@@ -132,6 +132,9 @@ async function main() {
   if (!/State of Illinois/.test(html['terms.html'])) throw new Error('terms missing Illinois law');
   if (!/within 31 days of purchase/.test(html['terms.html'])) throw new Error('terms missing 31-day starter refund');
   if (!/within 31 days of that charge/.test(html['terms.html'])) throw new Error('terms missing 31-day pro refund');
+  if (!html['terms.html'].includes('If a Starter purchase is fully refunded, access to Starter, including any unused manuals, is revoked. If a chargeback or payment dispute is opened, access is suspended while it is open. It is restored if the dispute is resolved in our favor and revoked if it is not.')) {
+    throw new Error('terms missing refund and chargeback access wording');
+  }
   const smsNeed = ['support replies', 'account alerts', 'manual-status alerts', 'Message frequency varies', 'Msg &amp; data rates may apply', 'Reply STOP to opt out', 'Reply HELP for help', 'support@manualos.com', 'Mobile numbers and SMS opt-in consent are not shared with or sold to third parties or affiliates for marketing'];
   for (const name of ['privacy.html', 'terms.html']) {
     for (const phrase of smsNeed) {
