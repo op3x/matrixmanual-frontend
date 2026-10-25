@@ -192,7 +192,7 @@ async function main() {
     throw new Error('account alerts is still promised');
   }
   const cancelCopy = 'You can cancel online, self-serve, from our <a href="/cancel">Manage plan</a> link.';
-  const mpCancel = 'You can manage or cancel your subscription online at the reseller\'s order-management site, <a href="https://link.com">link.com</a>. That is a full online alternative.';
+  const mpCancel = 'You can manage or cancel your subscription online at the reseller\'s order-management site, <a href="https://app.link.com">app.link.com</a>. That is a full online alternative.';
   if (!html['terms.html'].includes(cancelCopy) || !html['refunds.html'].includes(cancelCopy)) throw new Error('online cancel link missing');
   if (!html['terms.html'].includes('<p data-mp-section hidden>' + mpCancel) || !html['refunds.html'].includes('<p data-mp-section hidden>' + mpCancel)) {
     throw new Error('managed-payments cancel alternative is missing');
@@ -464,14 +464,14 @@ async function main() {
         leadBeforeEmail: lead.compareDocumentPosition(mail) & Node.DOCUMENT_POSITION_FOLLOWING,
       };
     });
-    if (portalOrder.leadHidden || !portalOrder.leadBeforeEmail || !portalOrder.leadText.startsWith('You can manage or cancel your subscription online at the reseller\'s order-management site, link.com.')) {
-      throw new Error('cancel page does not lead with link.com ' + JSON.stringify(portalOrder));
+    if (portalOrder.leadHidden || !portalOrder.leadBeforeEmail || !portalOrder.leadText.startsWith('You can manage or cancel your subscription online at the reseller\'s order-management site, app.link.com.')) {
+      throw new Error('cancel page does not lead with app.link.com ' + JSON.stringify(portalOrder));
     }
     const beforePortal = (await fetch(base + '/__mock/requests').then((res) => res.json())).filter((item) => item.path === '/billing-portal').length;
     await page.click('#cancel-submit');
     await page.waitForFunction(() => document.getElementById('cancel-error').textContent.startsWith('Manage plan did not open. Use the online option above'));
     const noPortalFocus = await page.evaluate(() => document.activeElement === document.getElementById('mp-cancel-lead') || document.getElementById('mp-cancel-lead').contains(document.activeElement));
-    if (!noPortalFocus) throw new Error('missing portal did not focus the link.com option');
+    if (!noPortalFocus) throw new Error('missing portal did not focus the app.link.com option');
     const earlyPortal = (await fetch(base + '/__mock/requests').then((res) => res.json())).filter((item) => item.path === '/billing-portal').slice(beforePortal);
     if (earlyPortal.length) throw new Error('portal posted without a checkout reference');
     await page.goto(base + '/cancel/?session_id=cs_test_pro', { waitUntil: 'networkidle0' });

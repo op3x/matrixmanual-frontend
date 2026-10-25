@@ -86,7 +86,8 @@ function inside(ranges, index) {
   return ranges.some(([start, end]) => index >= start && index < end);
 }
 
-// "Link" and link.com are allowed only inside data-mp-section.
+// "Link" is allowed only inside data-mp-section.
+// app.link.com is allowed only inside data-mp-section.
 // LINK.COM is allowed only inside the exact statement sentence.
 export function disallowedLinkHits(text) {
   const sections = mpSectionRanges(text);
@@ -99,7 +100,8 @@ export function disallowedLinkHits(text) {
     if (!inside(statements, index)) hits.push({ index, raw, reason: 'LINK.COM outside the statement sentence' });
   }
   for (const [index, , raw] of rangesOf(text, /link\.com/g)) {
-    if (!inside(sections, index)) hits.push({ index, raw, reason: 'link.com outside a managed-payments section' });
+    const appHost = text.slice(Math.max(0, index - 4), index) === 'app.';
+    if (!(appHost && inside(sections, index))) hits.push({ index, raw, reason: 'app.link.com outside a managed-payments section' });
   }
   return hits;
 }
@@ -114,7 +116,9 @@ export function assertLinkExceptions() {
     ['<p>Use the link below.</p>', false],
     ['<a class="skip-link" href="#main">Skip</a>', false],
     ['<p>Cancel at link.com today.</p>', true],
-    ['<p data-mp-section hidden>Subscriptions can also be managed or cancelled from the reseller\'s order-management site (link.com).</p>', false],
+    ['<p data-mp-section hidden>Subscriptions can also be managed or cancelled from the reseller\'s order-management site (link.com).</p>', true],
+    ['<p><a href="https://app.link.com">app.link.com</a></p>', true],
+    ['<p data-mp-section hidden><a href="https://app.link.com">app.link.com</a></p>', false],
   ];
   for (const [sample, expectHit] of cases) {
     const got = disallowedLinkHits(sample).length > 0;
