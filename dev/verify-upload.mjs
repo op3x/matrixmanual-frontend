@@ -6,6 +6,7 @@ import { createRequire } from 'node:module';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { assertNoBrandNames } from './check-brands.mjs';
 
 const require = createRequire(import.meta.url);
 function loadPuppeteer() {
@@ -164,6 +165,8 @@ async function main() {
     throw new Error('homepage still claims a removed format');
   }
   note('copy has no supported-format claim for gx3, cxp, or zap15', true);
+  await assertNoBrandNames(root);
+  note('shipped HTML and JS do not name vendors', true);
 
   const { child, base } = await startMock();
   const browser = await puppeteer.launch({
@@ -424,10 +427,12 @@ async function main() {
       const welcome = document.getElementById('payment-welcome');
       const welcomeText = document.getElementById('payment-welcome-text');
       const lr = link.getBoundingClientRect();
-      const mr = msg.getBoundingClientRect();
       const wr = welcome.getBoundingClientRect();
+      const tr = welcomeText.getBoundingClientRect();
       const ws = getComputedStyle(welcome);
       const needle = 'Starter credits are used up';
+      const sameRow = lr.top < tr.bottom - 1 && lr.bottom > tr.top + 1;
+      const directlyUnder = lr.top >= tr.bottom - 4 && (lr.top - tr.bottom) <= 28;
       const visibleCopies = [];
       const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
       let node;
@@ -447,7 +452,9 @@ async function main() {
       }).map((el) => el.id);
       return {
         pricing: !link.hidden && lr.height > 20 && getComputedStyle(link).visibility !== 'hidden',
-        aligned: Math.abs((mr.top + mr.height / 2) - (lr.top + lr.height / 2)) < 8,
+        aligned: sameRow || directlyUnder,
+        linkTop: Math.round(lr.top),
+        textTop: Math.round(tr.top),
         inputDisabled: document.getElementById('file-input').disabled,
         generateDisabled: document.getElementById('generate-btn').disabled,
         welcomeHidden: welcome.hidden,
@@ -639,10 +646,12 @@ async function main() {
         const welcome = document.getElementById('payment-welcome');
         const welcomeText = document.getElementById('payment-welcome-text');
         const lr = link.getBoundingClientRect();
-        const mr = msg.getBoundingClientRect();
         const wr = welcome.getBoundingClientRect();
+        const tr = welcomeText.getBoundingClientRect();
         const ws = getComputedStyle(welcome);
         const needle = welcomeText ? welcomeText.textContent : '';
+        const sameRow = lr.top < tr.bottom - 1 && lr.bottom > tr.top + 1;
+        const directlyUnder = lr.top >= tr.bottom - 4 && (lr.top - tr.bottom) <= 28;
         const visibleCopies = [];
         const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
         let node;
@@ -664,7 +673,9 @@ async function main() {
           message: msg.textContent,
           topHidden: msg.getAttribute('aria-hidden') === 'true',
           pricing: !link.hidden && lr.height > 20,
-          aligned: Math.abs((mr.top + mr.height / 2) - (lr.top + lr.height / 2)) < 8,
+          aligned: sameRow || directlyUnder,
+          linkTop: Math.round(lr.top),
+          textTop: Math.round(tr.top),
           welcomeShown: ws.display !== 'none' && ws.visibility !== 'hidden' && wr.height > 60,
           welcomeHidden: welcome.hidden,
           welcomeText: needle,
