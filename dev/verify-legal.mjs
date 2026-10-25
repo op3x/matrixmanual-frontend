@@ -281,15 +281,16 @@ async function main() {
     }
   }
   const homepageLine = "To write your manual, we send content extracted from your files, such as program logic, comments, and part details, to a third-party service provider that helps write the manual. We delete your uploaded files when the job finishes. Download your PDF right away, because we delete it 24 hours after it's made. Our provider deletes what we send it within 30 days, unless it must keep it longer to enforce its usage policy or comply with the law. Full details are in our Privacy Policy.";
-  const faqDownloadLine = "You get the PDF when the job is done. Download it right away, because it's deleted 24 hours after it's made.";
   if (!html['index.html'].includes('"text": "' + homepageLine + '"')) throw new Error('JSON-LD FAQ answer missing');
   if (!html['index.html'].includes(homepageLine.replace('Privacy Policy.', '<a href="/privacy.html">Privacy Policy</a>.'))) throw new Error('homepage visible retention line missing');
   const faqHeading = 'Who can see my PLC program?</h3>';
   const faqStart = html['index.html'].indexOf(faqHeading);
   const faqItem = html['index.html'].slice(faqStart + faqHeading.length, html['index.html'].indexOf('</div>', faqStart));
   const faqParagraphs = [...faqItem.matchAll(/<p>([\s\S]*?)<\/p>/g)].map((part) => part[1].replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim());
-  if (faqParagraphs[0] !== homepageLine) throw new Error('visible FAQ text does not match the retention statement');
-  if (faqParagraphs[1] !== faqDownloadLine) throw new Error('FAQ download line missing');
+  if (faqParagraphs.length !== 1 || faqParagraphs[0] !== homepageLine) throw new Error('visible FAQ text does not match the retention statement');
+  if (html['index.html'].includes('You get the PDF when the job is done.')) throw new Error('FAQ repeats the 24-hour download sentence');
+  const metaPrice = 'Starter is $39 once for 3 manuals, plus applicable taxes. Pro is $79 per month, plus applicable taxes.';
+  if ((html['index.html'].split(metaPrice).length - 1) !== 3) throw new Error('homepage meta descriptions do not state plus applicable taxes');
   const readyCard = "Your PDF is ready. Download it right away, because it's deleted 24 hours after it's made.";
   const expiredManual = "This manual isn't available. Manuals are deleted 24 hours after they're made. Generate it again from your files.";
   if (!html['upload.html'].includes(readyCard)) throw new Error('upload ready card missing');
