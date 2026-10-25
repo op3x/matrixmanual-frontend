@@ -89,9 +89,9 @@ code{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:.88em}
     <div class="callout">
       <p><strong>Short version</strong></p>
       <ul>
-        <li>Uploaded files stay in memory only while your manual is generated, and are never saved to disk.</li>
+        <li>Uploaded files are processed and deleted when the job finishes, and are not kept.</li>
         <li>Extracted program logic and device descriptions go to a third-party AI model provider to write the text.</li>
-        <li>The finished PDF can be downloaded for 24 hours. After that, it is no longer available.</li>
+        <li>The generated PDF stays on the server for up to 24 hours for download, then is deleted.</li>
         <li>We don't sell your data, and this site doesn't use cookies or analytics.</li>
         <li>If you opt in, we may text support replies, account alerts, and manual-status alerts. Mobile numbers and SMS opt-in consent are not shared with or sold to third parties or affiliates for marketing.</li>
       </ul>
@@ -110,8 +110,8 @@ code{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:.88em}
 
     <h2><span class="idx">02</span>How your files are processed</h2>
     <ul>
-      <li><strong>While your manual is generated:</strong> uploaded files are held in the server's memory and are never written to disk. When generation ends, whether it succeeds or fails, they are released from memory.</li>
-      <li><strong>The finished PDF:</strong> it is stored on the server for 24 hours under a random link so you can download it. After 24 hours the link stops working, and the PDF can no longer be downloaded. The file is removed the next time the service cleans up expired manuals. If the service restarts before that cleanup, the file can remain until the host replaces the machine. It still cannot be downloaded after 24 hours.</li>
+      <li><strong>Uploaded files:</strong> they are processed and deleted when the job finishes, and are not kept. That includes a job that fails.</li>
+      <li><strong>The generated PDF:</strong> it stays on the server for up to 24 hours for download, under a random link, then is deleted.</li>
       <li><strong>The download link:</strong> anyone who has it can download the PDF during those 24 hours, so don't share it.</li>
       <li><strong>Job status:</strong> progress and warnings are kept in memory for up to 24 hours. They don't include your name, email, or payment details. A restart clears them sooner.</li>
     </ul>
@@ -163,8 +163,8 @@ code{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:.88em}
 
     <h2><span class="idx">08</span>Retention</h2>
     <ul>
-      <li><strong>Uploaded files:</strong> only while your manual is generated.</li>
-      <li><strong>Generated PDFs:</strong> available to download for 24 hours, then removed on the next cleanup as described above.</li>
+      <li><strong>Uploaded files:</strong> deleted when the job finishes, and not kept.</li>
+      <li><strong>Generated PDFs:</strong> stay on the server for up to 24 hours for download, then are deleted.</li>
       <li><strong>Job status:</strong> in memory for up to 24 hours.</li>
       <li><strong>Data sent to the AI provider:</strong> deleted by the provider within 30 days under its standard terms, with the exceptions in section 03.</li>
       <li><strong>Purchase records:</strong> held by the payment processor for as long as it, and the law, require.</li>
@@ -187,7 +187,7 @@ code{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:.88em}
     <p>ManualOS is a business tool. It is not directed to children under 13, and we don't knowingly collect information from them.</p>
 
     <h2><span class="idx">11</span>Your choices</h2>
-    <p>Email <a href="mailto:support@manualos.com">support@manualos.com</a> with a question about your data, or to ask us to delete a text-message opt-in or purchase-related information we control. You can also use the <a href="/support.html">support form</a>. Because we keep no accounts, and uploaded files are not kept after generation, there is usually nothing else stored to delete. Reply STOP to opt out of text messages.</p>
+    <p>Email <a href="mailto:support@manualos.com">support@manualos.com</a> with a question about your data, or to ask us to delete a text-message opt-in or purchase-related information we control. You can also use the <a href="/support.html">support form</a>. Because we keep no accounts, and uploaded files are deleted when the job finishes and are not kept, there is usually nothing else stored to delete. Reply STOP to opt out of text messages.</p>
 
     <h2><span class="idx">12</span>Changes</h2>
     <p>If we change this policy, we will post the new version here and update the effective date above.</p>

@@ -922,7 +922,7 @@
     var updated = await verifySession({ keepAccessOnError: true });
     var successText = opts.legacy
       ? 'Your PDF is ready. Download it here.'
-      : 'Your PDF is ready. Download it here. This copy stays available for 24 hours.';
+      : 'Your PDF is ready. Download it here. This copy stays on the server for up to 24 hours, then is deleted.';
     if (updated && updated.remaining === null) successText += ' Unlimited manuals remaining.';
     else if (updated) successText += ' ' + remainingLabel(updated.remaining) + '.';
     successSub.textContent = successText;
