@@ -115,6 +115,43 @@ async function runAxe(page, label) {
   note('axe 0 violations: ' + label, true);
 }
 
+async function assertButtonContrast(page, label) {
+  const bad = await page.evaluate(() => {
+    function parse(c) {
+      const m = String(c).match(/rgba?\(([^)]+)\)/);
+      if (!m) return null;
+      const p = m[1].split(',').map((x) => parseFloat(x.trim()));
+      if (p.length < 3) return null;
+      return { r: p[0], g: p[1], b: p[2], a: p.length > 3 ? p[3] : 1 };
+    }
+    function bgOf(el) {
+      let node = el;
+      while (node) {
+        const c = parse(getComputedStyle(node).backgroundColor);
+        if (c && c.a > 0.05) return c;
+        node = node.parentElement;
+      }
+      return null;
+    }
+    const nodes = [...document.querySelectorAll('a.btn, button, .btn-primary, .btn-outline, .file-remove')];
+    const problems = [];
+    for (const el of nodes) {
+      const style = getComputedStyle(el);
+      const rect = el.getBoundingClientRect();
+      if (style.display === 'none' || style.visibility === 'hidden' || rect.width < 2 || rect.height < 2) continue;
+      const fg = parse(style.color);
+      const bg = bgOf(el);
+      if (!fg || !bg || fg.a === 0) continue;
+      if (Math.round(fg.r) === Math.round(bg.r) && Math.round(fg.g) === Math.round(bg.g) && Math.round(fg.b) === Math.round(bg.b)) {
+        problems.push((el.innerText || el.className || el.id || 'button').replace(/\s+/g, ' ').trim().slice(0, 60));
+      }
+    }
+    return problems;
+  });
+  if (bad.length) throw new Error(label + ' button text matches its background: ' + bad.join('; '));
+  note('button text colour differs from its background: ' + label, true);
+}
+
 async function main() {
   await mkdir(shotDir, { recursive: true });
   const fixtureDir = await mkdtemp(path.join(tmpdir(), 'manualos-files-'));
@@ -165,6 +202,25 @@ async function main() {
     throw new Error('homepage still claims a removed format');
   }
   note('copy has no supported-format claim for gx3, cxp, or zap15', true);
+  const exportHits = [];
+  const titleTag = (index.match(/<title>[^<]*<\/title>/) || [''])[0];
+  if (/export/i.test(titleTag)) exportHits.push(titleTag);
+  for (const tag of index.match(/<meta\b[^>]*>/g) || []) {
+    if (/export/i.test(tag) && /description|og:|twitter:/.test(tag)) exportHits.push(tag.slice(0, 160));
+  }
+  for (const desc of index.match(/"description":\s*"[^"]*"/g) || []) {
+    if (/export/i.test(desc)) exportHits.push(desc.slice(0, 160));
+  }
+  const footer = index.slice(index.indexOf('<footer'), index.indexOf('</footer>'));
+  if (/export/i.test(footer)) exportHits.push('footer');
+  const heroStart = index.indexOf('id="hero-title"');
+  const heroEnd = index.indexOf('class="fan"', heroStart);
+  if (/export/i.test(index.slice(heroStart, heroEnd))) exportHits.push('hero');
+  if (exportHits.length) throw new Error('export wording remains: ' + exportHits.join(' | '));
+  const starterButtons = (index.match(/data-checkout="starter"/g) || []).length;
+  const proButtons = (index.match(/data-checkout="pro"/g) || []).length;
+  if (starterButtons !== 1 || proButtons !== 1) throw new Error('checkout buttons starter=' + starterButtons + ' pro=' + proButtons);
+  note('headline surfaces do not say export, and each plan has one checkout button', true);
   await assertNoBrandNames(root);
   note('shipped HTML and JS do not name vendors', true);
 
@@ -703,8 +759,63 @@ async function main() {
     await page.setViewport({ width: 1280, height: 1000, deviceScaleFactor: 1 });
     await openUpload(page, base);
     await runAxe(page, 'ready desktop');
+    await assertButtonContrast(page, 'upload ready desktop');
     await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 1 });
     await runAxe(page, 'ready mobile');
+    await assertButtonContrast(page, 'upload ready mobile');
+
+    await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 1 });
+    await page.goto(base + '/', { waitUntil: 'networkidle0' });
+    const homeMobile = await page.evaluate(() => {
+      const bar = document.querySelector('.bar').getBoundingClientRect();
+      const cta = document.querySelector('.hero-cta').getBoundingClientRect();
+      const fan = document.querySelector('.fan').getBoundingClientRect();
+      const cards = [...document.querySelectorAll('.plan-card')].map((el) => el.getBoundingClientRect());
+      const previews = [...document.querySelectorAll('.gallery figure.page')].filter((el) => getComputedStyle(el).display !== 'none');
+      const pdf = document.querySelector('.sample-actions a');
+      const pdfBox = pdf.getBoundingClientRect();
+      return {
+        overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+        header: Math.round(bar.height),
+        ctaBeforeImage: cta.bottom <= fan.top + 1,
+        stacked: cards.length === 2 && cards[1].top >= cards[0].bottom - 2,
+        previews: previews.length,
+        pdf: pdfBox.height > 20 && getComputedStyle(pdf).display !== 'none',
+      };
+    });
+    if (homeMobile.overflow > 1) throw new Error('home overflow 390 ' + homeMobile.overflow);
+    if (homeMobile.header > 80) throw new Error('home header is not one row ' + JSON.stringify(homeMobile));
+    if (!homeMobile.ctaBeforeImage || !homeMobile.stacked || homeMobile.previews !== 2 || !homeMobile.pdf) {
+      throw new Error('home mobile layout ' + JSON.stringify(homeMobile));
+    }
+    await assertButtonContrast(page, 'home 390');
+    await runAxe(page, 'home 390');
+    note('home at 390 keeps one header row, copy before the image, stacked pricing, and two previews', true);
+
+    await page.setViewport({ width: 1280, height: 1000, deviceScaleFactor: 1 });
+    await page.goto(base + '/', { waitUntil: 'networkidle0' });
+    const homeDesktop = await page.evaluate(() => {
+      const figs = [...document.querySelectorAll('.gallery figure.page')];
+      const last = figs[figs.length - 1].getBoundingClientRect();
+      const row = figs.filter((el) => Math.abs(el.getBoundingClientRect().top - last.top) < 4);
+      const title = document.getElementById('hero-title').getBoundingClientRect();
+      const lede = document.querySelector('.lede').getBoundingClientRect();
+      const price = document.querySelector('.hero-price').getBoundingClientRect();
+      const cta = document.querySelector('.hero-cta').getBoundingClientRect();
+      return {
+        overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+        lastRow: row.length,
+        gap: Math.round(lede.top - title.bottom),
+        priceUnderButtons: price.top >= cta.bottom - 2,
+      };
+    });
+    if (homeDesktop.overflow > 1) throw new Error('home overflow 1280 ' + homeDesktop.overflow);
+    if (homeDesktop.lastRow < 2 || homeDesktop.gap > 40 || !homeDesktop.priceUnderButtons) {
+      throw new Error('home desktop layout ' + JSON.stringify(homeDesktop));
+    }
+    await assertButtonContrast(page, 'home 1280');
+    await runAxe(page, 'home 1280');
+    note('home at 1280 top-aligns the hero, puts prices under the buttons, and does not leave the last preview alone', true);
 
     if (external.length) throw new Error('external requests: ' + external.join(', '));
     note('no production or Stripe requests', true);

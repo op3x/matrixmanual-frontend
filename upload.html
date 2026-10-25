@@ -6,6 +6,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Upload your PLC or CAD files — ManualOS</title>
   <link rel="icon" href="/favicon.ico" sizes="32x32">
+  <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
+  <link rel="manifest" href="/site.webmanifest">
   <meta name="description" content="Upload your PLC or CAD files after checkout. ManualOS checks your plan, then writes a plain-English PDF.">
   <meta name="robots" content="noindex">
   <link rel="canonical" href="https://manualos.com/upload.html">
@@ -27,7 +29,7 @@
     .skip-link{position:absolute;left:.75rem;top:-3rem;background:var(--ink);color:var(--paper);padding:.7rem 1rem;z-index:20;text-decoration:none}
     .skip-link:focus{top:.5rem}
     header{position:sticky;top:0;z-index:100;background:var(--paper);border-bottom:1px solid var(--ink)}
-    nav{display:flex;align-items:center;justify-content:space-between;gap:.75rem;flex-wrap:wrap;padding:.35rem .85rem;max-width:76rem;margin:0 auto;width:100%}
+    nav{display:flex;align-items:center;justify-content:space-between;gap:.75rem;flex-wrap:nowrap;padding:.35rem .85rem;max-width:76rem;margin:0 auto;width:100%}
     .nav-logo{font-family:"IBM Plex Sans",Arial,sans-serif;font-size:1.05rem;font-weight:600;letter-spacing:-.02em;color:var(--ink);text-decoration:none;display:flex;align-items:center;gap:.55rem;min-height:2.75rem}
     .nav-logo-icon{width:1.7rem;height:1.7rem;background:var(--ink);color:var(--paper);display:flex;align-items:center;justify-content:center;font-weight:600;font-size:.95rem;border-bottom:3px solid var(--yellow);border-radius:0}
     .nav-back{font-size:.95rem;font-weight:600;color:var(--ink);text-decoration:underline;text-underline-offset:.15em;display:inline-flex;align-items:center;min-height:2.75rem;padding:.4rem .2rem}
@@ -120,12 +122,17 @@
     html.has-session #payment-welcome{display:grid !important;grid-column:1;grid-row:2;margin:0}
     html.has-session #access-message[aria-hidden="true"]{min-height:0;height:0;overflow:hidden;padding:0;margin:0;border:0}
     html.has-session .access-banner:has(#access-message[aria-hidden="true"]){row-gap:0}
-    #payment-welcome.is-locked{background:transparent;border-color:transparent;color:inherit}
+    #payment-welcome.is-locked{background:transparent;border-color:transparent;color:inherit;min-height:4rem}
+    #payment-welcome.is-locked .welcome-sizer{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0,0,0,0)}
     .access-banner .payment-welcome{flex:1 0 100%;margin:.65rem 0 0}
     .welcome-sizer,.welcome-text{grid-area:1/1}
-    .welcome-sizer{visibility:hidden}
+    .welcome-sizer{visibility:hidden;position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0,0,0,0)}
+    #payment-welcome{min-height:4rem}
     .welcome-text{align-self:start}
-    .upload-box.is-disabled{background-color:#efece3}
+    .upload-box.is-disabled{background-color:#e4dfd3}
+    body[data-phase="checking"] #upload-form,
+    body[data-phase="locked"] #upload-form{opacity:.55}
+    body[data-phase="locked"] #upload-form{pointer-events:none}
     .upload-box.is-disabled .btn-primary{background:#3e444b;border-color:#3e444b;color:#f3f0e6}
     .payment-welcome{display:none;margin:0 0 .8rem;padding:.75rem .85rem;border-radius:0;background:var(--sheet);border:1px solid var(--ink);color:var(--ink);font-weight:600}
     .noscript{margin-bottom:1rem}
@@ -169,7 +176,7 @@
     <p class="page-eyebrow">Generate a manual</p>
     <h1 class="page-title">Upload your files</h1>
     <p class="page-sub">Choose a PLC program, a CAD model, or both. ManualOS writes a plain-English operator and maintenance manual from the equipment in the files.</p>
-    <form id="upload-form" novalidate>
+    <form id="upload-form" novalidate aria-disabled="true">
       <fieldset id="source-picker">
         <legend>What are you uploading?</legend>
         <div class="source-options">
@@ -456,6 +463,7 @@
     fileInput.disabled = !enabled || busy;
     dropZone.classList.toggle('is-disabled', !enabled);
     dropZone.setAttribute('aria-disabled', enabled ? 'false' : 'true');
+    if (uploadForm) uploadForm.setAttribute('aria-disabled', enabled ? 'false' : 'true');
     updateGenerateButton();
   }
 

@@ -183,6 +183,7 @@ function contentType(file) {
     '.pdf': 'application/pdf',
     '.txt': 'text/plain; charset=utf-8',
     '.woff2': 'font/woff2',
+    '.webmanifest': 'application/manifest+json',
   };
   return types[path.extname(file).toLowerCase()] || 'application/octet-stream';
 }
