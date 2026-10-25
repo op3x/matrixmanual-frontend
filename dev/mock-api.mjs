@@ -15,6 +15,37 @@ const pdfs = new Map();
 const holds = new Map();
 const requests = [];
 
+function storeJob(spec) {
+  const job = {
+    id: spec.id,
+    sessionId: spec.sessionId,
+    filename: spec.filename,
+    status: spec.status,
+    progress: {
+      stage: spec.status === 'succeeded' ? 'done' : spec.status,
+      percent: spec.status === 'succeeded' ? 100 : 40,
+      message: spec.status === 'succeeded' ? 'Manual is ready' : 'Working on your manual',
+    },
+    error: null,
+    warnings: [],
+    coverage: null,
+    createdAt: spec.createdAt,
+    expiresAt: new Date(Date.parse(spec.createdAt) + 24 * 60 * 60 * 1000).toISOString(),
+  };
+  jobs.set(job.id, job);
+  if (spec.status === 'succeeded') pdfs.set(job.id, PDF);
+}
+
+const seedHour = 60 * 60 * 1000;
+const seededAt = Date.now();
+storeJob({ id: 'job_recent_starter', sessionId: 'cs_test_local', status: 'succeeded', filename: 'packer-line.L5X', createdAt: new Date(seededAt - seedHour).toISOString() });
+storeJob({ id: 'job_recent_starter_wait', sessionId: 'cs_test_local', status: 'running', filename: 'labeler.st', createdAt: new Date(seededAt - 2 * seedHour).toISOString() });
+storeJob({ id: 'job_recent_starter_old', sessionId: 'cs_test_local', status: 'succeeded', filename: 'archive-old.L5X', createdAt: new Date(seededAt - 48 * seedHour).toISOString() });
+storeJob({ id: 'job_recent_pro', sessionId: 'cs_test_pro', status: 'succeeded', filename: 'filler.L5X', createdAt: new Date(seededAt - seedHour).toISOString() });
+storeJob({ id: 'job_recent_pro_wait', sessionId: 'cs_test_pro', status: 'running', filename: 'labeler.st', createdAt: new Date(seededAt - 2 * seedHour).toISOString() });
+storeJob({ id: 'job_recent_empty', sessionId: 'cs_test_empty', status: 'succeeded', filename: 'packer-line.L5X', createdAt: new Date(seededAt - seedHour).toISOString() });
+storeJob({ id: 'job_recent_past_due', sessionId: 'cs_test_past_due', status: 'succeeded', filename: 'conveyor.L5X', createdAt: new Date(seededAt - seedHour).toISOString() });
+
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -37,6 +68,24 @@ function sendPdf(res, body) {
     'Cache-Control': 'no-store',
   });
   res.end(body);
+}
+
+function headerSession(req) {
+  return String(req.headers['x-session-id'] || '').trim();
+}
+
+function decodeJobId(value) {
+  try { return decodeURIComponent(value); } catch { return value; }
+}
+
+function mineView(job) {
+  return {
+    id: job.id,
+    status: job.status,
+    created_at: job.createdAt,
+    filename: job.filename || 'manual',
+    pdf_available: job.status === 'succeeded' && pdfs.has(job.id),
+  };
 }
 
 function publicJob(job) {
@@ -124,7 +173,7 @@ function scenarioOf(filenames) {
 }
 
 function sessionAllowed(sessionId) {
-  return sessionId === 'cs_test_local' || sessionId === 'cs_test_pro';
+  return sessionId === 'cs_test_local' || sessionId === 'cs_test_pro' || sessionId === 'cs_test_past_due';
 }
 
 function errorForScenario(scenario) {
@@ -251,6 +300,8 @@ async function handleJobsPost(req, res) {
   const id = 'job_' + Math.random().toString(16).slice(2, 14);
   const job = {
     id,
+    sessionId: session,
+    filename: filenames[0] || 'manual',
     status: 'queued',
     progress: { stage: 'queued', percent: 0, message: 'Waiting to start' },
     error: null,
@@ -316,8 +367,50 @@ const server = http.createServer(async (req, res) => {
       requests.push({ method: 'GET', path: '/verify-session', status: 200, files: [], fields: [] });
       if (sessionId === 'cs_test_local') return sendJson(res, 200, { valid: true, plan: 'starter', remaining: 3 });
       if (sessionId === 'cs_test_pro') return sendJson(res, 200, { valid: true, plan: 'pro', remaining: null });
+      if (sessionId === 'cs_test_past_due') return sendJson(res, 200, { valid: true, plan: 'pro', remaining: null, payment_issue: true });
+      if (sessionId === 'cs_test_payment_failed') {
+        return sendJson(res, 200, { valid: false, access: false, plan: 'pro', remaining: null, reason: 'payment_failed', portal: true });
+      }
+      if (sessionId === 'cs_test_canceled') {
+        return sendJson(res, 200, { valid: false, access: false, plan: 'pro', remaining: null, reason: 'canceled', portal: true });
+      }
       if (sessionId === 'cs_test_empty') return sendJson(res, 200, { valid: true, plan: 'starter', remaining: 0 });
       return sendJson(res, 200, { valid: false, plan: null, remaining: null });
+    }
+    if (req.method === 'POST' && url.pathname === '/access-link') {
+      const raw = await readBody(req);
+      let body = {};
+      try { body = JSON.parse(raw.toString('utf8') || '{}'); } catch { body = {}; }
+      const email = typeof body.email === 'string' ? body.email.trim() : '';
+      const lowered = email.toLowerCase();
+      const status = lowered === 'limited@example.com' ? 429 : lowered === 'fail@example.com' ? 500 : lowered === 'unconfigured@example.com' ? 503 : 202;
+      const emailConfigured = lowered !== 'nomail@example.com';
+      requests.push({ method: 'POST', path: '/access-link', status, files: [], fields: email ? ['email'] : [], email });
+      if (status === 429) return sendJson(res, 429, { error: 'Too many requests' });
+      if (status === 503) return sendJson(res, 503, { error: 'email_not_configured' });
+      if (status === 500) return sendJson(res, 500, { error: 'Mail service unavailable' });
+      if (!emailConfigured) return sendJson(res, 202, { ok: true, email_configured: false });
+      return sendJson(res, 202, { ok: true });
+    }
+    if (req.method === 'POST' && url.pathname === '/billing-portal') {
+      const raw = await readBody(req);
+      let body = {};
+      try { body = JSON.parse(raw.toString('utf8') || '{}'); } catch { body = {}; }
+      const sessionId = typeof body.session_id === 'string' ? body.session_id.trim() : '';
+      const starter = sessionId === 'cs_test_local' || sessionId === 'cs_test_empty';
+      const pro = sessionId === 'cs_test_pro' || sessionId === 'cs_test_past_due' || sessionId === 'cs_test_payment_failed' || sessionId === 'cs_test_canceled';
+      const status = starter ? 400 : pro ? 200 : 402;
+      requests.push({ method: 'POST', path: '/billing-portal', status, files: [], fields: ['session_id'], session: sessionId });
+      if (status === 400) return sendJson(res, 400, { error: 'Starter has no subscription.' });
+      if (status === 402) return sendJson(res, 402, { error: 'Invalid session.' });
+      return sendJson(res, 200, { url: 'http://' + req.headers.host + '/__mock/portal' });
+    }
+    if (req.method === 'GET' && url.pathname === '/__mock/portal') {
+      const html = '<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><title>Manage subscription</title></head><body><p>Subscription management</p></body></html>';
+      const payload = Buffer.from(html);
+      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Content-Length': payload.length, 'Cache-Control': 'no-store' });
+      res.end(payload);
+      return;
     }
     if (req.method === 'POST' && url.pathname === '/api/support/sms-consent') {
       const raw = await readBody(req);
@@ -349,19 +442,50 @@ const server = http.createServer(async (req, res) => {
       holds.clear();
       return sendJson(res, 200, { released: true });
     }
+    if (req.method === 'GET' && url.pathname === '/jobs' && url.searchParams.has('mine')) {
+      const sessionId = headerSession(req);
+      if (!sessionId) {
+        requests.push({ method: 'GET', path: '/jobs?mine', status: 401, files: [], fields: [], session: '' });
+        return sendJson(res, 401, { error: 'Missing session.' });
+      }
+      const cutoff = Date.now() - 24 * 60 * 60 * 1000;
+      const list = [...jobs.values()].filter((job) => {
+        return job.sessionId === sessionId && Date.parse(job.createdAt) >= cutoff;
+      }).sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt)).map(mineView);
+      requests.push({ method: 'GET', path: '/jobs?mine', status: 200, files: [], fields: [], session: sessionId });
+      return sendJson(res, 200, { jobs: list });
+    }
     const jobMatch = /^\/jobs\/([^/]+)$/.exec(url.pathname);
     if (req.method === 'GET' && jobMatch) {
-      const job = jobs.get(jobMatch[1]);
-      if (!job) return sendJson(res, 404, { error: 'Job not found or expired.' });
+      const sessionId = headerSession(req);
+      if (!sessionId) {
+        requests.push({ method: 'GET', path: url.pathname, status: 401, files: [], fields: [], session: '' });
+        return sendJson(res, 401, { error: 'Missing session.' });
+      }
+      const job = jobs.get(decodeJobId(jobMatch[1]));
+      if (!job || job.sessionId !== sessionId) {
+        requests.push({ method: 'GET', path: url.pathname, status: 404, files: [], fields: [], session: sessionId });
+        return sendJson(res, 404, { error: 'Job not found or expired.' });
+      }
+      requests.push({ method: 'GET', path: url.pathname, status: 200, files: [], fields: [], session: sessionId });
       return sendJson(res, 200, publicJob(job));
     }
     const pdfMatch = /^\/jobs\/([^/]+)\/pdf$/.exec(url.pathname);
     if (req.method === 'GET' && pdfMatch) {
-      const job = jobs.get(pdfMatch[1]);
-      if (!job) return sendJson(res, 404, { error: 'Job not found or expired.' });
+      const sessionId = headerSession(req);
+      if (!sessionId) {
+        requests.push({ method: 'GET', path: url.pathname, status: 401, files: [], fields: [], session: '' });
+        return sendJson(res, 401, { error: 'Missing session.' });
+      }
+      const job = jobs.get(decodeJobId(pdfMatch[1]));
+      if (!job || job.sessionId !== sessionId) {
+        requests.push({ method: 'GET', path: url.pathname, status: 404, files: [], fields: [], session: sessionId });
+        return sendJson(res, 404, { error: 'Job not found or expired.' });
+      }
       if (job.status !== 'succeeded') return sendJson(res, 409, { error: 'Manual is not ready.' });
       const pdf = pdfs.get(job.id);
       if (!pdf) return sendJson(res, 404, { error: 'Job not found or expired.' });
+      requests.push({ method: 'GET', path: url.pathname, status: 200, files: [], fields: [], session: sessionId });
       return sendPdf(res, pdf);
     }
     if (req.method === 'GET' || req.method === 'HEAD') return await serveStatic(req, res, url.pathname);

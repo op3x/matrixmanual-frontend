@@ -8,7 +8,9 @@ GitHub Pages builds this folder with Jekyll. `_config.yml` excludes `dev/`, so t
 
 `upload.html` checks a paid Checkout session with `GET /verify-session?session_id=`, then accepts PLC programs, CAD models, or both.
 
-The page prefers `POST /jobs` (several files, real progress, then `GET /jobs/:id/pdf`). That route is specified in the backend README and is not on production yet. If `POST /jobs` returns **404**, the page falls back to `POST /generate-manual` and sends one file, and it says so on the page. A credit is not used for a file rejected as the wrong format or as having no equipment data.
+The page prefers `POST /jobs` (several files, real progress, then `GET /jobs/:id/pdf`). Production serves `/jobs`. If `POST /jobs` returns **404**, the page falls back to `POST /generate-manual` and sends one file, and it says so on the page. A credit is not used for a file rejected as the wrong format or as having no equipment data.
+
+`GET /jobs/:id`, `GET /jobs/:id/pdf`, and `GET /jobs?mine` send `X-Session-Id`. `GET /jobs?mine` returns `{jobs:[{id,status,created_at,filename,pdf_available}]}` from the last 24 hours. After a purchase is verified, that session id is stored in the browser and removed from the address bar. Pro shows Manage subscription (`POST /billing-portal`), including when a renewal failed or the subscription ended and the portal is still available. A browser with no purchase can email the upload link (`POST /access-link`) when mail is configured. The link is also in the purchase email.
 
 - `?jobs=0` always uses the current single-file generator.
 - `?jobs=1` calls `/jobs` and does not fall back.
@@ -25,4 +27,4 @@ node dev/mock-api.mjs
 
 Open the printed origin at `/upload.html?session_id=cs_test_local`. The mock session is fake. Do not send a real paid Checkout session to it, and do not point tests at production.
 
-`dev/verify-upload.mjs` runs the headless checks (selector, file list, progress, success, errors, and the `/jobs` 404 fallback). It needs `puppeteer-core` and Chrome.
+`dev/verify-upload.mjs` runs the headless checks (selector, file list, progress, success, errors, and the `/jobs` 404 fallback). `dev/verify-access.mjs` checks the upload-link form, the recent-manuals list, and Pro subscription management. Both need `puppeteer-core` and Chrome.

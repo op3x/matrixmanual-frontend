@@ -10,6 +10,7 @@
   <link rel="manifest" href="/site.webmanifest">
   <meta name="description" content="Upload your PLC or CAD files after checkout. ManualOS checks your plan, then writes a plain-English PDF.">
   <meta name="robots" content="noindex">
+  <meta name="referrer" content="no-referrer">
   <link rel="canonical" href="https://manualos.com/upload.html">
   <meta name="theme-color" content="#f3f0e6">
   <link rel="preconnect" href="https://manualforge-backend-production.up.railway.app" crossorigin>
@@ -136,6 +137,29 @@
     .upload-box.is-disabled .btn-primary{background:#3e444b;border-color:#3e444b;color:#f3f0e6}
     .payment-welcome{display:none;margin:0 0 .8rem;padding:.75rem .85rem;border-radius:0;background:var(--sheet);border:1px solid var(--ink);color:var(--ink);font-weight:600}
     .noscript{margin-bottom:1rem}
+    .payment-issue{display:flex;flex-wrap:wrap;gap:.65rem .75rem;align-items:center;margin:0 0 1rem;padding:.75rem .85rem;background:var(--sheet);border:1px solid var(--ink);border-left:4px solid #6b2a14}
+    .payment-issue > p{margin:0;font-weight:600;flex:1 1 14rem}
+    html.is-portal #access-banner{display:none !important}
+    .payment-issue .billing-tools{flex:1 1 auto;margin:0}
+    .payment-issue .upload-error{flex:1 0 100%;margin:.2rem 0 0}
+    #access-recovery{display:none;margin:0 0 1rem;padding:.75rem .85rem;background:var(--sheet);border:1px solid var(--ink)}
+    html.needs-access-link #access-recovery{display:block}
+    .recovery-title{font-family:"IBM Plex Sans",Arial,sans-serif;font-weight:600;font-size:1.15rem;color:var(--ink);letter-spacing:-.02em;line-height:1.15;margin-bottom:.35rem}
+    #access-recovery .recovery-note{margin:0 0 .75rem}
+    #access-recovery .field{margin-bottom:.7rem}
+    #access-link-status{margin:.75rem 0 0;font-weight:600}
+    #access-link-status.is-error{padding-left:.6rem;border-left:4px solid #6b2a14}
+    .buyer-access{margin-top:1.4rem}
+    .buyer-access h2{font-size:1.25rem;margin-bottom:.35rem}
+    .recent-intro{color:var(--muted);margin-bottom:.75rem}
+    .billing-tools{margin:0 0 .9rem}
+    .billing-tools:has(#manage-subscription[hidden]){display:none}
+    .billing-tools .upload-error{margin-top:.6rem}
+    .recent-list{list-style:none;display:flex;flex-direction:column;gap:.4rem}
+    .recent-list li{display:flex;flex-wrap:wrap;align-items:center;gap:.45rem .7rem;background:var(--sheet);border:1px solid var(--ink);padding:.45rem .45rem .45rem .7rem}
+    .recent-name{font-family:"IBM Plex Mono",ui-monospace,monospace;font-weight:500;flex:1 1 12rem;min-width:0}
+    .recent-meta{font-family:"IBM Plex Mono",ui-monospace,monospace;color:var(--muted);font-size:.85rem}
+    .btn-outline:disabled{opacity:.65;cursor:not-allowed}
     @media (min-width:720px){
       .source-options{grid-template-columns:repeat(3,1fr)}
       .fields{grid-template-columns:1fr 1fr}
@@ -147,11 +171,12 @@
       .success-actions{flex-direction:column}
       .success-actions .btn-primary,.success-actions .btn-outline{width:100%}
       .generate-btn-wrap .btn-primary{width:100%}
+      #access-link-btn,#manage-subscription{width:100%}
     }
     @media (prefers-reduced-motion:reduce){
       *{scroll-behavior:auto !important;transition:none !important}
     }
-    #source-picker,#file-list,#progress-wrap,#upload-error,#success-section,#export-help,#mode-note,#access-banner,#generate-btn{scroll-margin-top:5rem}
+    #source-picker,#file-list,#progress-wrap,#upload-error,#success-section,#export-help,#mode-note,#access-banner,#generate-btn,#access-recovery,#payment-issue,#buyer-access,#recent-manuals,#manage-subscription{scroll-margin-top:5rem}
     .site-footer{background:var(--ink);color:#f3f0e6;margin-top:auto;border-top:4px solid var(--yellow);padding:1.5rem .85rem 1.75rem}
     .site-footer a{color:#f3f0e6;text-decoration:none}
     .site-footer a:hover{color:var(--yellow)}
@@ -164,6 +189,18 @@
   </style>
   <script>
     document.documentElement.classList.add('has-session');
+    (function () {
+      try {
+        var params = new URLSearchParams(location.search);
+        var fromQuery = (params.get('session_id') || '').trim();
+        var stored = '';
+        try { stored = (localStorage.getItem('manualos_session_id') || '').trim(); } catch (err) {}
+        if (!stored) {
+          try { stored = (sessionStorage.getItem('manualos_session_id') || '').trim(); } catch (err) {}
+        }
+        if (!fromQuery && !stored) document.documentElement.classList.add('needs-access-link');
+      } catch (err) {}
+    })();
   </script>
 </head>
 <body data-phase="checking">
@@ -176,11 +213,23 @@
 </header>
 <main id="main" tabindex="-1">
   <noscript><p class="upload-error noscript">ManualOS needs JavaScript to check your purchase and upload files.</p></noscript>
+  <div id="payment-issue" class="payment-issue" role="status" hidden>
+    <p id="payment-issue-text">Your last payment didn’t go through. Update your card to keep access.</p>
+  </div>
   <div id="access-banner" class="access-banner" role="status">
     <span id="access-message">Checking your access…</span>
     <a id="access-pricing-link" href="/#pricing" hidden>View pricing</a>
     <p id="payment-welcome" class="payment-welcome" role="status" hidden><span class="welcome-sizer" aria-hidden="true">Payment confirmed. You are on the Starter plan, with 12 manuals remaining. Upload a PLC program, a CAD model, or both when you are ready.</span><span id="payment-welcome-text" class="welcome-text"></span></p>
   </div>
+  <section id="access-recovery" aria-labelledby="access-recovery-title">
+    <p id="access-recovery-title" class="recovery-title">Email me my upload link</p>
+    <p class="recovery-note">You can also find the link in your purchase email.</p>
+    <form id="access-link-form" novalidate>
+      <label class="field" for="access-email"><span>Email</span><input id="access-email" name="email" type="email" autocomplete="email" inputmode="email" maxlength="200" required></label>
+      <button class="btn-outline" id="access-link-btn" type="submit">Email me my upload link</button>
+      <p id="access-link-status" role="status" tabindex="-1" hidden></p>
+    </form>
+  </section>
   <div id="upload-section">
     <p class="page-eyebrow">Generate a manual</p>
     <h1 class="page-title">Upload your files</h1>
@@ -246,6 +295,21 @@
       <a class="btn-outline" id="back-btn" href="/">Back to home</a>
     </div>
   </section>
+  <div id="buyer-access" class="buyer-access" hidden>
+    <div id="billing-home">
+      <div id="billing-tools" class="billing-tools">
+        <button class="btn-outline" id="manage-subscription" type="button" hidden>Manage subscription</button>
+        <p id="billing-error" class="upload-error" role="alert" tabindex="-1" hidden></p>
+      </div>
+    </div>
+    <section id="recent-manuals" aria-labelledby="recent-title">
+      <h2 id="recent-title">Recent manuals (last 24 hours)</h2>
+      <p class="recent-intro">A finished PDF stays available for 24 hours.</p>
+      <p id="recent-empty" hidden>No manuals in the last 24 hours.</p>
+      <ul id="recent-list" class="recent-list"></ul>
+      <p id="recent-error" class="upload-error" role="alert" tabindex="-1" hidden></p>
+    </section>
+  </div>
   <section class="export-help" id="export-help" aria-labelledby="export-title">
     <h2 id="export-title">How to export your file</h2>
     <p class="export-intro">PLC: .L5X, .L5K, .scl, .st, .exp, .awl, .acd, PLCopen .xml, and .TcPOU. Tag lists: .csv and .xlsx. A tag-table XML is tags only, not the program. CAD: .step and .stp, .iges and .igs, .stl, and ASCII .dxf. Archives: a .zip of those files.</p>
@@ -305,9 +369,9 @@
 </footer>
 <script>
 (function () {
-  // POST /jobs is the preferred upload (async progress, up to 25 files). It is not
-  // deployed on production yet. When POST /jobs returns 404, this page falls back
-  // to POST /generate-manual for the first PLC file so the current site keeps working.
+  // POST /jobs is the preferred upload (async progress, up to 25 files). Production
+  // serves it. When POST /jobs returns 404, this page falls back to POST /generate-manual
+  // for the first PLC file so an older server keeps working.
   // ?jobs=0 always uses the current generator. ?jobs=1 never falls back.
   // On localhost the API is the page origin (see dev/mock-api.mjs). On manualos.com
   // it is the production API host. A localhost ?api= override must also be local.
@@ -376,6 +440,21 @@
   var warningBlock = document.getElementById('warning-block');
   var warningsEl = document.getElementById('warnings');
   var downloadLink = document.getElementById('download-link');
+  var accessLinkForm = document.getElementById('access-link-form');
+  var accessEmail = document.getElementById('access-email');
+  var accessLinkBtn = document.getElementById('access-link-btn');
+  var accessLinkStatus = document.getElementById('access-link-status');
+  var paymentIssue = document.getElementById('payment-issue');
+  var paymentIssueText = document.getElementById('payment-issue-text');
+  var buyerAccess = document.getElementById('buyer-access');
+  var billingHome = document.getElementById('billing-home');
+  var billingTools = document.getElementById('billing-tools');
+  var manageBtn = document.getElementById('manage-subscription');
+  var billingError = document.getElementById('billing-error');
+  var recentEmpty = document.getElementById('recent-empty');
+  var recentList = document.getElementById('recent-list');
+  var recentError = document.getElementById('recent-error');
+  var recentUrls = [];
 
   function resolveApiBase() {
     var host = location.hostname;
@@ -547,26 +626,130 @@
     }
   }
 
+  function storedSessionId() {
+    try {
+      var localId = (localStorage.getItem(SESSION_STORAGE_KEY) || '').trim();
+      if (localId) return localId;
+    } catch (err) {}
+    try { return (sessionStorage.getItem(SESSION_STORAGE_KEY) || '').trim(); } catch (err) { return ''; }
+  }
+
   function readSessionId() {
     var params = new URLSearchParams(window.location.search);
     var fromQuery = (params.get('session_id') || '').trim();
     if (fromQuery) {
       sessionFromQuery = true;
-      try { localStorage.setItem(SESSION_STORAGE_KEY, fromQuery); } catch (err) {}
+      rememberSession(fromQuery);
+      stripSessionFromUrl();
       return fromQuery;
     }
-    try { return (localStorage.getItem(SESSION_STORAGE_KEY) || '').trim(); } catch (err) { return ''; }
+    return storedSessionId();
   }
 
-  function lockUpload(message) {
+  function stripSessionFromUrl() {
+    try {
+      var url = new URL(window.location.href);
+      if (!url.searchParams.has('session_id')) return;
+      url.searchParams.delete('session_id');
+      var search = url.searchParams.toString();
+      history.replaceState(null, '', url.pathname + (search ? '?' + search : '') + url.hash);
+    } catch (err) {}
+  }
+
+  function showAccessRecovery(show) {
+    document.documentElement.classList.toggle('needs-access-link', !!show);
+  }
+
+  function rememberSession(id) {
+    if (!id) return;
+    var saved = false;
+    try { localStorage.setItem(SESSION_STORAGE_KEY, id); saved = true; } catch (err) {}
+    if (!saved) {
+      try { sessionStorage.setItem(SESSION_STORAGE_KEY, id); } catch (err) {}
+    }
+  }
+
+  function hideBilling() {
+    if (paymentIssue) paymentIssue.hidden = true;
+    if (manageBtn) manageBtn.hidden = true;
+    if (billingHome && billingTools) billingHome.appendChild(billingTools);
+    if (billingError) {
+      billingError.hidden = true;
+      billingError.textContent = '';
+    }
+  }
+
+  function hideBuyerAccess() {
+    hideBilling();
+    if (buyerAccess) buyerAccess.hidden = true;
+  }
+
+  function showBuyerAccess() {
+    if (buyerAccess) buyerAccess.hidden = false;
+  }
+
+  var GRACE_PAYMENT = 'Your last payment didn\u2019t go through. Update your card to keep access.';
+  var PAYMENT_FAILED = 'Your last payment didn\u2019t go through. Update your card to keep generating manuals.';
+  var CANCELED_PLAN = 'Your subscription has ended. Restart it from Manage subscription.';
+
+  function applyBilling(data) {
+    document.documentElement.classList.remove('is-portal');
+    var pro = String(data && data.plan || '').toLowerCase() === 'pro';
+    var issue = !!(pro && data && data.payment_issue === true);
+    if (manageBtn) manageBtn.hidden = !pro;
+    if (paymentIssueText && issue) paymentIssueText.textContent = GRACE_PAYMENT;
+    if (paymentIssue) paymentIssue.hidden = !issue;
+    if (issue && paymentIssue && billingTools) paymentIssue.appendChild(billingTools);
+    else if (billingHome && billingTools) billingHome.appendChild(billingTools);
+  }
+
+  function portalMessage(data) {
+    var reason = String(data && data.reason || '').toLowerCase();
+    if (reason === 'canceled' || reason === 'cancelled') return CANCELED_PLAN;
+    return PAYMENT_FAILED;
+  }
+
+  function applyPortalLock(data) {
+    rememberSession(sessionId);
+    showAccessRecovery(false);
+    document.documentElement.classList.add('has-session');
+    document.documentElement.classList.add('is-portal');
+    setUploadEnabled(false);
+    var message = portalMessage(data);
+    showAccess('', { showPricing: false, ok: false, hideMessage: true });
+    fillReservedWelcome(message, true);
+    if (paymentIssueText) paymentIssueText.textContent = message;
+    if (paymentIssue) paymentIssue.hidden = false;
+    if (manageBtn) manageBtn.hidden = false;
+    if (paymentIssue && billingTools) paymentIssue.appendChild(billingTools);
+    if (buyerAccess) buyerAccess.hidden = true;
+    if (document.body.dataset.phase !== 'progress' && document.body.dataset.phase !== 'success') setPhase('locked');
+  }
+
+  function sessionIsActive(data) {
+    if (!data) return false;
+    if (data.access === false || data.valid === false) return false;
+    return data.valid === true || data.access === true;
+  }
+
+  function lockUpload(message, options) {
+    var opts = options || {};
+    document.documentElement.classList.remove('is-portal');
     setUploadEnabled(false);
     showAccess('', { showPricing: true, ok: false, hideMessage: true });
     fillReservedWelcome(message, true);
+    hideBuyerAccess();
+    showAccessRecovery(!!opts.recovery);
     if (document.body.dataset.phase !== 'progress' && document.body.dataset.phase !== 'success') setPhase('locked');
   }
 
   function applySession(data) {
+    rememberSession(sessionId);
+    showAccessRecovery(false);
+    document.documentElement.classList.remove('is-portal');
     if (data.remaining === 0) {
+      hideBilling();
+      showBuyerAccess();
       setUploadEnabled(false);
       showAccess('', { showPricing: true, ok: false, hideMessage: true });
       fillReservedWelcome('Starter credits are used up', true);
@@ -575,6 +758,8 @@
       }
       return;
     }
+    applyBilling(data);
+    showBuyerAccess();
     setUploadEnabled(true);
     showAccess(planLabel(data.plan) + ' plan \u00b7 ' + remainingLabel(data.remaining), { showPricing: false, ok: true });
     if (document.body.dataset.phase !== 'progress' && document.body.dataset.phase !== 'success' && document.body.dataset.phase !== 'error') {
@@ -592,7 +777,7 @@
   async function verifySession(options) {
     var keepAccessOnError = !!(options && options.keepAccessOnError);
     if (!sessionId) {
-      lockUpload('No purchase found on this browser. Choose a plan to generate manuals.');
+      lockUpload('No purchase found on this browser. Choose a plan to generate manuals.', { recovery: true });
       return null;
     }
     var res;
@@ -604,12 +789,19 @@
     }
     var data = {};
     try { data = await res.json(); } catch (err) { data = {}; }
-    if (!res.ok || !data.valid) {
-      if (!(keepAccessOnError && !res.ok)) {
-        lockUpload('This purchase isn\u2019t active. Choose a plan to generate manuals.');
-      }
+    if (!res.ok) {
+      if (!keepAccessOnError) lockUpload('This purchase isn\u2019t active. Choose a plan to generate manuals.');
       return null;
     }
+    if (!sessionIsActive(data)) {
+      if (data.portal === true) {
+        applyPortalLock(data);
+        return data;
+      }
+      lockUpload('This purchase isn\u2019t active. Choose a plan to generate manuals.');
+      return null;
+    }
+    await loadRecentManuals();
     applySession(data);
     return data;
   }
@@ -877,7 +1069,7 @@
       try {
         res = await fetch(apiBase + '/jobs/' + encodeURIComponent(id), {
           cache: 'no-store',
-          headers: { 'X-Session-Id': sessionId }
+          headers: sessionHeaders()
         });
         failures = 0;
       } catch (err) {
@@ -945,7 +1137,7 @@
       try {
         res = await fetch(apiBase + '/jobs/' + encodeURIComponent(id) + '/pdf', {
           cache: 'no-store',
-          headers: { 'X-Session-Id': sessionId }
+          headers: sessionHeaders()
         });
       } catch (err) {
         await sleep(600);
@@ -1017,7 +1209,7 @@
     try {
       res = await fetch(apiBase + '/generate-manual', {
         method: 'POST',
-        headers: { 'X-Session-Id': sessionId },
+        headers: sessionHeaders(),
         body: formData
       });
     } catch (err) {
@@ -1055,7 +1247,7 @@
   async function handleGenerate() {
     if (busy) return;
     if (!uploadEnabled || !sessionId) {
-      lockUpload('No purchase found on this browser. Choose a plan to generate manuals.');
+      lockUpload('No purchase found on this browser. Choose a plan to generate manuals.', { recovery: true });
       return;
     }
     if (!selectedFiles.length) {
@@ -1088,7 +1280,7 @@
     try {
       res = await fetch(apiBase + '/jobs', {
         method: 'POST',
-        headers: { 'X-Session-Id': sessionId },
+        headers: sessionHeaders(),
         body: formData
       });
     } catch (err) {
@@ -1167,6 +1359,253 @@
     if (firstRadio) firstRadio.focus();
   }
 
+  function sessionHeaders(extra) {
+    var headers = { 'X-Session-Id': sessionId };
+    if (extra) {
+      Object.keys(extra).forEach(function (key) { headers[key] = extra[key]; });
+    }
+    return headers;
+  }
+
+  function setAccessLinkStatus(text, isError) {
+    if (!accessLinkStatus) return;
+    accessLinkStatus.textContent = text || '';
+    accessLinkStatus.hidden = !text;
+    accessLinkStatus.classList.toggle('is-error', !!isError);
+    accessLinkStatus.setAttribute('role', isError ? 'alert' : 'status');
+    if (text) accessLinkStatus.focus();
+  }
+
+  function showBillingError(text) {
+    if (!billingError) return;
+    billingError.textContent = text || '';
+    billingError.hidden = !text;
+    if (text) billingError.focus();
+  }
+
+  function showRecentError(text) {
+    if (!recentError) return;
+    recentError.textContent = text || '';
+    recentError.hidden = !text;
+  }
+
+  function formatRecentWhen(iso) {
+    var date = new Date(iso);
+    if (Number.isNaN(date.getTime())) return '';
+    return date.toISOString().slice(0, 16).replace('T', ' ') + ' UTC';
+  }
+
+  function recentStatusLabel(status) {
+    var value = String(status || '').toLowerCase();
+    if (value === 'succeeded' || value === 'done') return 'Ready';
+    if (value === 'failed') return 'Failed';
+    if (value === 'queued' || value === 'running') return 'In progress';
+    return value ? value.charAt(0).toUpperCase() + value.slice(1) : 'Unknown';
+  }
+
+  function recentDownloadName(filename) {
+    var base = String(filename || 'manual').replace(/\.[^.]+$/, '');
+    var clean = base.replace(/[^\w.\- ()]+/g, '').trim() || 'manual';
+    return clean.slice(0, 80) + '-manual.pdf';
+  }
+
+  function renderRecent(items) {
+    if (!recentList) return;
+    recentList.replaceChildren();
+    showRecentError('');
+    if (!items.length) {
+      recentList.hidden = true;
+      if (recentEmpty) {
+        recentEmpty.hidden = false;
+        recentEmpty.textContent = 'No manuals in the last 24 hours.';
+      }
+      return;
+    }
+    recentList.hidden = false;
+    if (recentEmpty) recentEmpty.hidden = true;
+    items.forEach(function (item) {
+      var li = document.createElement('li');
+      var name = document.createElement('span');
+      name.className = 'recent-name';
+      var filename = item && item.filename ? String(item.filename) : 'Manual';
+      name.textContent = filename;
+      li.appendChild(name);
+      var meta = document.createElement('span');
+      meta.className = 'recent-meta';
+      var when = item && item.created_at ? formatRecentWhen(item.created_at) : '';
+      meta.textContent = recentStatusLabel(item && item.status) + (when ? ' · ' + when : '');
+      li.appendChild(meta);
+      if (item && item.pdf_available && item.id && /^[\w.-]+$/.test(String(item.id))) {
+        var button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'btn-outline recent-download';
+        button.setAttribute('data-download', String(item.id));
+        button.setAttribute('data-filename', filename);
+        button.textContent = 'Download';
+        button.setAttribute('aria-label', 'Download ' + filename);
+        li.appendChild(button);
+      }
+      recentList.appendChild(li);
+    });
+  }
+
+  async function loadRecentManuals() {
+    if (!sessionId || !recentList) return;
+    var res;
+    try {
+      res = await fetch(apiBase + '/jobs?mine', {
+        cache: 'no-store',
+        headers: sessionHeaders()
+      });
+    } catch (err) {
+      showRecentError('We couldn\u2019t load recent manuals. Refresh the page to try again.');
+      return;
+    }
+    if (!res.ok) {
+      showRecentError('We couldn\u2019t load recent manuals. Refresh the page to try again.');
+      return;
+    }
+    var data = await readJson(res);
+    var jobs = Array.isArray(data) ? data : (data && Array.isArray(data.jobs) ? data.jobs : null);
+    if (!jobs) {
+      showRecentError('We couldn\u2019t load recent manuals. Refresh the page to try again.');
+      return;
+    }
+    renderRecent(jobs);
+  }
+
+  async function downloadRecent(button) {
+    var id = button.getAttribute('data-download') || '';
+    var filename = button.getAttribute('data-filename') || 'manual';
+    if (!id || !sessionId) return;
+    button.disabled = true;
+    showRecentError('');
+    try {
+      var res = await fetch(apiBase + '/jobs/' + encodeURIComponent(id) + '/pdf', {
+        cache: 'no-store',
+        headers: sessionHeaders()
+      });
+      if (res.status === 404) {
+        showRecentError('This manual isn\u2019t available. It may have expired after 24 hours.');
+        return;
+      }
+      if (!res.ok) {
+        showRecentError('We couldn\u2019t download that manual. Try again.');
+        return;
+      }
+      var buffer = await res.arrayBuffer();
+      var head = new TextDecoder().decode(buffer.slice(0, 5));
+      if (head !== '%PDF-') {
+        showRecentError('The download wasn\u2019t a PDF. Please try again.');
+        return;
+      }
+      var blob = new Blob([buffer], { type: 'application/pdf' });
+      var url = URL.createObjectURL(blob);
+      recentUrls.push(url);
+      if (recentUrls.length > 8) URL.revokeObjectURL(recentUrls.shift());
+      var anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.setAttribute('download', recentDownloadName(filename));
+      anchor.hidden = true;
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+    } catch (err) {
+      showRecentError('We couldn\u2019t reach ManualOS. Check your connection and try again.');
+    } finally {
+      button.disabled = false;
+    }
+  }
+
+  function emailIsUnavailable(res, data) {
+    if (res && res.status === 503) return true;
+    if (!data || typeof data !== 'object') return false;
+    if (data.email_configured === false || data.mail_configured === false) return true;
+    var code = String(data.reason || data.code || '').toLowerCase();
+    if (code === 'email_not_configured' || code === 'smtp_not_configured' || code === 'mail_not_configured') return true;
+    var error = String(data.error || '').toLowerCase();
+    return error === 'email_not_configured' || error === 'smtp_not_configured' || error === 'mail_not_configured' || /not configured/.test(error);
+  }
+
+  function showEmailUnavailable() {
+    if (accessLinkForm) accessLinkForm.hidden = true;
+    var title = document.getElementById('access-recovery-title');
+    if (title) title.textContent = 'Email support for your upload link';
+    var note = document.querySelector('#access-recovery .recovery-note');
+    if (note) note.textContent = 'We can\u2019t email the upload link right now. Email support@manualos.com and we will send it.';
+    setAccessLinkStatus('', false);
+  }
+
+  async function requestAccessLink(event) {
+    event.preventDefault();
+    if (!accessEmail || !accessLinkBtn || accessLinkBtn.disabled) return;
+    var email = accessEmail.value.trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setAccessLinkStatus('Enter the email address you used at checkout.', true);
+      return;
+    }
+    accessLinkBtn.disabled = true;
+    accessLinkBtn.textContent = 'Sending\u2026';
+    setAccessLinkStatus('', false);
+    try {
+      var res = await fetch(apiBase + '/access-link', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email })
+      });
+      var data = await readJson(res);
+      if (res.status === 429) {
+        setAccessLinkStatus('Too many requests, try again in an hour.', true);
+        return;
+      }
+      if (emailIsUnavailable(res, data)) {
+        showEmailUnavailable();
+        return;
+      }
+      if (res.status === 202 || data.ok === true) {
+        setAccessLinkStatus('If that email has a purchase, we\u2019ve sent the link. Check your inbox and spam folder.', false);
+        return;
+      }
+      setAccessLinkStatus('We couldn\u2019t send the link just now. Try again in a few minutes.', true);
+    } catch (err) {
+      setAccessLinkStatus('We couldn\u2019t send the link just now. Check your connection and try again.', true);
+    } finally {
+      accessLinkBtn.disabled = false;
+      accessLinkBtn.textContent = 'Email me my upload link';
+    }
+  }
+
+  async function openBillingPortal() {
+    if (!manageBtn || manageBtn.disabled || !sessionId) return;
+    manageBtn.disabled = true;
+    showBillingError('');
+    try {
+      var res = await fetch(apiBase + '/billing-portal', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ session_id: sessionId })
+      });
+      var data = await readJson(res);
+      if (res.status === 400) {
+        showBillingError('Subscription management is available on Pro.');
+        return;
+      }
+      if (res.status === 402) {
+        showBillingError('This purchase isn\u2019t active.');
+        return;
+      }
+      if (!res.ok || !data.url) {
+        showBillingError('We couldn\u2019t open subscription management. Try again, or email support@manualos.com.');
+        return;
+      }
+      window.location.assign(data.url);
+    } catch (err) {
+      showBillingError('We couldn\u2019t reach ManualOS. Check your connection and try again.');
+    } finally {
+      if (manageBtn) manageBtn.disabled = false;
+    }
+  }
+
   fileInput.addEventListener('change', function () {
     addFiles(fileInput.files);
     fileInput.value = '';
@@ -1213,6 +1652,16 @@
     resetComposer();
     verifySession({ keepAccessOnError: true });
   });
+
+  if (accessLinkForm) accessLinkForm.addEventListener('submit', requestAccessLink);
+  if (manageBtn) manageBtn.addEventListener('click', openBillingPortal);
+  if (recentList) {
+    recentList.addEventListener('click', function (event) {
+      var button = event.target.closest('[data-download]');
+      if (!button || button.disabled) return;
+      downloadRecent(button);
+    });
+  }
 
   syncSource();
   sessionId = readSessionId();
