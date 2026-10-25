@@ -216,7 +216,7 @@
         </div>
       </div>
       <ul class="file-list" id="file-list" hidden></ul>
-      <p class="credit-note" id="credit-note">A file we reject — wrong format, or no equipment data in the file — does not use a credit.</p>
+      <p class="credit-note" id="credit-note">On Starter, a file we reject — wrong format, or no equipment data in the file — does not use a credit.</p>
       <div class="generate-btn-wrap">
         <button class="btn-primary" id="generate-btn" type="submit" disabled>Generate my manual</button>
       </div>
@@ -248,7 +248,7 @@
   </section>
   <section class="export-help" id="export-help" aria-labelledby="export-title">
     <h2 id="export-title">How to export your file</h2>
-    <p class="export-intro">PLC: .L5X, .L5K, .scl, .st, .exp, .awl, .acd, PLCopen .xml, and .TcPOU. Tag lists: .csv and .xlsx. A tag-table XML is tags only, not the program. CAD: .step and .stp, .iges and .igs, .stl, and ASCII .dxf. Archives: a .zip of those files.</p>
+    <p class="export-intro">PLC: .L5X, .L5K, .scl, .st, .exp, .awl, .acd, PLCopen .xml, and .TcPOU. Tag lists: .csv and .xlsx. A tag-table XML is tags only, not the program. CAD: .step and .stp, .iges and .igs, .stl, and ASCII .dxf. Archives: a .zip of up to 80 files and 200 MB.</p>
     <details class="export">
       <summary>.L5X and .L5K</summary>
       <p>Export the controller program as .L5X. That file is an XML export of the program, including ladder. The older .L5K text export is the same kind of save, with the .L5K type. Upload the .L5X or .L5K file.</p>
@@ -271,7 +271,7 @@
     </details>
     <details class="export">
       <summary>.step, .iges, .stl, and ASCII .dxf</summary>
-      <p>From the CAD tool, use Save As or Export. Choose STEP (.step or .stp), IGES (.iges or .igs), STL (.stl), or ASCII DXF (.dxf). STEP AP214 and AP242 are both fine. STEP, IGES, and STL are the 3D model. DXF is a 2D drawing. You can zip several of them.</p>
+      <p>From the CAD tool, use Save As or Export. Choose STEP (.step or .stp), IGES (.iges or .igs), STL (.stl), or ASCII .dxf. STEP AP214 and AP242 are both fine. STEP, IGES, and STL are the 3D model. .dxf is a 2D drawing. You can zip several of them.</p>
     </details>
   </section>
   <section class="platforms" aria-labelledby="platforms-label">
@@ -285,7 +285,7 @@
       <li>.csv and .xlsx tag lists</li>
       <li>.step, .stp, .iges, .igs, .stl</li>
       <li>ASCII .dxf</li>
-      <li>.zip of these</li>
+      <li>.zip of these, up to 80 files and 200 MB</li>
     </ul>
   </section>
 </main>
@@ -313,6 +313,8 @@
   // it is the production API host. A localhost ?api= override must also be local.
   var PRODUCTION_API = 'https://manualforge-backend-production.up.railway.app';
   var SESSION_STORAGE_KEY = 'manualos_session_id';
+  var NO_PURCHASE_MESSAGE = 'We couldn\u2019t find that purchase. Choose a plan to generate manuals.';
+  var INACTIVE_PURCHASE_MESSAGE = 'This purchase isn\u2019t active. Choose a plan to generate manuals.';
   var MAX_FILES = 25;
   var MAX_BYTES = 50 * 1024 * 1024;
   var PLC_EXT = ['l5x', 'l5k', 'xml', 'tcpou', 'st', 'scl', 'exp', 'awl', 'csv', 'xlsx', 'acd', 'stl', 'zip'];
@@ -332,14 +334,14 @@
     failed: 'Generation failed'
   };
   var GUIDANCE = {
-    plc: 'Add a PLC program: .L5X, .L5K, .scl, .st, .exp, .awl, .acd, PLCopen .xml, .TcPOU, or a .csv or .xlsx tag list, or a zip of those. A tag-table XML is tags only, not the program. Up to 25 files, 50 MB each.',
-    cad: 'Add a CAD model: STEP (.step or .stp), IGES (.iges or .igs), STL (.stl), or ASCII DXF (.dxf), or a zip of those. Up to 25 files, 50 MB each.',
-    both: 'Add the PLC program and the CAD model together. They are written up as one manual. You can mix the PLC types above with STEP, IGES, STL, or DXF, including a zip. Up to 25 files, 50 MB each.'
+    plc: 'Add a PLC program: .L5X, .L5K, .scl, .st, .exp, .awl, .acd, PLCopen .xml, .TcPOU, or a .csv or .xlsx tag list, or a zip of those. A tag-table XML is tags only, not the program. Up to 25 files, 50 MB each. A .zip can hold up to 80 files and 200 MB.',
+    cad: 'Add a CAD model: STEP (.step or .stp), IGES (.iges or .igs), STL (.stl), or ASCII .dxf, or a zip of those. Up to 25 files, 50 MB each. A .zip can hold up to 80 files and 200 MB.',
+    both: 'Add the PLC program and the CAD model together. They are written up as one manual. You can mix the PLC types above with STEP, IGES, STL, or .dxf, including a zip. Up to 25 files, 50 MB each. A .zip can hold up to 80 files and 200 MB.'
   };
   var DROP_HELP = {
-    plc: '.L5X, .L5K, .scl, .st, .exp, .awl, .acd, PLCopen .xml, .TcPOU, .csv, .xlsx, or a zip of those.',
-    cad: 'STEP, IGES, STL, DXF, or a zip of those.',
-    both: 'PLC program files and CAD files together, or a zip of both.'
+    plc: '.L5X, .L5K, .scl, .st, .exp, .awl, .acd, PLCopen .xml, .TcPOU, .csv, .xlsx, or a zip of up to 80 files and 200 MB.',
+    cad: 'STEP, IGES, STL, .dxf, or a zip of up to 80 files and 200 MB.',
+    both: 'PLC program files and CAD files together, or a zip of both (up to 80 files and 200 MB).'
   };
 
   var apiBase = resolveApiBase();
@@ -559,6 +561,14 @@
     try { return (localStorage.getItem(SESSION_STORAGE_KEY) || '').trim(); } catch (err) { return ''; }
   }
 
+  function purchaseLockMessage(data, res) {
+    var plan = data && typeof data.plan === 'string' ? data.plan.trim() : '';
+    // /verify-session answers 200 for both. plan is null when the id is unknown;
+    // a real starter or pro purchase that is not active still names its plan.
+    if (res.status === 404 || (res.ok && !plan)) return NO_PURCHASE_MESSAGE;
+    return INACTIVE_PURCHASE_MESSAGE;
+  }
+
   function lockUpload(message) {
     setUploadEnabled(false);
     showAccess('', { showPricing: true, ok: false, hideMessage: true });
@@ -594,7 +604,7 @@
   async function verifySession(options) {
     var keepAccessOnError = !!(options && options.keepAccessOnError);
     if (!sessionId) {
-      lockUpload('No purchase found on this browser. Choose a plan to generate manuals.');
+      lockUpload(NO_PURCHASE_MESSAGE);
       return null;
     }
     var res;
@@ -607,9 +617,7 @@
     var data = {};
     try { data = await res.json(); } catch (err) { data = {}; }
     if (!res.ok || !data.valid) {
-      if (!(keepAccessOnError && !res.ok)) {
-        lockUpload('This purchase isn\u2019t active. Choose a plan to generate manuals.');
-      }
+      if (!(keepAccessOnError && !res.ok)) lockUpload(purchaseLockMessage(data, res));
       return null;
     }
     applySession(data);
@@ -1057,7 +1065,7 @@
   async function handleGenerate() {
     if (busy) return;
     if (!uploadEnabled || !sessionId) {
-      lockUpload('No purchase found on this browser. Choose a plan to generate manuals.');
+      lockUpload(NO_PURCHASE_MESSAGE);
       return;
     }
     if (!selectedFiles.length) {
@@ -1138,7 +1146,7 @@
       generateBtn.textContent = 'Generate my manual';
       var reason = safeServerMessage({ error: job.error }) || 'Please try again.';
       var finished = 'The manual couldn’t be finished. ' + reason;
-      if (sessionPlan === 'starter') finished += " If a run fails with an error, we give the credit back; if anything goes wrong on our side, email support and we'll restore it.";
+      if (sessionPlan === 'starter') finished += " On Starter, if a run fails with an error, we give the credit back; if anything goes wrong on our side, email support and we'll restore it.";
       showUploadError(finished);
       return;
     }

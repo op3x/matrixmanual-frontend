@@ -123,7 +123,7 @@ a{color:var(--ink)}
           <label for="support-phone">Phone <span class="optional">Optional</span></label>
           <input id="support-phone" name="phone" type="tel" autocomplete="tel" maxlength="40" inputmode="tel" aria-describedby="phone-hint">
           <p class="hint" id="phone-hint">Optional, unless you opt in to text messages below.</p>
-          <p class="field-error" id="support-phone-error" hidden></p>
+          <p class="field-error" id="support-phone-error" role="alert" hidden></p>
         </div>
         <div class="field">
           <label for="support-message">Message</label>
@@ -246,15 +246,32 @@ a{color:var(--ink)}
     };
   }
 
+  function smsPhoneError(phone) {
+    var digits = (String(phone || '').match(/\d/g) || []).join('');
+    if (!digits) return 'Enter the mobile number that should receive texts.';
+    if (digits.length < 10) return 'Enter a phone number with at least 10 digits.';
+    var national = digits.length === 11 && digits.charAt(0) === '1' ? digits.slice(1) : digits;
+    var repeated = /^(\d)\1+$/.test(national);
+    if (national.length !== 10) return repeated ? 'Enter a valid US mobile number.' : '';
+    var area = national.charAt(0);
+    var exchange = national.charAt(3);
+    var office = national.slice(3, 6);
+    var line = national.slice(6);
+    var fictional = office === '555' && line.slice(0, 2) === '01';
+    if (repeated || area === '0' || area === '1' || exchange === '0' || exchange === '1' || fictional) {
+      return 'Enter a valid US mobile number.';
+    }
+    return '';
+  }
+
   function validate(data) {
     var errors = [];
     if (!data.name) errors.push(['support-name', 'Enter your name.']);
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) errors.push(['support-email', 'Enter a valid email address.']);
     if (!data.message) errors.push(['support-message', 'Enter a message.']);
     if (data.consent) {
-      var digits = (data.phone.match(/\d/g) || []).length;
-      if (!data.phone) errors.push(['support-phone', 'Enter the mobile number that should receive texts.']);
-      else if (digits < 10) errors.push(['support-phone', 'Enter a phone number with at least 10 digits.']);
+      var phoneError = smsPhoneError(data.phone);
+      if (phoneError) errors.push(['support-phone', phoneError]);
     }
     return errors;
   }

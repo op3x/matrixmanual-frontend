@@ -757,11 +757,12 @@ async function main() {
       note(label + ' locks upload without an empty welcome gap', true);
     }
     await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 1 });
-    await expectLocked('?session_id=cs_test_invalid', /isn.t active/, 'invalid session');
+    await expectLocked('?session_id=cs_test_invalid', /couldn.t find that purchase/, 'unknown session');
+    await expectLocked('?session_id=cs_test_inactive', /isn.t active/, 'inactive purchase');
     await shoot(page, 'invalid_session', '#access-banner');
     await expectLocked('?session_id=cs_test_drop', /couldn.t check your purchase/, 'network error');
     await shoot(page, 'network_error', '#access-banner');
-    await expectLocked('', /No purchase found/, 'no session');
+    await expectLocked('', /couldn.t find that purchase/, 'no session');
 
     await page.setViewport({ width: 1280, height: 1000, deviceScaleFactor: 1 });
     await openUpload(page, base);
