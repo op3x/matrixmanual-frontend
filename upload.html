@@ -303,6 +303,7 @@
     <p class="legal">© 2026 Op3x LLC. ManualOS is operated by Op3x LLC.</p>
   </div>
 </footer>
+<script src="/config.js"></script>
 <script>
 (function () {
   // POST /jobs is the preferred upload (async progress, up to 25 files). It is not
@@ -479,7 +480,7 @@
       accessMessage.removeAttribute('aria-hidden');
       accessBanner.setAttribute('role', 'status');
     }
-    accessPricingLink.hidden = !opts.showPricing;
+    accessPricingLink.hidden = !opts.showPricing || window.CHECKOUT_ENABLED !== true;
     accessBanner.classList.toggle('ok', !!opts.ok);
   }
 
@@ -508,7 +509,7 @@
       extra.textContent = opts.server;
       uploadError.appendChild(extra);
     }
-    if (opts.pricing) {
+    if (opts.pricing && window.CHECKOUT_ENABLED === true) {
       var line = document.createElement('p');
       var link = document.createElement('a');
       link.href = '/#pricing';

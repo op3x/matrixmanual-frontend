@@ -143,6 +143,9 @@ figcaption{padding:.6rem .7rem .75rem;font-size:.92rem;border-top:1px solid var(
 .btn-price{width:100%;margin-top:0;padding:.55rem .9rem;font-size:1rem;line-height:1.2}
 .checkout-error:empty{margin:0}
 .checkout-error:not(:empty){margin-top:1rem;padding:.75rem .85rem;border:1px solid var(--ink);border-left:4px solid #6b2a14;background:var(--sheet);color:var(--ink);font-weight:600}
+.checkout-closed{margin:1rem 0 0;max-width:42rem;padding:.75rem .85rem;border:1px solid var(--ink);border-left:4px solid var(--yellow);background:var(--sheet);font-weight:600;overflow-wrap:anywhere}
+.checkout-closed a{text-decoration:underline;text-underline-offset:.15em}
+.checkout-closed[hidden]{display:none}
 .pay-note{margin-top:1rem;color:var(--muted);max-width:42rem}
 .faq-item{padding:.9rem 0;border-top:1px solid var(--ink)}
 .faq-item p{margin-top:.35rem;max-width:46rem}
@@ -653,6 +656,7 @@ figcaption{padding:.6rem .7rem .75rem;font-size:.92rem;border-top:1px solid var(
         </div>
       </article>
     </div>
+    <p id="checkout-closed" class="checkout-closed">Checkout opens soon. Questions: <a href="mailto:support@manualos.com">email support@manualos.com</a></p>
     <p class="need-more">Need more? <a href="mailto:support@manualos.com">Email us</a>.</p>
     <p id="checkout-error" class="checkout-error" role="alert" aria-live="assertive" tabindex="-1"></p>
     <noscript>
@@ -705,6 +709,7 @@ figcaption{padding:.6rem .7rem .75rem;font-size:.92rem;border-top:1px solid var(
     <p class="legal">© 2026 Op3x LLC. ManualOS is operated by Op3x LLC.</p>
   </div>
 </footer>
+<script src="/config.js"></script>
 <script src="/checkout-config.js"></script>
 <script>
 (function () {
@@ -714,8 +719,18 @@ figcaption{padding:.6rem .7rem .75rem;font-size:.92rem;border-top:1px solid var(
   if (host === 'localhost' || host === '127.0.0.1' || host === '[::1]') API_BASE = location.origin;
   var TERMS_VERSION = 'terms-rev-a-m2';
   var checkoutError = document.getElementById('checkout-error');
+  var checkoutClosed = document.getElementById('checkout-closed');
   var buttons = document.querySelectorAll('[data-checkout]');
   var busy = false;
+
+  function checkoutEnabled() {
+    return window.CHECKOUT_ENABLED === true;
+  }
+
+  function closeCheckout() {
+    if (checkoutClosed) checkoutClosed.hidden = false;
+    buttons.forEach(function (button) { button.disabled = true; });
+  }
 
   function boxFor(button) {
     var id = button.getAttribute('data-consent');
@@ -728,6 +743,11 @@ figcaption{padding:.6rem .7rem .75rem;font-size:.92rem;border-top:1px solid var(
   }
 
   function syncButtons() {
+    if (!checkoutEnabled()) {
+      closeCheckout();
+      return;
+    }
+    if (checkoutClosed) checkoutClosed.hidden = true;
     if (busy) return;
     buttons.forEach(function (button) {
       var box = boxFor(button);
@@ -758,6 +778,10 @@ figcaption{padding:.6rem .7rem .75rem;font-size:.92rem;border-top:1px solid var(
   });
 
   async function startCheckout(plan, button) {
+    if (!checkoutEnabled()) {
+      closeCheckout();
+      return;
+    }
     if (busy) return;
     var box = boxFor(button);
     if (!configReady() || !box || !box.checked) {
