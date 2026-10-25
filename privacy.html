@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Placeholders [MAILING ADDRESS], [EFFECTIVE DATE], and [LOG RETENTION] must be filled in before publishing. This page is not legal advice. -->
+<!-- Dashed placeholders are filled in before publishing. This page is not legal advice. -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -48,7 +48,7 @@ a{color:var(--ink)}
 code{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:.88em}
 .callout,.fill-note{border:1px solid var(--ink);border-left:4px solid var(--yellow);background:var(--paper);padding:.85rem .95rem;margin:1rem 0}
 .fill-note{background:#fff6d6}
-.placeholder{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:.92em;background:#fff6d6;border:1px dashed var(--ink);padding:0 .28rem}
+.placeholder{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:.92em;background:#fff6d6;border:1px dashed var(--ink);padding:0 .28rem;overflow-wrap:anywhere}
 .site-footer{background:var(--ink);color:#f3f0e6;margin-top:auto;border-top:4px solid var(--yellow);padding:1.5rem .85rem 1.75rem}
 .site-footer a{color:#f3f0e6;text-decoration:none}
 .site-footer a:hover{color:var(--yellow)}
@@ -79,10 +79,10 @@ code{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:.88em}
     <div class="titleblock">
       <span>Doc no. LEGAL-01 · Privacy</span>
       <span>Rev A</span>
-      <span>Eff. <span class="placeholder">[EFFECTIVE DATE]</span></span>
+      <span>Eff. <span class="placeholder">[[EFFECTIVE_DATE]]</span></span>
     </div>
     <div class="fill-note">
-      <p><strong>Open items.</strong> A dashed token is a placeholder. Fill it in before this page is final: <span class="placeholder">[EFFECTIVE DATE]</span>, <span class="placeholder">[MAILING ADDRESS]</span>, and <span class="placeholder">[LOG RETENTION]</span>.</p>
+      <p><strong>Open items.</strong> A dashed token is a placeholder. Fill it in before this page is final.</p>
     </div>
     <h1>Privacy policy</h1>
     <p class="lede">ManualOS turns PLC program files and CAD files into equipment manuals. This page explains what we collect, what happens to your files, and who else handles them. ManualOS is operated by Op3x LLC ("we", "us").</p>
@@ -216,7 +216,7 @@ code{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:.88em}
     </section>
 
     <h2><span class="idx">14</span>Contact</h2>
-    <p>Op3x LLC, <span class="placeholder">[MAILING ADDRESS]</span>. Email: <a href="mailto:support@manualos.com">support@manualos.com</a>. <a href="/support.html">Support form</a>.</p>
+    <p>Op3x LLC, <span class="placeholder">[[OP3X_MAILING_ADDRESS]]</span>. Email: <a href="mailto:support@manualos.com">support@manualos.com</a>. <a href="/support.html">Support form</a>.</p>
   </article>
 </main>
 <footer class="site-footer">

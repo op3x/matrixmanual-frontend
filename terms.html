@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Placeholders [MAILING ADDRESS] and [EFFECTIVE DATE] must be filled in before publishing. This page is not legal advice. -->
+<!-- Dashed placeholders are filled in before publishing. This page is not legal advice. -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -47,7 +47,7 @@ a{color:var(--ink)}
 .lede{font-size:1.05rem;margin-top:0}
 .callout,.fill-note{border:1px solid var(--ink);border-left:4px solid var(--yellow);background:var(--paper);padding:.85rem .95rem;margin:1rem 0}
 .fill-note{background:#fff6d6}
-.placeholder{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:.92em;background:#fff6d6;border:1px dashed var(--ink);padding:0 .28rem}
+.placeholder{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:.92em;background:#fff6d6;border:1px dashed var(--ink);padding:0 .28rem;overflow-wrap:anywhere}
 .site-footer{background:var(--ink);color:#f3f0e6;margin-top:auto;border-top:4px solid var(--yellow);padding:1.5rem .85rem 1.75rem}
 .site-footer a{color:#f3f0e6;text-decoration:none}
 .site-footer a:hover{color:var(--yellow)}
@@ -78,10 +78,10 @@ a{color:var(--ink)}
     <div class="titleblock">
       <span>Doc no. LEGAL-02 · Terms</span>
       <span>Rev A</span>
-      <span>Eff. <span class="placeholder">[EFFECTIVE DATE]</span></span>
+      <span>Eff. <span class="placeholder">[[EFFECTIVE_DATE]]</span></span>
     </div>
     <div class="fill-note">
-      <p><strong>Open items.</strong> A dashed token is a placeholder. Fill it in before this page is final: <span class="placeholder">[EFFECTIVE DATE]</span> and <span class="placeholder">[MAILING ADDRESS]</span>.</p>
+      <p><strong>Open items.</strong> A dashed token is a placeholder. Fill it in before this page is final.</p>
     </div>
     <h1>Terms of service</h1>
     <p class="lede">These terms are an agreement between you and Op3x LLC ("we", "us"), which operates ManualOS at manualos.com. By buying a plan or uploading files, you agree to them.</p>
@@ -113,6 +113,7 @@ a{color:var(--ink)}
 
     <h2><span class="idx">03</span>Subscriptions and cancellation</h2>
     <p>Pro renews every month and is charged through our payment processor until you cancel. To cancel, email <a href="mailto:support@manualos.com">support@manualos.com</a> from the email address you used at checkout. We will cancel the subscription at the end of your current billing period. You won't be charged again, and Pro access continues until that period ends.</p>
+    <p>Billing and complaint calls and texts can reach the owner at any hour, including after hours.</p>
     <p>Pro is intended for normal use by one customer's own projects. We may limit use that is automated, abusive, or far beyond typical use.</p>
 
     <h2><span class="idx">04</span>Refunds</h2>
@@ -121,6 +122,7 @@ a{color:var(--ink)}
       <li><strong>Pro:</strong> you can request a refund of any monthly charge within 31 days of that charge.</li>
       <li><strong>After a refund:</strong> unused credits from the refunded purchase end.</li>
     </ul>
+    <p>Billing and complaint calls and texts can reach the owner at any hour, including after hours.</p>
 
     <h2><span class="idx">05</span>Generated manuals are drafts</h2>
     <div class="callout">
@@ -171,7 +173,8 @@ a{color:var(--ink)}
     </section>
 
     <h2><span class="idx">12</span>Contact</h2>
-    <p>Op3x LLC, <span class="placeholder">[MAILING ADDRESS]</span>. Email: <a href="mailto:support@manualos.com">support@manualos.com</a>. <a href="/support.html">Support form</a>.</p>
+    <p>Op3x LLC, <span class="placeholder">[[OP3X_MAILING_ADDRESS]]</span>. Email: <a href="mailto:support@manualos.com">support@manualos.com</a>. <a href="/support.html">Support form</a>.</p>
+    <p>Billing and complaint calls and texts can reach the owner at any hour, including after hours.</p>
   </article>
 </main>
 <footer class="site-footer">

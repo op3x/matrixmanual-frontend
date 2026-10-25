@@ -107,11 +107,20 @@ async function main() {
       if (html[name].includes(word)) throw new Error(name + ' contains ' + word);
     }
   }
-  for (const token of ['[MAILING ADDRESS]', '[EFFECTIVE DATE]', '[LOG RETENTION]']) {
-    if (!html['privacy.html'].includes(token)) throw new Error('privacy missing ' + token);
+  if (!html['privacy.html'].includes('[LOG RETENTION]')) throw new Error('privacy missing log retention placeholder');
+  for (const name of ['privacy.html', 'terms.html']) {
+    const addressCount = (html[name].match(/\[\[OP3X_MAILING_ADDRESS\]\]/g) || []).length;
+    const dateCount = (html[name].match(/\[\[EFFECTIVE_DATE\]\]/g) || []).length;
+    if (addressCount !== 1) throw new Error(name + ' address placeholder count ' + addressCount);
+    if (dateCount !== 1) throw new Error(name + ' effective date placeholder count ' + dateCount);
+    if (/\[MAILING ADDRESS\]|\[EFFECTIVE DATE\]/.test(html[name])) throw new Error(name + ' still uses an old placeholder');
   }
-  for (const token of ['[MAILING ADDRESS]', '[EFFECTIVE DATE]']) {
-    if (!html['terms.html'].includes(token)) throw new Error('terms missing ' + token);
+  const reach = 'Billing and complaint calls and texts can reach the owner at any hour, including after hours.';
+  if (!html['support.html'].includes(reach)) throw new Error('support page missing after-hours reach');
+  const termsReach = (html['terms.html'].match(/Billing and complaint calls and texts can reach the owner at any hour, including after hours\./g) || []).length;
+  if (termsReach < 1) throw new Error('terms missing after-hours reach');
+  if (/within \d+ (hour|business day)|response time|we will respond|promptly|immediately/i.test(html['support.html'] + html['terms.html'])) {
+    throw new Error('support or terms promise a response time');
   }
   if (!/State of Illinois/.test(html['terms.html'])) throw new Error('terms missing Illinois law');
   if (!/within 31 days of purchase/.test(html['terms.html'])) throw new Error('terms missing 31-day starter refund');
