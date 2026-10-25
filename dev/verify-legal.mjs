@@ -170,9 +170,9 @@ async function main() {
   }
   if (/\{\{LAUNCH_DATE\}\}/.test(Object.values(html).join('\n'))) throw new Error('a page still uses {{LAUNCH_DATE}}');
   const temp = 'Some file types are briefly written to temporary storage during conversion and deleted right after.';
-  const kept = 'Uploaded files are processed and deleted when the job finishes; they are not kept.';
+  const kept = 'Uploaded files are processed in memory and deleted when the job finishes, including a job that fails.';
   if (!html['privacy.html'].includes(temp) || !html['privacy.html'].includes(kept)) throw new Error('privacy missing temporary-storage retention wording');
-  if (!html['privacy.html'].includes('up to 24 hours')) throw new Error('privacy missing 24-hour PDF line');
+  if (!html['privacy.html'].includes('It is stored on our server for 24 hours so you can download it, then deleted.')) throw new Error('privacy missing 24-hour PDF line');
   if (!html['support.html'].includes('backend PR #8')) throw new Error('support script missing backend PR #8 note');
   if (/team seats/i.test(html['terms.html'] + html['privacy.html'])) throw new Error('team seats were invented');
   if (/at any hour/.test(Object.values(html).join('\n'))) throw new Error('an at-any-hour line is still present');
@@ -255,7 +255,35 @@ async function main() {
   for (const name of ['index.html', 'upload.html', '404.html', 'privacy.html', 'terms.html', 'refunds.html', 'support.html', 'cancel/index.html']) {
     if (!html[name].includes('<p class="legal">' + footerLine + '</p>')) throw new Error(name + ' footer is not the Op3x product line');
   }
-  if (/24 hours/i.test(html['index.html'])) throw new Error('homepage still mentions a 24-hour PDF');
+  if (/never stored|after you leave the page/i.test(Object.values(html).join('\n'))) throw new Error('a page still says files are never stored or not kept after you leave');
+  const allowedRetention = new Set(['24 hour', '24 hours', '30 day', '30 days', '28 day', '28 days']);
+  for (const name of pages) {
+    const visible = html[name].replace(/<!--[\s\S]*?-->/g, '');
+    const duration = /\b(\d+)\s*(hour|hours|day|days)\b/gi;
+    let match;
+    while ((match = duration.exec(visible))) {
+      const phrase = (match[1] + ' ' + match[2]).toLowerCase();
+      if (allowedRetention.has(phrase)) continue;
+      const around = visible.slice(Math.max(0, match.index - 80), match.index + match[0].length + 80);
+      if (/\b(keep|kept|store|stored|delet|retention|backup|expire|expired)\w*/i.test(around)) {
+        throw new Error(name + ' has a retention period other than 24 hours, 30 days, or 28 days: ' + phrase);
+      }
+    }
+  }
+  const homepageLine = "To write your manual, we send content extracted from your files, such as program logic, comments, and part details, to a third-party service provider that helps write the manual. We delete your uploaded files when the job finishes. Download your PDF right away, because we delete it 24 hours after it's made. Our provider deletes what we send it within 30 days, unless it must keep it longer to enforce its usage policy or comply with the law. Full details are in our Privacy Policy.";
+  if (!html['index.html'].includes(homepageLine)) throw new Error('homepage JSON-LD retention line missing');
+  if (!html['index.html'].includes(homepageLine.replace('Privacy Policy.', '<a href="/privacy.html">Privacy Policy</a>.'))) throw new Error('homepage visible retention line missing');
+  if (!html['index.html'].includes("You get the PDF when the job is done. Download it right away, because it's deleted 24 hours after it's made.")) throw new Error('homepage FAQ download line missing');
+  const readyCard = "Your PDF is ready. Download it right away, because it's deleted 24 hours after it's made.";
+  const expiredManual = "This manual isn't available. Manuals are deleted 24 hours after they're made. Generate it again from your files.";
+  if (!html['upload.html'].includes(readyCard)) throw new Error('upload ready card missing');
+  if ((html['upload.html'].match(new RegExp(expiredManual.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g')) || []).length < 2) throw new Error('upload expired message missing');
+  const privacyVisible = html['privacy.html'].replace(/<!--[\s\S]*?-->/g, '');
+  if (privacyVisible.includes('Only the buyer who made it can download it')) throw new Error('buyer-only download line ships before backend #19');
+  if (!html['privacy.html'].includes('TODO backend #19')) throw new Error('privacy missing the backend #19 download TODO');
+  if (!privacyVisible.includes("Anyone who has the job link can download it during those 24 hours, so don't share it.")) throw new Error('privacy missing the pre-#19 download line');
+  if (!html['privacy.html'].includes('Backup copies, which can include generated PDFs and job status from the last 24 hours, are deleted within 28 days.')) throw new Error('privacy missing the backups line');
+  if (!html['terms.html'].includes('Each generated PDF is stored for 24 hours so you can download it, then deleted. Download your copy right away.')) throw new Error('terms download line missing');
   const trainNearModel = /\btrain\w{0,3}\b[\s\S]{0,40}\bmodels?\b|\bmodels?\b[\s\S]{0,40}\btrain\w{0,3}\b/i;
   for (const name of pages) {
     if (trainNearModel.test(html[name])) throw new Error(name + ' still says files are used to train models');

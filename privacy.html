@@ -86,9 +86,9 @@ code{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:.88em}
     <div class="callout">
       <p><strong>Short version</strong></p>
       <ul>
-        <li>Uploaded files are processed and deleted when the job finishes; they are not kept.</li>
-        <li>Some file types are briefly written to temporary storage during conversion and deleted right after.</li>
-        <li>The generated PDF stays on the server for up to 24 hours for download, then is deleted.</li>
+        <li>Uploaded files are processed in memory and deleted when the job finishes, including a job that fails. Some file types are briefly written to temporary storage during conversion and deleted right after.</li>
+        <!-- TODO backend #19: replace "Anyone who has the job link can download it during those 24 hours, so don't share it." with "Only the buyer who made it can download it, using the checkout reference saved in their browser." -->
+        <li>The generated PDF: It is stored on our server for 24 hours so you can download it, then deleted. Anyone who has the job link can download it during those 24 hours, so don't share it.</li>
         <li>Extracted program logic and device descriptions go to a third-party AI model provider to write the text.</li>
         <li>We don't sell your data, and this site doesn't use analytics. Video you choose to play may set cookies from the video host.</li>
         <li>If you opt in, ManualOS (Op3x LLC) may text support replies and order/manual-status texts. Mobile numbers and SMS opt-in consent are not shared with or sold to third parties or affiliates for marketing.</li>
@@ -108,11 +108,9 @@ code{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:.88em}
 
     <h2><span class="idx">02</span>How your files are processed</h2>
     <ul>
-      <li><strong>Uploaded files:</strong> Uploaded files are processed and deleted when the job finishes; they are not kept. That includes a job that fails.</li>
-      <li>Some file types are briefly written to temporary storage during conversion and deleted right after.</li>
-      <li><strong>The generated PDF:</strong> it stays on the server for up to 24 hours for download, under a random link, then is deleted.</li>
-      <li><strong>The download link:</strong> anyone who has it can download the PDF during those 24 hours, so don't share it.</li>
-      <li><strong>Job status:</strong> progress and warnings are kept in memory for up to 24 hours. They don't include your name, email, or payment details. A restart clears them sooner.</li>
+      <li><strong>Uploaded files:</strong> Uploaded files are processed in memory and deleted when the job finishes, including a job that fails. Some file types are briefly written to temporary storage during conversion and deleted right after.</li>
+      <li><strong>The generated PDF:</strong> It is stored on our server for 24 hours so you can download it, then deleted. Anyone who has the job link can download it during those 24 hours, so don't share it.</li>
+      <li><strong>Job status:</strong> Each job's status, progress, warnings, file or product name, and your checkout reference are stored on our server for 24 hours so you can find your manual again, then deleted. For subscriptions this includes our payment processor's customer and subscription IDs. It never includes card details.</li>
     </ul>
 
     <h2><span class="idx">03</span>AI processing</h2>
@@ -166,10 +164,10 @@ code{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:.88em}
 
     <h2><span class="idx">08</span>Retention</h2>
     <ul>
-      <li><strong>Uploaded files:</strong> Uploaded files are processed and deleted when the job finishes; they are not kept.</li>
-      <li>Some file types are briefly written to temporary storage during conversion and deleted right after.</li>
-      <li><strong>Generated PDFs:</strong> stay on the server for up to 24 hours for download, then are deleted.</li>
-      <li><strong>Job status:</strong> in memory for up to 24 hours.</li>
+      <li><strong>Uploaded files:</strong> Uploaded files are processed in memory and deleted when the job finishes, including a job that fails. Some file types are briefly written to temporary storage during conversion and deleted right after.</li>
+      <li><strong>Generated PDFs:</strong> It is stored on our server for 24 hours so you can download it, then deleted. Anyone who has the job link can download it during those 24 hours, so don't share it.</li>
+      <li><strong>Job status:</strong> Each job's status, progress, warnings, file or product name, and your checkout reference are stored on our server for 24 hours so you can find your manual again, then deleted. For subscriptions this includes our payment processor's customer and subscription IDs. It never includes card details.</li>
+      <li><strong>Backups:</strong> Our server is backed up automatically. Backup copies, which can include generated PDFs and job status from the last 24 hours, are deleted within 28 days.</li>
       <li><strong>Data sent to the AI provider:</strong> Our AI model provider deletes the text we send it, and what it returns, within 30 days, unless it must keep it longer to enforce its usage policy or to comply with the law.</li>
       <li><strong>Purchase records:</strong> held by the payment processor for as long as it, and the law, require.</li>
       <li><strong>Your checkout reference:</strong> kept in your browser until you clear it.</li>
