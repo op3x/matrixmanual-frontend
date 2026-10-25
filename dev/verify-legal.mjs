@@ -21,7 +21,7 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const shotDir = process.env.SCREENSHOT_DIR || '/opt/cursor/artifacts/screenshots';
 const chromePath = process.env.CHROME_PATH || '/usr/bin/google-chrome';
 const axePath = '/tmp/manualos-test/node_modules/axe-core/axe.min.js';
-const pages = ['index.html', 'upload.html', '404.html', 'privacy.html', 'terms.html', 'support.html'];
+const pages = ['index.html', 'upload.html', '404.html', 'privacy.html', 'terms.html', 'refunds.html', 'support.html'];
 const CONSENT = 'I agree to receive text messages from ManualOS at this number: support replies, account alerts, and manual-status alerts. Msg frequency varies. Msg & data rates may apply. Reply STOP to opt out, HELP for help. Consent is not a condition of purchase.';
 
 function read(name) {
@@ -95,15 +95,14 @@ async function main() {
 
   for (const name of pages) {
     const footer = footerOf(html[name]);
-    for (const href of ['/support.html', '/privacy.html', '/terms.html']) {
+    for (const href of ['/support.html', '/privacy.html', '/terms.html', '/refunds.html']) {
       if (!footer.includes('href="' + href + '"')) throw new Error(name + ' footer missing ' + href);
     }
-    if (footer.includes('/refunds.html')) throw new Error(name + ' footer still links refunds.html');
     if (/hello@manualos\.com/i.test(html[name])) throw new Error(name + ' still uses hello@');
   }
 
   const banned = ['Twilio', 'Stripe', 'Anthropic', 'Claude', 'OpenAI', 'Bandwidth', 'Vonage', 'Plivo', 'Telnyx', 'Formspree', 'Getform', 'Typeform', 'GitHub'];
-  for (const name of ['privacy.html', 'terms.html', 'support.html']) {
+  for (const name of ['privacy.html', 'terms.html', 'refunds.html', 'support.html']) {
     for (const word of banned) {
       if (html[name].includes(word)) throw new Error(name + ' contains ' + word);
     }
@@ -112,7 +111,7 @@ async function main() {
   if (!html['privacy.html'].includes('Hosting logs are kept for 30 days.') || !html['privacy.html'].includes('<strong>Hosting logs:</strong> 30 days.')) {
     throw new Error('privacy missing 30-day hosting logs');
   }
-  for (const name of ['privacy.html', 'terms.html']) {
+  for (const name of ['privacy.html', 'terms.html', 'refunds.html']) {
     const addressCount = (html[name].match(/\[\[OP3X_MAILING_ADDRESS\]\]/g) || []).length;
     const dateCount = (html[name].match(/\[\[EFFECTIVE_DATE\]\]/g) || []).length;
     const legalCount = (html[name].match(/\[\[OP3X_LEGAL_NAME\]\]/g) || []).length;
@@ -123,24 +122,34 @@ async function main() {
     if (!html[name].includes('250 Trent Lane, Loves Park, IL 61111')) throw new Error(name + ' missing mailing address');
     if (/\[MAILING ADDRESS\]|\[EFFECTIVE DATE\]/.test(html[name])) throw new Error(name + ' still uses an old placeholder');
   }
-  if (/\[\[REFUND_WINDOW\]\]|refunds\.html/.test(Object.values(html).join('\n'))) throw new Error('refunds page or window placeholder is still present');
+  if (/\[\[REFUND_WINDOW\]\]/.test(Object.values(html).join('\n'))) throw new Error('refund window placeholder is still present');
   const sitemap = await read('sitemap.xml');
-  if (/refunds\.html/.test(sitemap)) throw new Error('sitemap still lists refunds.html');
-  if (/31-day|31 days/.test(Object.values(html).join('\n') + sitemap)) throw new Error('a page still states a 31-day refund window');
-  const refundNeed = [
-    'Refunds and chargebacks',
-    'you can get a full refund by emailing',
-    'until you receive your first manual from that purchase',
-    "After a manual is delivered, the purchase can't be refunded, except where the law requires it.",
-    'a monthly or annual charge can be refunded until you receive your first manual in that billing period',
-    "After that it can't be refunded, except where the law requires it.",
-    "You can cancel anytime and won't be billed again after the current period.",
-    'the credits and access from that purchase end.',
-    "access is suspended while a dispute is open, restored if it's decided in ManualOS's favor, and permanently revoked if ManualOS loses it.",
+  if (!sitemap.includes('https://manualos.com/refunds.html')) throw new Error('sitemap missing refunds.html');
+  if (/31-day|31 days|within 31 days/.test(Object.values(html).join('\n') + sitemap)) throw new Error('a page still states a 31-day refund window');
+  if (/unused credits from the refunded purchase/.test(html['terms.html'] + html['refunds.html'])) throw new Error('old unused-credits refund bullet is still present');
+  const refundRule = [
+    'A purchase can be refunded until its first manual is delivered.',
+    '<strong>Starter:</strong> you can get a full refund until your first manual is delivered.',
+    '<strong>Pro:</strong> each monthly charge can be refunded until the first manual in that billing period is delivered.',
+    "After that, payments aren't refundable, except where required by law.",
+    'from the email address you used at checkout.',
+    "A run that fails, or a file ManualOS can't read, doesn't use a credit.",
+    "and we'll help.",
+    'Your finished PDF is stored for up to 24 hours so you can download it, then deleted. Save your copy.',
   ];
-  for (const phrase of refundNeed) {
-    if (!html['terms.html'].includes(phrase)) throw new Error('terms missing refund phrase: ' + phrase);
+  for (const phrase of refundRule) {
+    if (!html['terms.html'].includes(phrase)) throw new Error('terms refund rule diverges: ' + phrase);
+    if (!html['refunds.html'].includes(phrase)) throw new Error('refunds page missing: ' + phrase);
   }
+  if (!html['terms.html'].includes('the credits and access from that purchase end.')) throw new Error('terms missing access-ends sentence');
+  if (!html['terms.html'].includes("access is suspended while a dispute is open, restored if it's decided in ManualOS's favor, and permanently revoked if ManualOS loses it.")) {
+    throw new Error('terms missing chargeback rule');
+  }
+  if (/chargeback|Integrator|at any hour|tel:/i.test(html['refunds.html'])) throw new Error('refunds page includes chargebacks, Integrator, a phone line, or after-hours wording');
+  if (!html['refunds.html'].includes('<title>Refunds and cancellation | ManualOS</title>')) throw new Error('refunds title');
+  if (!html['refunds.html'].includes('content="Refunds until your first manual is delivered, how to cancel Pro, and why a rejected file never uses a credit."')) throw new Error('refunds meta description');
+  if (!html['refunds.html'].includes('href="https://manualos.com/refunds.html"')) throw new Error('refunds canonical');
+  if (!html['refunds.html'].includes('Prices are in USD, plus applicable taxes.')) throw new Error('refunds missing price note');
   if (!html['terms.html'].includes('refunds until the first manual is delivered')) throw new Error('terms meta description still describes the old refund window');
   if (!html['terms.html'].includes('$249 per month or $2,490 per year')) throw new Error('terms missing Integrator price');
   if (!html['terms.html'].includes('25 manuals per month, and unused manuals don\'t roll over')) throw new Error('terms missing Integrator manuals');
@@ -152,16 +161,9 @@ async function main() {
   if (!html['privacy.html'].includes('for Integrator, monthly manual counts')) throw new Error('privacy missing Integrator counts');
   if (!html['privacy.html'].includes('kept on our server while you have the Integrator plan')) throw new Error('privacy missing white-label retention');
   if (/team seats/i.test(html['terms.html'] + html['privacy.html'])) throw new Error('team seats were invented');
-  const reach = 'Billing and complaint calls and texts can reach the owner at any hour, including after hours.';
-  const termsReach = (html['terms.html'].match(/Billing and complaint calls and texts can reach the owner at any hour, including after hours\./g) || []).length;
-  const supportReach = (html['support.html'].match(/Billing and complaint calls and texts can reach the owner at any hour, including after hours\./g) || []).length;
-  if (termsReach !== 1) throw new Error('terms after-hours line count ' + termsReach);
-  if (supportReach !== 1) throw new Error('support after-hours line count ' + supportReach);
-  for (const name of ['index.html', 'upload.html', '404.html', 'privacy.html']) {
-    if (html[name].includes(reach)) throw new Error(name + ' repeats the after-hours line');
-  }
-  if (/within \d+ (hour|business day)|response time|we will respond|promptly|immediately/i.test(html['support.html'] + html['terms.html'])) {
-    throw new Error('support or terms promise a response time');
+  if (/at any hour/.test(Object.values(html).join('\n'))) throw new Error('an at-any-hour line is still present');
+  if (/within \d+ (hour|business day)|response time|we will respond|promptly|immediately/i.test(html['support.html'] + html['terms.html'] + html['refunds.html'])) {
+    throw new Error('support, terms, or refunds promise a response time');
   }
   if (!/State of Illinois/.test(html['terms.html'])) throw new Error('terms missing Illinois law');
   const smsNeed = ['support replies', 'account alerts', 'manual-status alerts', 'Message frequency varies', 'Msg &amp; data rates may apply', 'Reply STOP to opt out', 'Reply HELP for help', 'support@manualos.com', 'Mobile numbers and SMS opt-in consent are not shared with or sold to third parties or affiliates for marketing'];
@@ -207,7 +209,7 @@ async function main() {
 
     for (const width of [390, 1280]) {
       await page.setViewport({ width, height: width === 390 ? 844 : 1000, deviceScaleFactor: 1 });
-      for (const name of ['support.html', 'privacy.html', 'terms.html', '404.html', 'index.html']) {
+      for (const name of ['support.html', 'privacy.html', 'terms.html', 'refunds.html', '404.html', 'index.html']) {
         await page.goto(base + '/' + name, { waitUntil: 'networkidle0' });
         const extra = await overflow(page);
         if (extra > 1) throw new Error(name + ' overflows by ' + extra + 'px at ' + width);
@@ -236,7 +238,7 @@ async function main() {
     const label = await page.$eval('label[for="sms-consent"]', (el) => el.textContent.trim());
     if (label !== CONSENT) throw new Error('checkbox label mismatch: ' + label);
 
-    for (const name of ['support.html', 'privacy.html', 'terms.html']) {
+    for (const name of ['support.html', 'privacy.html', 'terms.html', 'refunds.html']) {
       await page.goto(base + '/' + name, { waitUntil: 'networkidle0' });
       const stem = name.replace('.html', '');
       await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 1 });
