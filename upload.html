@@ -300,7 +300,7 @@
       <a href="/refunds.html">Refunds</a>
       <a href="mailto:support@manualos.com">support@manualos.com</a>
     </nav>
-    <p class="legal">© 2026 ManualOS. manualos.com</p>
+    <p class="legal">© 2026 Op3x LLC. ManualOS is operated by Op3x LLC.</p>
   </div>
 </footer>
 <script>
@@ -344,6 +344,7 @@
 
   var apiBase = resolveApiBase();
   var sessionId = '';
+  var sessionPlan = '';
   var sessionFromQuery = false;
   var uploadEnabled = false;
   var busy = false;
@@ -566,6 +567,7 @@
   }
 
   function applySession(data) {
+    sessionPlan = String(data.plan || '').toLowerCase();
     if (data.remaining === 0) {
       setUploadEnabled(false);
       showAccess('', { showPricing: true, ok: false, hideMessage: true });
@@ -893,7 +895,7 @@
       if (res.status === 404) {
         resetProgress();
         setBusy(false);
-        showUploadError('This job is no longer available. It may have expired after 24 hours.');
+        showUploadError("This manual isn't available. Manuals are deleted 24 hours after they're made. Generate it again from your files.");
         return null;
       }
       var job = await readJson(res);
@@ -923,8 +925,8 @@
     paintNotes(opts.warnings, opts.coverage);
     var updated = await verifySession({ keepAccessOnError: true });
     var successText = opts.legacy
-      ? 'Your PDF is ready. Download it here.'
-      : 'Your PDF is ready. Download it here. This copy stays on the server for up to 24 hours, then is deleted.';
+      ? "Your PDF is ready. Download it now."
+      : "Your PDF is ready. Download it right away, because it's deleted 24 hours after it's made.";
     if (updated && updated.remaining === null) successText += ' Unlimited manuals remaining.';
     else if (updated) successText += ' ' + remainingLabel(updated.remaining) + '.';
     successSub.textContent = successText;
@@ -958,7 +960,7 @@
       if (!res.ok) {
         var errBody = await readJson(res);
         showUploadError(res.status === 404
-          ? 'This manual isn’t available. It may have expired after 24 hours.'
+          ? "This manual isn't available. Manuals are deleted 24 hours after they're made. Generate it again from your files."
           : (friendlyHttpError(res.status, errBody).message));
         return false;
       }
@@ -1135,7 +1137,9 @@
       setBusy(false);
       generateBtn.textContent = 'Generate my manual';
       var reason = safeServerMessage({ error: job.error }) || 'Please try again.';
-      showUploadError('The manual couldn’t be finished. ' + reason + ' The credit for this attempt is returned.');
+      var finished = 'The manual couldn’t be finished. ' + reason;
+      if (sessionPlan === 'starter') finished += " If a run fails with an error, we give the credit back; if anything goes wrong on our side, email support and we'll restore it.";
+      showUploadError(finished);
       return;
     }
     var ready = await fetchJobPdf(job.id, token);

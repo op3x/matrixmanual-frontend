@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <!-- Headline lives in #hero-title. The title describes the page. -->
 <title>ManualOS | Operator and maintenance manuals from PLC and CAD files</title>
-<meta name="description" content="Upload your PLC or CAD files. PLC program files (.L5X, .L5K, .scl, .st and more) and CAD files (STEP, IGES, DXF). Starter is $39 once for 3 manuals. Pro is $79/month.">
+<meta name="description" content="Upload your PLC or CAD files. PLC program files (.L5X, .L5K, .scl, .st and more) and CAD files (STEP, IGES, DXF). Starter is $39 once for 3 manuals, plus applicable taxes. Pro is $79 per month, plus applicable taxes.">
 <meta name="robots" content="index, follow">
 <link rel="canonical" href="https://manualos.com/">
 <meta property="og:site_name" content="ManualOS">
@@ -13,18 +13,18 @@
 <meta property="og:locale" content="en_US">
 <meta property="og:url" content="https://manualos.com/">
 <meta property="og:title" content="ManualOS — Upload your PLC or CAD files">
-<meta property="og:description" content="Upload your PLC or CAD files. PLC program files (.L5X, .L5K, .scl, .st and more) and CAD files (STEP, IGES, DXF). Starter is $39 once for 3 manuals. Pro is $79/month.">
+<meta property="og:description" content="Upload your PLC or CAD files. PLC program files (.L5X, .L5K, .scl, .st and more) and CAD files (STEP, IGES, DXF). Starter is $39 once for 3 manuals, plus applicable taxes. Pro is $79 per month, plus applicable taxes.">
 <meta property="og:image" content="https://manualos.com/assets/og-image.jpg">
 <meta property="og:image:secure_url" content="https://manualos.com/assets/og-image.jpg">
 <meta property="og:image:type" content="image/jpeg">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
-<meta property="og:image:alt" content="ManualOS. Upload your PLC or CAD files. PLC program files (.L5X, .L5K, .scl, .st and more) and CAD files (STEP, IGES, DXF). Starter is $39 once. Pro is $79 per month. The cover of a 60-page sample for the SAMPLE-A Case Packer, Example Machinery Co. (fictional), document OM-SAMPLE-A-EN, sits beside the title.">
+<meta property="og:image:alt" content="ManualOS. Upload your PLC or CAD files. PLC program files (.L5X, .L5K, .scl, .st and more) and CAD files (STEP, IGES, DXF). Starter is $39 once. Pro is $79 per month, plus applicable taxes. The cover of a 60-page sample for the SAMPLE-A Case Packer, Example Machinery Co. (fictional), document OM-SAMPLE-A-EN, sits beside the title.">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="ManualOS — Upload your PLC or CAD files">
-<meta name="twitter:description" content="Upload your PLC or CAD files. PLC program files (.L5X, .L5K, .scl, .st and more) and CAD files (STEP, IGES, DXF). Starter is $39 once for 3 manuals. Pro is $79/month.">
+<meta name="twitter:description" content="Upload your PLC or CAD files. PLC program files (.L5X, .L5K, .scl, .st and more) and CAD files (STEP, IGES, DXF). Starter is $39 once for 3 manuals, plus applicable taxes. Pro is $79 per month, plus applicable taxes.">
 <meta name="twitter:image" content="https://manualos.com/assets/og-image.jpg">
-<meta name="twitter:image:alt" content="ManualOS. Upload your PLC or CAD files. PLC program files (.L5X, .L5K, .scl, .st and more) and CAD files (STEP, IGES, DXF). Starter is $39 once. Pro is $79 per month. The cover of a 60-page sample for the SAMPLE-A Case Packer, Example Machinery Co. (fictional), document OM-SAMPLE-A-EN, sits beside the title.">
+<meta name="twitter:image:alt" content="ManualOS. Upload your PLC or CAD files. PLC program files (.L5X, .L5K, .scl, .st and more) and CAD files (STEP, IGES, DXF). Starter is $39 once. Pro is $79 per month, plus applicable taxes. The cover of a 60-page sample for the SAMPLE-A Case Packer, Example Machinery Co. (fictional), document OM-SAMPLE-A-EN, sits beside the title.">
 <link rel="icon" href="/favicon.ico" sizes="32x32">
 <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
 <link rel="manifest" href="/site.webmanifest">
@@ -67,7 +67,8 @@ a{color:var(--ink)}
 .btn-ghost,.btn-outline{background:var(--sheet);color:var(--ink)}
 .btn-ghost:hover,.btn-outline:hover{background:var(--yellow);color:var(--ink)}
 .btn-nav{margin-left:.25rem}
-.btn:disabled,.btn-price:disabled{background:#3e444b;border-color:#3e444b;color:#f3f0e6;cursor:wait}
+.btn:disabled,.btn-price:disabled{background:#3e444b;border-color:#3e444b;color:#f3f0e6;cursor:not-allowed}
+.btn[aria-busy="true"]:disabled{cursor:wait}
 .hero-sheet{margin:.75rem;border:1px solid var(--ink);background:var(--sheet);padding:.85rem .85rem 1rem}
 .titleblock{display:grid;grid-template-columns:1.5fr .7fr .7fr;border:1px solid var(--ink);font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:.68rem;letter-spacing:.04em;text-transform:uppercase;margin:0 0 .9rem;background:var(--paper)}
 .titleblock span{padding:.32rem .45rem;border-left:1px solid var(--ink);min-width:0;overflow-wrap:anywhere}
@@ -81,7 +82,7 @@ a{color:var(--ink)}
 .hero-cta{display:flex;flex-wrap:wrap;gap:.6rem;margin:.15rem 0 0}
 .hero-price{margin:0;font-weight:600;max-width:40rem}
 .hero-note{margin:0;color:var(--muted);font-size:.95rem;max-width:40rem}
-.hero-note a,.pay-note a,.need-more a,.faq-item a,.privacy a{text-decoration:underline;text-underline-offset:.15em}
+.hero-note a,.pay-note a,.need-more a,.faq-item a,.privacy a,.renew-terms a,.consent-row a{text-decoration:underline;text-underline-offset:.15em}
 .fan{margin:0}
 .fan-stage{position:relative;height:300px;margin:.15rem 0 .75rem;overflow:hidden;border:1px solid var(--ink);background-color:#e5dfd1;background-image:linear-gradient(to right,rgba(23,24,26,.07) 1px,transparent 1px),linear-gradient(to bottom,rgba(23,24,26,.07) 1px,transparent 1px);background-size:18px 18px}
 .sheet-page{position:absolute;top:18px;width:min(58%,230px);background:#fff;border:1px solid var(--ink);line-height:0}
@@ -110,7 +111,7 @@ a{color:var(--ink)}
 .spec thead th{background:var(--ink);color:#f3f0e6;font-weight:600;font-size:.78rem;letter-spacing:.05em;text-transform:uppercase}
 .spec td:first-child,.mono{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:.8rem}
 .plan-cards{display:grid;gap:1rem}
-.plan-card{border:1px solid var(--ink);background:var(--sheet);padding:1rem .95rem 1.05rem;display:flex;flex-direction:column;gap:.7rem}
+.plan-card{border:1px solid var(--ink);background:var(--sheet);padding:1rem .95rem 1.05rem;display:flex;flex-direction:column;gap:.7rem;min-width:0}
 .plan-card.is-pro{box-shadow:inset 0 4px 0 var(--yellow)}
 .plan-card .plan{margin:0;font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:.78rem;letter-spacing:.06em;text-transform:uppercase;font-weight:500}
 .plan-card .price{margin:0;font-size:2rem;letter-spacing:-.03em;line-height:1}
@@ -131,7 +132,15 @@ figure.page img{display:block;width:100%;background:#fff}
 figcaption{padding:.6rem .7rem .75rem;font-size:.92rem;border-top:1px solid var(--rule)}
 .privacy{margin-top:1rem;border:1px solid var(--ink);border-left:4px solid var(--yellow);background:var(--sheet);padding:.85rem .95rem}
 .privacy h3{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:.75rem;letter-spacing:.08em;text-transform:uppercase;font-weight:500}
-.btn-price{width:100%;margin-top:auto;padding:.55rem .9rem;font-size:1rem;line-height:1.2}
+.plan-buy{margin-top:auto;display:grid;gap:.65rem}
+.renew-terms,.seller-note,.statement{margin:0;font-size:.92rem;overflow-wrap:anywhere}
+.statement{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:.78rem;letter-spacing:.03em}
+.seller-note[hidden],.statement[hidden]{display:none}
+.consent-row{display:grid;grid-template-columns:1.5rem minmax(0,1fr);gap:.35rem .65rem;align-items:start;border:1px solid var(--ink);border-left:4px solid var(--yellow);background:var(--paper);padding:.7rem .75rem}
+.consent-row input{width:1.5rem;height:1.5rem;margin:0;accent-color:var(--ink)}
+.consent-row input:focus-visible{outline:2px solid var(--ink);outline-offset:3px;box-shadow:0 0 0 4px var(--yellow)}
+.consent-row label{font-weight:600;cursor:pointer;overflow-wrap:anywhere}
+.btn-price{width:100%;margin-top:0;padding:.55rem .9rem;font-size:1rem;line-height:1.2}
 .checkout-error:empty{margin:0}
 .checkout-error:not(:empty){margin-top:1rem;padding:.75rem .85rem;border:1px solid var(--ink);border-left:4px solid #6b2a14;background:var(--sheet);color:var(--ink);font-weight:600}
 .pay-note{margin-top:1rem;color:var(--muted);max-width:42rem}
@@ -222,7 +231,7 @@ figcaption{padding:.6rem .7rem .75rem;font-size:.92rem;border-top:1px solid var(
           "priceCurrency": "USD",
           "availability": "https://schema.org/InStock",
           "url": "https://manualos.com/#pricing",
-          "description": "One-time purchase of 3 manuals."
+          "description": "One-time purchase of 3 manuals, plus applicable taxes."
         },
         {
           "@type": "Offer",
@@ -231,7 +240,7 @@ figcaption{padding:.6rem .7rem .75rem;font-size:.92rem;border-top:1px solid var(
           "priceCurrency": "USD",
           "availability": "https://schema.org/InStock",
           "url": "https://manualos.com/#pricing",
-          "description": "Monthly subscription with unlimited manuals. Cancel anytime."
+          "description": "Monthly subscription with unlimited manuals, plus applicable taxes. Cancel anytime."
         }
       ]
     },
@@ -260,7 +269,7 @@ figcaption{padding:.6rem .7rem .75rem;font-size:.92rem;border-top:1px solid var(
           "name": "What counts as one manual?",
           "acceptedAnswer": {
             "@type": "Answer",
-            "text": "One generation run is one manual: one upload of up to 25 files or a .zip, whether those files are PLC, CAD, or both. A failed run doesn’t use a credit. Starter is a one-time $39 purchase and includes 3 manuals. Pro is $79 per month and includes unlimited manuals while the subscription is active."
+            "text": "One generation run is one manual: one upload of up to 25 files or a .zip, whether those files are PLC, CAD, or both. If a run fails with an error, we give the credit back; if anything goes wrong on our side, email support and we'll restore it. Starter is a one-time $39 purchase, plus applicable taxes, and includes 3 manuals. Pro is $79 per month, plus applicable taxes, and includes unlimited manuals while the subscription is active."
           }
         },
         {
@@ -268,7 +277,7 @@ figcaption{padding:.6rem .7rem .75rem;font-size:.92rem;border-top:1px solid var(
           "name": "Who can see my PLC program?",
           "acceptedAnswer": {
             "@type": "Answer",
-            "text": "ManualOS processes your files to write the manual. Extracted program logic, comments, and part details are sent to a third-party AI model provider to write the manual. We don’t use your files to train models, and our AI provider doesn’t train on API data by default. Uploaded files are processed and deleted when the job finishes and are not kept. The generated PDF stays on the server for up to 24 hours for download, then is deleted. Programs are not sold."
+            "text": "To write your manual, we send content extracted from your files, such as program logic, comments, and part details, to a third-party service provider that helps write the manual. We delete your uploaded files when the job finishes. Download your PDF right away, because we delete it 24 hours after it's made. Our provider deletes what we send it within 30 days, unless it must keep it longer to enforce its usage policy or comply with the law. Full details are in our Privacy Policy."
           }
         },
         {
@@ -276,7 +285,7 @@ figcaption{padding:.6rem .7rem .75rem;font-size:.92rem;border-top:1px solid var(
           "name": "Can I cancel Pro, and what about refunds?",
           "acceptedAnswer": {
             "@type": "Answer",
-            "text": "Pro is month to month. You can cancel anytime by emailing support@manualos.com, and you will not be billed again after the current period. Starter is not a subscription. It is a one-time $39 purchase for 3 manuals. If a payment or a generated manual is wrong, email support@manualos.com and we will help."
+            "text": "Pro renews automatically every month until you cancel. You can cancel online, self-serve, from the Manage plan link at https://manualos.com/cancel. You can also email support@manualos.com. Cancellation takes effect at the end of the current billing period. You keep Pro until then and will not be charged again. Starter is not a subscription. It is a one-time $39 purchase, plus applicable taxes, for 3 manuals. If a payment or a generated manual is wrong, email support@manualos.com and we will help."
           }
         }
       ]
@@ -317,7 +326,7 @@ figcaption{padding:.6rem .7rem .75rem;font-size:.92rem;border-top:1px solid var(
         <a class="btn btn-primary" href="#pricing">See pricing</a>
         <a class="btn btn-ghost" href="#sample">View a sample manual</a>
       </div>
-      <p class="hero-price">Starter $39 once · 3 manuals. Pro $79 a month · unlimited.</p>
+      <p class="hero-price">Starter $39 once · 3 manuals. Pro $79 a month · unlimited. Plus applicable taxes.</p>
       <p class="hero-note">A .zip of those files is fine. <a href="/upload.html">Already purchased? Upload a file</a>.</p>
       </div>
       <figure class="fan">
@@ -575,18 +584,18 @@ figcaption{padding:.6rem .7rem .75rem;font-size:.92rem;border-top:1px solid var(
     </ul>
     <div class="privacy">
       <h3>Privacy</h3>
-      <p>ManualOS processes your files to write the manual. Extracted program logic, comments, and part details are sent to a third-party AI model provider to write the manual. We don’t use your files to train models, and our AI provider doesn’t train on API data by default. Uploaded files are processed and deleted when the job finishes and are not kept. The generated PDF stays on the server for up to 24 hours for download, then is deleted. Programs are not sold. Card numbers are entered at secure checkout, not on this site. <a href="/privacy.html">Privacy policy</a>.</p>
+      <p>To write your manual, we send content extracted from your files, such as program logic, comments, and part details, to a third-party service provider that helps write the manual. We delete your uploaded files when the job finishes. Download your PDF right away, because we delete it 24 hours after it's made. Our provider deletes what we send it within 30 days, unless it must keep it longer to enforce its usage policy or comply with the law. Full details are in our <a href="/privacy.html">Privacy Policy</a>.</p>
     </div>
   </section>
   <section class="section" id="pricing" aria-labelledby="pricing-title">
     <p class="kicker"><span class="idx">07</span> Pricing</p>
     <h2 id="pricing-title">Pricing</h2>
-    <p class="section-intro">Starter is a one-time purchase of 3 manuals. Pro is a monthly plan you can cancel anytime.</p>
+    <p class="section-intro">Starter is a one-time purchase of 3 manuals. Pro is $79 a month, plus applicable taxes.</p>
     <div class="plan-cards">
       <article class="plan-card">
         <h3 class="plan">Starter</h3>
         <p class="price">$39</p>
-        <p class="bill">one-time</p>
+        <p class="bill">one-time, plus applicable taxes</p>
         <dl>
           <div>
             <dt>Files</dt>
@@ -601,12 +610,21 @@ figcaption{padding:.6rem .7rem .75rem;font-size:.92rem;border-top:1px solid var(
             <dd>3 manuals. Pay once and generate them when you are ready.</dd>
           </div>
         </dl>
-        <button type="button" class="btn btn-outline btn-price" data-checkout="starter">Buy Starter</button>
+        <div class="plan-buy">
+          <p class="renew-terms" id="starter-renew-terms">$39 one time for 3 manuals, plus applicable taxes. Refundable within 30 days if no manual has been delivered. By continuing you agree to the <a href="/terms.html">Terms</a> and <a href="/refunds.html">Refund policy</a>.</p>
+          <p class="seller-note" id="starter-seller-note" data-seller-note hidden>Your purchase is processed by our authorized reseller, which is the merchant of record. ManualOS is provided by Op3x LLC.</p>
+          <div class="consent-row">
+            <input id="starter-consent" name="starter-consent" type="checkbox" required aria-describedby="starter-renew-terms starter-seller-note starter-statement">
+            <label for="starter-consent">I agree to the <a href="/terms.html">Terms</a> and <a href="/refunds.html">Refund policy</a>.</label>
+          </div>
+          <button type="button" class="btn btn-outline btn-price" data-checkout="starter" data-consent="starter-consent" data-disclosure="starter-disclosure-b2" disabled>Buy Starter</button>
+          <p class="statement" id="starter-statement" data-statement hidden>Appears on your card statement as LINK.COM* MANUALOS</p>
+        </div>
       </article>
       <article class="plan-card is-pro">
         <h3 class="plan">Pro</h3>
         <p class="price">$79</p>
-        <p class="bill">per month · Monthly</p>
+        <p class="bill">per month, plus applicable taxes</p>
         <dl>
           <div>
             <dt>Files</dt>
@@ -621,7 +639,18 @@ figcaption{padding:.6rem .7rem .75rem;font-size:.92rem;border-top:1px solid var(
             <dd>Unlimited manuals while the subscription is active. Cancel anytime.</dd>
           </div>
         </dl>
-        <button type="button" class="btn btn-primary btn-price" data-checkout="pro">Start Pro</button>
+        <div class="plan-buy">
+          <p class="renew-terms" id="pro-renew-terms">$79/month plus applicable taxes, charged today and every month until you cancel. Cancel online, self-serve, from <a href="/cancel">Manage plan</a>. Each month is refundable until it ends, if no manual was delivered that month.</p>
+          <p class="seller-note" id="pro-seller-note" data-seller-note hidden>Your purchase is processed by our authorized reseller, which is the merchant of record. ManualOS is provided by Op3x LLC.</p>
+          <div class="consent-row">
+            <input id="pro-consent" name="pro-consent" type="checkbox" required aria-describedby="pro-renew-terms pro-auto-renew pro-seller-note pro-statement">
+            <label for="pro-consent">I agree to the <a href="/terms.html">Terms</a> and authorize <span data-seller-direct>Op3x LLC to charge my card $79 plus applicable taxes</span><span data-seller-mp hidden>ManualOS's authorized reseller to charge my card $79 plus applicable taxes</span> each month until I cancel.</label>
+          </div>
+          <p class="renew-terms" id="pro-auto-renew">Renews automatically at $79 plus applicable taxes each month until you cancel at <a href="/cancel">manualos.com/cancel</a>.</p>
+          <button type="button" class="btn btn-primary btn-price" data-checkout="pro" data-consent="pro-consent" data-subscription="true" data-disclosure="pro-renew-b2" disabled>Start Pro</button>
+          <p class="statement" id="pro-statement" data-statement hidden>Appears on your card statement as LINK.COM* MANUALOS</p>
+          <p data-mp-section hidden>You can manage or cancel your subscription online at the reseller's order-management site, <a href="https://app.link.com">app.link.com</a>. That is a full online alternative.</p>
+        </div>
       </article>
     </div>
     <p class="need-more">Need more? <a href="mailto:support@manualos.com">Email us</a>.</p>
@@ -629,7 +658,7 @@ figcaption{padding:.6rem .7rem .75rem;font-size:.92rem;border-top:1px solid var(
     <noscript>
       <p class="checkout-error">Checkout needs JavaScript. Email <a href="mailto:support@manualos.com">support@manualos.com</a> and we will help you buy a plan.</p>
     </noscript>
-    <p class="pay-note">Secure checkout. ManualOS does not see or store your card number. A rejected file doesn’t use a credit. <a href="/upload.html">Already purchased? Go to upload</a>.</p>
+    <p class="pay-note">Secure checkout. ManualOS does not see or store your card number. <a href="/upload.html">Already purchased? Go to upload</a>.</p>
   </section>
   <section class="section" id="faq" aria-labelledby="faq-title">
     <p class="kicker"><span class="idx">08</span> Questions</p>
@@ -644,15 +673,15 @@ figcaption{padding:.6rem .7rem .75rem;font-size:.92rem;border-top:1px solid var(
     </div>
     <div class="faq-item">
       <h3>What counts as one manual?</h3>
-      <p>One generation run is one manual: one upload of up to 25 files or a .zip, whether those files are PLC, CAD, or both. A failed run doesn’t use a credit. Starter is a one-time $39 purchase and includes 3 manuals. Pro is $79 per month and includes unlimited manuals while the subscription is active.</p>
+      <p>One generation run is one manual: one upload of up to 25 files or a .zip, whether those files are PLC, CAD, or both. If a run fails with an error, we give the credit back; if anything goes wrong on our side, email support and we'll restore it. Starter is a one-time $39 purchase, plus applicable taxes, and includes 3 manuals. Pro is $79 per month, plus applicable taxes, and includes unlimited manuals while the subscription is active.</p>
     </div>
     <div class="faq-item">
       <h3>Who can see my PLC program?</h3>
-      <p>ManualOS processes your files to write the manual. Extracted program logic, comments, and part details are sent to a third-party AI model provider to write the manual. We don’t use your files to train models, and our AI provider doesn’t train on API data by default. Uploaded files are processed and deleted when the job finishes and are not kept. The generated PDF stays on the server for up to 24 hours for download, then is deleted. Programs are not sold.</p>
+      <p>To write your manual, we send content extracted from your files, such as program logic, comments, and part details, to a third-party service provider that helps write the manual. We delete your uploaded files when the job finishes. Download your PDF right away, because we delete it 24 hours after it's made. Our provider deletes what we send it within 30 days, unless it must keep it longer to enforce its usage policy or comply with the law. Full details are in our <a href="/privacy.html">Privacy Policy</a>.</p>
     </div>
     <div class="faq-item">
       <h3>Can I cancel Pro, and what about refunds?</h3>
-      <p>Pro is month to month. You can cancel anytime by emailing <a href="mailto:support@manualos.com">support@manualos.com</a>, and you will not be billed again after the current period. Starter is not a subscription. It is a one-time $39 purchase for 3 manuals. If a payment or a generated manual is wrong, email support@manualos.com and we will help.</p>
+      <p>Pro renews automatically every month until you cancel. You can cancel online, self-serve, from our <a href="/cancel">Manage plan</a> link. You can also email <a href="mailto:support@manualos.com?subject=Cancel%20my%20ManualOS%20Pro%20subscription&amp;body=Please%20cancel%20my%20ManualOS%20Pro%20subscription%20at%20the%20end%20of%20the%20current%20billing%20period.">support@manualos.com</a>. Cancellation takes effect at the end of the current billing period: you keep Pro until then and will not be charged again. Starter is not a subscription. It is a one-time $39 purchase, plus applicable taxes, for 3 manuals. If a payment or a generated manual is wrong, email support@manualos.com and we will help.</p>
     </div>
   </section>
 </main>
@@ -673,48 +702,98 @@ figcaption{padding:.6rem .7rem .75rem;font-size:.92rem;border-top:1px solid var(
       <a href="/sitemap.xml">Sitemap</a>
       <a href="mailto:support@manualos.com">support@manualos.com</a>
     </nav>
-    <p class="legal">© 2026 ManualOS. manualos.com</p>
+    <p class="legal">© 2026 Op3x LLC. ManualOS is operated by Op3x LLC.</p>
   </div>
 </footer>
+<script src="/checkout-config.js"></script>
 <script>
 (function () {
+  // Same production host as upload.html. On localhost the API is this origin, matching support.html.
   var API_BASE = 'https://manualforge-backend-production.up.railway.app';
+  var host = location.hostname;
+  if (host === 'localhost' || host === '127.0.0.1' || host === '[::1]') API_BASE = location.origin;
+  var TERMS_VERSION = 'terms-rev-a-m2';
   var checkoutError = document.getElementById('checkout-error');
   var buttons = document.querySelectorAll('[data-checkout]');
   var busy = false;
 
+  function boxFor(button) {
+    var id = button.getAttribute('data-consent');
+    return id ? document.getElementById(id) : null;
+  }
+
+  function configReady() {
+    var mode = document.documentElement.getAttribute('data-checkout-config');
+    return mode === 'mp' || mode === 'direct';
+  }
+
+  function syncButtons() {
+    if (busy) return;
+    buttons.forEach(function (button) {
+      var box = boxFor(button);
+      button.disabled = !(configReady() && box && box.checked);
+    });
+  }
+
   buttons.forEach(function (button) {
+    var box = boxFor(button);
+    if (box) box.addEventListener('change', syncButtons);
     button.addEventListener('click', function () {
       startCheckout(button.getAttribute('data-checkout'), button);
     });
   });
 
+  syncButtons();
+  document.addEventListener('manualos-checkout-config', function (event) {
+    if (event.detail && event.detail.managedPayments === true) {
+      ['starter-consent', 'pro-consent'].forEach(function (id) {
+        var consentBox = document.getElementById(id);
+        if (consentBox) consentBox.checked = false;
+      });
+    }
+    syncButtons();
+  });
+  window.addEventListener('pageshow', function () {
+    syncButtons();
+  });
+
   async function startCheckout(plan, button) {
     if (busy) return;
+    var box = boxFor(button);
+    if (!configReady() || !box || !box.checked) {
+      if (box) box.focus();
+      return;
+    }
     busy = true;
     var originalLabel = button.textContent;
+    var subscription = button.getAttribute('data-subscription') === 'true';
+    var sellerMode = window.manualosManagedPayments === true ? 'mp' : 'direct';
+    var disclosureVersion = (button.getAttribute('data-disclosure') || 'checkout-b2') + '-' + sellerMode;
+    var payload = {
+      plan: plan,
+      renewalConsent: subscription,
+      termsAccepted: true,
+      termsVersion: TERMS_VERSION,
+      disclosureVersion: disclosureVersion
+    };
     checkoutError.textContent = '';
-    buttons.forEach(function (el) {
-      el.disabled = true;
-      el.setAttribute('aria-busy', 'true');
-    });
+    buttons.forEach(function (el) { el.disabled = true; });
+    button.setAttribute('aria-busy', 'true');
     button.textContent = 'Starting checkout\u2026';
     try {
       var res = await fetch(API_BASE + '/create-checkout-session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ plan: plan })
+        body: JSON.stringify(payload)
       });
       var data = await res.json().catch(function () { return {}; });
       if (!res.ok || !data || !data.url) throw new Error('checkout failed');
       window.location.href = data.url;
     } catch (err) {
       busy = false;
-      buttons.forEach(function (el) {
-        el.disabled = false;
-        el.removeAttribute('aria-busy');
-      });
+      button.removeAttribute('aria-busy');
       button.textContent = originalLabel;
+      syncButtons();
       checkoutError.textContent = 'We couldn\u2019t start checkout. Please try again in a moment.';
       checkoutError.focus();
     }

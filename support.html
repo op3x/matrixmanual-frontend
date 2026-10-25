@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Support — ManualOS</title>
-<meta name="description" content="Contact ManualOS support. Optional text messages cover support replies, account alerts, and manual-status alerts. Message frequency varies.">
+<meta name="description" content="Contact ManualOS support. Optional text messages cover support replies and order/manual-status texts. Message frequency varies.">
 <meta name="robots" content="index, follow">
 <link rel="canonical" href="https://manualos.com/support.html">
 <link rel="icon" href="/favicon.ico" sizes="32x32">
@@ -133,10 +133,9 @@ a{color:var(--ink)}
       </div>
       <h2 id="sms-title"><span class="idx">02</span>Text messages <span class="optional">Optional</span></h2>
       <div class="consent">
-        <input id="sms-consent" name="sms-consent" type="checkbox" value="yes" aria-describedby="sms-links">
+        <input id="sms-consent" name="sms-consent" type="checkbox" value="yes">
         <div>
-          <label for="sms-consent">I agree to receive text messages from ManualOS at this number: support replies, account alerts, and manual-status alerts. Msg frequency varies. Msg &amp; data rates may apply. Reply STOP to opt out, HELP for help. Consent is not a condition of purchase.</label>
-          <p id="sms-links"><a href="/terms.html#sms">Terms</a> and <a href="/privacy.html#sms">Privacy</a>.</p>
+          <label for="sms-consent">Yes, text me at this number. I agree to receive support replies and order/manual-status texts from ManualOS (Op3x LLC). Msg frequency varies. Msg &amp; data rates may apply. Reply HELP for help, STOP to cancel. Consent is not a condition of purchase. See <a href="/terms.html#sms">Terms (/terms.html#sms)</a> and <a href="/privacy.html#sms">Privacy (/privacy.html#sms)</a>.</label>
         </div>
       </div>
       <p id="form-error" class="form-error" role="alert" tabindex="-1"></p>
@@ -163,16 +162,17 @@ a{color:var(--ink)}
       <a href="/refunds.html">Refunds</a>
       <a href="mailto:support@manualos.com">support@manualos.com</a>
     </nav>
-    <p class="legal">© 2026 ManualOS. manualos.com</p>
+    <p class="legal">© 2026 Op3x LLC. ManualOS is operated by Op3x LLC.</p>
   </div>
 </footer>
 <script>
 (function () {
   // Published support number. Leave '' until the line is assigned. The line stays hidden while this is empty.
   var SUPPORT_PHONE_DISPLAY = '';
-  // Bump if the checkbox sentence changes. Sent with the opt-in record.
+  // Exact support-sms-v3 checkbox label. Must match the backend string, including the page paths.
   // The opt-in POST needs backend PR #8 deployed before a checked box can be saved in production.
-  var CONSENT_TEXT_VERSION = 'support-sms-v2';
+  var CONSENT_TEXT_VERSION = 'support-sms-v3';
+  var CONSENT_TEXT = 'Yes, text me at this number. I agree to receive support replies and order/manual-status texts from ManualOS (Op3x LLC). Msg frequency varies. Msg & data rates may apply. Reply HELP for help, STOP to cancel. Consent is not a condition of purchase. See Terms (/terms.html#sms) and Privacy (/privacy.html#sms).';
   // Same production host as index.html. On localhost the API is this origin, matching upload.html.
   var API_BASE = 'https://manualforge-backend-production.up.railway.app';
   var host = location.hostname;
@@ -284,6 +284,7 @@ a{color:var(--ink)}
     var payload = {
       phone: phone,
       consentTextVersion: CONSENT_TEXT_VERSION,
+      consentText: CONSENT_TEXT,
       source: 'website-support-form'
     };
     var opts = {
