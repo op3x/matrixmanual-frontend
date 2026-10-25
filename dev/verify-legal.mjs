@@ -1,7 +1,7 @@
 // Checks privacy, terms, support, and cancel: axe, layout, footer links, and email cancel.
 // Uses the local mock. Does not call production.
 import { spawn } from 'node:child_process';
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { mkdir, readdir, readFile, writeFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -26,6 +26,39 @@ const CREDIT_LINE = "If a run fails with an error, we give the credit back; if a
 
 function read(name) {
   return readFile(path.join(root, name), 'utf8');
+}
+
+const MP_GREP = [
+  ['managedPayments', /managedPayments/],
+  ['checkout-config', /checkout-config/],
+  ["'mp'", /'mp'|"mp"/],
+  ['-direct', /-direct/],
+];
+
+async function assertNoManagedPayments(rootDir) {
+  const skip = new Set(['dev', 'node_modules', '.git', 'assets']);
+  const hits = [];
+  async function walk(dir) {
+    const entries = await readdir(dir, { withFileTypes: true });
+    for (const entry of entries) {
+      if (entry.name.startsWith('.')) continue;
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        if (skip.has(entry.name)) continue;
+        await walk(full);
+        continue;
+      }
+      if (!/\.(html|js)$/i.test(entry.name)) continue;
+      const text = await readFile(full, 'utf8');
+      const file = path.relative(rootDir, full);
+      for (const [label, re] of MP_GREP) {
+        const match = re.exec(text);
+        if (match) hits.push(file + ': ' + label + ' — ' + text.slice(Math.max(0, match.index - 30), match.index + match[0].length + 30).replace(/\s+/g, ' '));
+      }
+    }
+  }
+  await walk(rootDir);
+  if (hits.length) throw new Error('published pages still name managed payments:\n' + hits.join('\n'));
 }
 
 function footerOf(html) {
@@ -337,18 +370,15 @@ async function main() {
   if (html['index.html'].includes('Full details are in our Privacy Policy. You get the PDF when the job is done.')) throw new Error('JSON-LD FAQ answer appends the extra download sentence');
   if (!html['terms.html'].includes('ManualOS is operated by Op3x LLC ("ManualOS," "we," "us")')) throw new Error('terms operator sentence missing');
   const indexMarkup = html['index.html'].slice(0, html['index.html'].lastIndexOf('<script>'));
-  const configJs = await read('checkout-config.js');
   const autoRenew = 'Renews automatically at $79 plus applicable taxes each month until you cancel. Cancel anytime online: use the one-click cancel email at <a href="/cancel">manualos.com/cancel</a>. Cancelling stops future charges, and you keep Pro until the end of the period you\'ve paid for. Each monthly charge is refundable until that billing period ends, as long as no manual has been delivered in that period, except where the law requires otherwise.';
   const proConsent = 'I agree to the <a href="https://manualos.com/terms.html">ManualOS Terms</a> and authorize Op3x LLC to charge my card $79/month (USD, plus applicable taxes), renewing automatically each month until I cancel.';
   const starterConsent = 'I agree to the <a href="https://manualos.com/terms.html">ManualOS Terms</a> and authorize Op3x LLC to make this one-time charge. This isn\'t a subscription.';
   const starterRefund = '$39 one time for 3 manuals, plus applicable taxes. Full refund within 30 days of purchase, as long as no manual from that purchase has been delivered, except where the law requires otherwise.';
   const directSeller = 'Op3x LLC is the seller of ManualOS. Op3x LLC processes payments and refunds for these purchases and handles payment disputes.';
-  if (/CHECKOUT_SELLER_MODE|MANAGED_PAYMENTS_ON/.test(html['index.html'] + configJs)) throw new Error('a frontend seller constant is still present');
-  if (!configJs.includes("'/api/checkout-config'") || !html['index.html'].includes('src="/checkout-config.js"')) throw new Error('checkout config is not loaded from the backend');
-  if (!html['terms.html'].includes('src="/checkout-config.js"') || !html['refunds.html'].includes('src="/checkout-config.js"') || !html['privacy.html'].includes('src="/checkout-config.js"')) throw new Error('legal pages do not load checkout config');
-  if (!configJs.includes('3000')) throw new Error('checkout config has no 3 second fallback');
+  if (/CHECKOUT_SELLER_MODE|MANAGED_PAYMENTS_ON/.test(html['index.html'])) throw new Error('a frontend seller constant is still present');
   if (!html['index.html'].includes('termsAccepted: true') || /termsConsent/.test(html['index.html'])) throw new Error('checkout payload must send termsAccepted and not termsConsent');
-  if (!html['index.html'].includes("getAttribute('data-checkout-config')")) throw new Error('Pay stays enabled before checkout config settles');
+  if (!html['index.html'].includes("disclosureVersion: 'checkout-tos-v2'")) throw new Error('consent version is not exactly checkout-tos-v2');
+  if (!html['index.html'].includes('button.disabled = !(box && box.checked)')) throw new Error('Buy is not gated only by the checkbox');
   if (/while managed payments are on/.test(html['terms.html'] + html['refunds.html'])) throw new Error('managed-payments jargon remains');
   if (!html['terms.html'].includes('Changes apply to purchases made after the effective date.')) throw new Error('terms missing purchases-after-effective-date sentence');
   if (!html['terms.html'].includes('Changes apply from your first renewal at least 14 days after we email you about them.')) throw new Error('terms changes clause missing');
@@ -358,7 +388,7 @@ async function main() {
   }
   if (/until you opt out or ask us to delete it/.test(html['privacy.html'])) throw new Error('old SMS retention sentence remains');
   if (/<strong>\s*Open items\./.test(html['privacy.html'] + html['terms.html'] + html['refunds.html'])) throw new Error('Open items box is still visible');
-  if (/data-statement|data-seller-mp|data-seller-direct|data-mp-section|merchant of record|app\.link\.com/i.test(configJs)) throw new Error('checkout config still toggles card copy');
+  await assertNoManagedPayments(root);
   const aiRetention = 'Our AI model provider deletes the text we send it, and what it returns, within 30 days, unless it must keep it longer to enforce its usage policy or to comply with the law.';
   const emailShare = 'an email provider, to receive and answer support emails';
   const toolShare = 'automated tools, including AI assistants, that help us run and support the service; they access your information only to do that work.';
@@ -367,7 +397,6 @@ async function main() {
   if (/It deletes the data within 30 days|usage policies/.test(html['privacy.html'])) throw new Error('old AI retention line remains');
   if (!html['privacy.html'].includes(emailShare) || !html['privacy.html'].includes(toolShare)) throw new Error('privacy sharing list is missing the email provider or automated tools');
   if (html['index.html'].includes(aiRetention) || html['index.html'].includes(emailShare) || html['index.html'].includes(toolShare)) throw new Error('privacy-only sharing or retention copy is on the homepage');
-  if (/\bLink\b|LINK\.COM|Stripe/.test(configJs)) throw new Error('checkout config script names a provider');
   if (!indexMarkup.includes('<label for="pro-consent">' + proConsent + '</label>')) throw new Error('pro checkbox label is not the approved sentence');
   if (!indexMarkup.includes('<label for="starter-consent">' + starterConsent + '</label>')) throw new Error('starter checkbox label is not the approved sentence');
   if (!indexMarkup.includes('id="pro-auto-renew">' + autoRenew + '</p>')) throw new Error('pro renewal, cancel, and refund lines are not beside Pay');
@@ -384,7 +413,7 @@ async function main() {
   }
   if (/\$249|\$2,490|Start Integrator|integrator-consent/.test(html['index.html'])) throw new Error('homepage still sells Integrator');
   for (const name of ['terms.html', 'refunds.html']) {
-    if (!html[name].includes('<p data-direct-section>' + directSeller + '</p>')) throw new Error(name + ' missing direct seller section');
+    if (!html[name].includes('<p data-seller-section>' + directSeller + '</p>')) throw new Error(name + ' missing seller section');
   }
   if (/billing-portal|access-link/.test(html['cancel/index.html'])) {
     throw new Error('cancel page still names a billing backend route');
@@ -547,7 +576,7 @@ async function main() {
     await page.waitForFunction(() => location.pathname.endsWith('/upload.html'));
     const checkout = (await fetch(base + '/__mock/requests').then((res) => res.json())).filter((item) => item.path === '/create-checkout-session').slice(beforeCheckout);
     if (checkout.length !== 1 || checkout[0].status !== 200) throw new Error('checkout response ' + JSON.stringify(checkout));
-    if (checkout[0].plan !== 'pro' || checkout[0].renewalConsent !== true || checkout[0].termsAccepted !== true || checkout[0].termsConsent !== undefined || checkout[0].termsVersion !== 'terms-rev-a-m2' || checkout[0].disclosureVersion !== 'pro-renew-b2-mp' || !checkout[0].fields.includes('termsAccepted') || checkout[0].fields.includes('termsConsent') || checkout[0].fields.includes('terms_version')) {
+    if (checkout[0].plan !== 'pro' || checkout[0].renewalConsent !== true || checkout[0].termsAccepted !== true || checkout[0].termsConsent !== undefined || checkout[0].termsVersion !== 'terms-rev-a-m2' || checkout[0].disclosureVersion !== 'checkout-tos-v2' || !checkout[0].fields.includes('termsAccepted') || checkout[0].fields.includes('termsConsent') || checkout[0].fields.includes('terms_version')) {
       throw new Error('checkout body ' + JSON.stringify(checkout[0]));
     }
 
@@ -571,7 +600,7 @@ async function main() {
     await page.click('[data-checkout="starter"]');
     await page.waitForFunction(() => location.pathname.endsWith('/upload.html'));
     const starter = (await fetch(base + '/__mock/requests').then((res) => res.json())).filter((item) => item.path === '/create-checkout-session').pop();
-    if (starter.plan !== 'starter' || starter.renewalConsent !== false || starter.termsAccepted !== true || starter.termsConsent !== undefined || starter.disclosureVersion !== 'starter-disclosure-b2-mp' || starter.fields.includes('termsConsent') || starter.fields.includes('terms_version')) {
+    if (starter.plan !== 'starter' || starter.renewalConsent !== false || starter.termsAccepted !== true || starter.termsConsent !== undefined || starter.disclosureVersion !== 'checkout-tos-v2' || starter.fields.includes('termsConsent') || starter.fields.includes('terms_version')) {
       throw new Error('starter body ' + JSON.stringify(starter));
     }
 
@@ -643,15 +672,6 @@ async function main() {
     const copyPosts = afterCopy.filter((item) => item.method === 'POST' && (item.path === '/billing-portal' || item.path === '/access-link'));
     if (copyPosts.length) throw new Error('copy buttons called the backend');
 
-    async function setConfig(body) {
-      const res = await fetch(base + '/__mock/checkout-config', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      });
-      if (!res.ok) throw new Error('mock config ' + res.status);
-    }
-
     async function renderedSeller(target) {
       return target.evaluate(() => {
         function shown(selector) {
@@ -673,7 +693,7 @@ async function main() {
           mpCharge: shown('[data-seller-mp]'),
           directCharge: shown('[data-seller-direct]'),
           mpSection: shown('[data-mp-section]'),
-          directSection: shown('[data-direct-section]'),
+          directSection: shown('[data-seller-section]'),
           text: text.replace(/\s+/g, ' ').trim(),
         };
       });
@@ -718,57 +738,10 @@ async function main() {
       }
     }
 
-    await setConfig({ managedPayments: false, fail: false, hold: false });
     for (const name of ['index.html#pricing', 'terms.html', 'refunds.html', 'privacy.html']) {
       await page.goto(base + '/' + name, { waitUntil: 'networkidle0' });
-      expectSeller(await renderedSeller(page), 'direct', name.startsWith('index') ? 'index' : name);
+      expectSeller(await renderedSeller(page), 'page', name.startsWith('index') ? 'index' : name);
     }
-    await page.goto(base + '/index.html#pricing', { waitUntil: 'networkidle0' });
-    await page.click('#pro-consent');
-    await page.click('[data-checkout="pro"]');
-    await page.waitForFunction(() => location.pathname.endsWith('/upload.html'));
-    const directCheckout = (await fetch(base + '/__mock/requests').then((res) => res.json())).filter((item) => item.path === '/create-checkout-session').pop();
-    if (!directCheckout || directCheckout.termsAccepted !== true || directCheckout.termsConsent !== undefined || directCheckout.disclosureVersion !== 'pro-renew-b2-direct' || (directCheckout.fields || []).includes('terms_version')) throw new Error('direct checkout ' + JSON.stringify(directCheckout));
-
-    await setConfig({ managedPayments: true, fail: true, hold: false });
-    for (const name of ['index.html#pricing', 'terms.html', 'refunds.html', 'privacy.html']) {
-      const beforeFail = (await fetch(base + '/__mock/requests').then((res) => res.json())).filter((item) => item.path === '/api/checkout-config').length;
-      await page.goto(base + '/' + name, { waitUntil: 'domcontentloaded' });
-      await page.waitForFunction((start) => fetch('/__mock/requests').then((res) => res.json()).then((list) => {
-        const configs = list.filter((item) => item.path === '/api/checkout-config');
-        return configs.length > start && configs[configs.length - 1].status === 500 && document.documentElement.getAttribute('data-checkout-config') === 'direct';
-      }), { timeout: 8000 }, beforeFail);
-      expectSeller(await renderedSeller(page), 'direct', name.startsWith('index') ? 'index' : name);
-    }
-    const failedConfig = (await fetch(base + '/__mock/requests').then((res) => res.json())).filter((item) => item.path === '/api/checkout-config').pop();
-    if (!failedConfig || failedConfig.status !== 500) throw new Error('config failure was not recorded ' + JSON.stringify(failedConfig));
-
-    await setConfig({ managedPayments: true, fail: false, hold: true });
-    await page.goto(base + '/terms.html', { waitUntil: 'domcontentloaded' });
-    expectSeller(await renderedSeller(page), 'direct', 'terms.html');
-    await page.goto(base + '/refunds.html', { waitUntil: 'domcontentloaded' });
-    expectSeller(await renderedSeller(page), 'direct', 'refunds.html');
-    await page.goto(base + '/index.html#pricing', { waitUntil: 'domcontentloaded' });
-    const pendingConfig = await page.evaluate(() => document.documentElement.getAttribute('data-checkout-config'));
-    if (pendingConfig) throw new Error('checkout config settled before the request returned: ' + pendingConfig);
-    expectSeller(await renderedSeller(page), 'direct', 'index');
-    await page.click('#pro-consent');
-    const heldDisabled = await page.$eval('[data-checkout="pro"]', (el) => el.disabled);
-    if (!heldDisabled) throw new Error('Start Pro enabled before checkout config settled');
-    await page.waitForFunction(() => document.documentElement.getAttribute('data-checkout-config') === 'direct', { timeout: 5000 });
-    const afterTimeout = await page.$eval('[data-checkout="pro"]', (el) => !el.disabled && document.getElementById('pro-consent').checked);
-    if (!afterTimeout) throw new Error('Pay stayed disabled after the 3 second direct fallback');
-    await setConfig({ managedPayments: true, fail: false, hold: false, release: true });
-    await page.waitForFunction(() => document.documentElement.getAttribute('data-checkout-config') === 'mp');
-    const resetConsent = await page.evaluate(() => !document.getElementById('pro-consent').checked && document.querySelector('[data-checkout="pro"]').disabled);
-    if (!resetConsent) throw new Error('managed-payments config did not clear consent after the direct fallback');
-    expectSeller(await renderedSeller(page), 'mp', 'index');
-    await page.goto(base + '/terms.html', { waitUntil: 'networkidle0' });
-    expectSeller(await renderedSeller(page), 'mp', 'terms.html');
-    await page.goto(base + '/refunds.html', { waitUntil: 'networkidle0' });
-    expectSeller(await renderedSeller(page), 'mp', 'refunds.html');
-    await page.goto(base + '/privacy.html', { waitUntil: 'networkidle0' });
-    expectSeller(await renderedSeller(page), 'mp', 'privacy.html');
 
     if (pageErrors.length) throw new Error('page errors: ' + pageErrors.join(' | '));
     console.log('PASS support form, consent POST, and layouts');

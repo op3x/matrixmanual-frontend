@@ -22,7 +22,7 @@
 :root{--paper:#f3f0e6;--sheet:#f7f4ec;--ink:#17181a;--muted:#3a3f44;--rule:#cfc6b6;--yellow:#e6b400}
 *,*::before,*::after{box-sizing:border-box}
 html{scroll-padding-top:4.5rem;color-scheme:light}
-body{margin:0;min-height:100vh;display:flex;flex-direction:column;font-family:"IBM Plex Sans",Arial,"Helvetica Neue",sans-serif;background:var(--paper);color:var(--ink);line-height:1.55;font-size:1rem}
+body{margin:0;min-height:100vh;display:flex;flex-flow:column;font-family:"IBM Plex Sans",Arial,"Helvetica Neue",sans-serif;background:var(--paper);color:var(--ink);line-height:1.55;font-size:1rem}
 :focus-visible{outline:2px solid var(--ink);outline-offset:2px}
 .skip-link{position:absolute;left:.75rem;top:-3rem;background:var(--ink);color:var(--paper);padding:.7rem 1rem;z-index:30;text-decoration:none}
 .skip-link:focus{top:.5rem}
@@ -91,7 +91,7 @@ code{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:.88em}
       <li><strong>Pro:</strong> $79 per month, plus applicable taxes, with unlimited manuals while your plan is active.</li>
     </ul>
     <p>Prices are in USD, plus applicable taxes.</p>
-    <p data-direct-section>Op3x LLC is the seller of ManualOS. Op3x LLC processes payments and refunds for these purchases and handles payment disputes.</p>
+    <p data-seller-section>Op3x LLC is the seller of ManualOS. Op3x LLC processes payments and refunds for these purchases and handles payment disputes.</p>
 
     <h2><span class="idx">02</span>Cancelling Pro</h2>
     <p><strong>Cancelling Pro.</strong> Pro renews automatically every month until you cancel. Cancel anytime online: use the one-click cancel email at <a href="/cancel">manualos.com/cancel</a>. Cancelling stops future charges, and you keep Pro until the end of the period you've paid for.</p>
@@ -134,6 +134,5 @@ code{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:.88em}
   </div>
 </footer>
 <script src="/effective-date.js"></script>
-<script src="/checkout-config.js"></script>
 </body>
 </html>

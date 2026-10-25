@@ -68,7 +68,6 @@ async function readConsent(page) {
       nextToConsent: renewal.previousElementSibling === box.closest('.consent-row'),
       starterNextToBuy: starterRefund.nextElementSibling === starterButton,
       variants: document.querySelectorAll('[data-seller-direct],[data-seller-mp],[data-statement]').length,
-      mode: document.documentElement.getAttribute('data-checkout-config'),
       disabled: button.disabled,
       checked: box.checked,
       starterDisabled: starterButton.disabled,
@@ -76,21 +75,21 @@ async function readConsent(page) {
   });
 }
 
-function expectLabel(state, mode) {
-  if (state.mode !== mode || state.variants || state.checked || !state.disabled || !state.starterDisabled) {
-    throw new Error(mode + ' consent gate ' + JSON.stringify(state));
+function expectLabel(state) {
+  if (state.variants || state.checked || !state.disabled || !state.starterDisabled) {
+    throw new Error('consent gate ' + JSON.stringify(state));
   }
   if (state.text !== PRO_LABEL || state.href !== 'https://manualos.com/terms.html') {
-    throw new Error(mode + ' pro label ' + JSON.stringify(state));
+    throw new Error('pro label ' + JSON.stringify(state));
   }
   if (state.starter !== STARTER_LABEL || state.starterHref !== 'https://manualos.com/terms.html') {
-    throw new Error(mode + ' starter label ' + JSON.stringify(state));
+    throw new Error('starter label ' + JSON.stringify(state));
   }
   if (state.renewal !== PRO_BESIDE || !state.nextToBuy || !state.nextToConsent || !state.starterRefund.includes(STARTER_BESIDE) || !state.starterNextToBuy) {
-    throw new Error(mode + ' disclosure is not beside the checkbox and Buy ' + JSON.stringify(state));
+    throw new Error('disclosure is not beside the checkbox and Buy ' + JSON.stringify(state));
   }
   if (/authorized reseller|LINK\.COM|merchant of record|app\.link\.com/i.test(state.text + state.starter + state.renewal + state.starterRefund)) {
-    throw new Error(mode + ' retired copy ' + state.text);
+    throw new Error('retired copy ' + state.text);
   }
 }
 
@@ -103,29 +102,18 @@ const browser = await chromium.launch({
 try {
   await mkdir(shotDir, { recursive: true });
   const page = await browser.newPage({ viewport: { width: 1100, height: 900 } });
-  async function shot(mode) {
-    await page.goto(base + '/index.html?seller=' + mode + '#pricing', { waitUntil: 'networkidle' });
-    await page.waitForFunction((expected) => document.documentElement.getAttribute('data-checkout-config') === expected, mode);
-    const state = await readConsent(page);
-    expectLabel(state, mode);
-    const card = page.locator('article.is-pro .plan-buy');
-    await card.screenshot({ path: path.join(shotDir, 'checkout-consent-' + mode + '.png') });
-    await page.click('#pro-consent');
-    const enabled = await page.$eval('[data-checkout="pro"]', (el) => !el.disabled && document.getElementById('pro-consent').checked);
-    if (!enabled) throw new Error(mode + ' ticking the box did not enable Buy');
-    await page.click('#pro-consent');
-    const disabledAgain = await page.$eval('[data-checkout="pro"]', (el) => el.disabled && !document.getElementById('pro-consent').checked);
-    if (!disabledAgain) throw new Error(mode + ' clearing the box left Buy enabled');
-    console.log('PASS ' + mode + ' consent label, and Buy stays disabled until ticked');
-  }
-  await shot('mp');
-  const posted = await fetch(base + '/__mock/checkout-config', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ managedPayments: false, fail: false, hold: false }),
-  });
-  if (!posted.ok) throw new Error('could not switch checkout config');
-  await shot('direct');
+  await page.goto(base + '/index.html#pricing', { waitUntil: 'domcontentloaded' });
+  const state = await readConsent(page);
+  expectLabel(state);
+  const card = page.locator('article.is-pro .plan-buy');
+  await card.screenshot({ path: path.join(shotDir, 'checkout-consent.png') });
+  await page.click('#pro-consent');
+  const enabled = await page.$eval('[data-checkout="pro"]', (el) => !el.disabled && document.getElementById('pro-consent').checked);
+  if (!enabled) throw new Error('ticking the box did not enable Buy');
+  await page.click('#pro-consent');
+  const disabledAgain = await page.$eval('[data-checkout="pro"]', (el) => el.disabled && !document.getElementById('pro-consent').checked);
+  if (!disabledAgain) throw new Error('clearing the box left Buy enabled');
+  console.log('PASS consent label, and Buy stays disabled until ticked');
 } finally {
   await browser.close();
   child.kill('SIGTERM');
