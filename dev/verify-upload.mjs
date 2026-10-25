@@ -303,7 +303,8 @@ async function main() {
   if (starterButtons !== 1 || proButtons !== 1 || integratorButtons !== 1) {
     throw new Error('checkout buttons starter=' + starterButtons + ' pro=' + proButtons + ' integrator=' + integratorButtons);
   }
-  if (!/INTEGRATOR_CHECKOUT_PATH = '\/checkout'/.test(index)) throw new Error('integrator checkout path is not /checkout');
+  if (!/fetch\(API_BASE \+ '\/create-checkout-session'/.test(index)) throw new Error('checkout path is not /create-checkout-session');
+  if (/INTEGRATOR_CHECKOUT_PATH|['"`]\/checkout['"`]/.test(index)) throw new Error('integrator still posts to /checkout');
   const ld = JSON.parse(index.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/)[1]);
   const faq = ld['@graph'].find((node) => node['@type'] === 'FAQPage');
   if (/team seats/i.test(index)) throw new Error('team seats are still mentioned');
@@ -321,11 +322,41 @@ async function main() {
   if (!faqHtml.includes('What does the Integrator plan include?') || !faqHtml.includes('white-label PDFs with your own logo and company name') || !faqHtml.includes('same extra documents as Pro') || !faqHtml.includes('$9') || !faqHtml.includes('operator and maintenance manual') || !faqHtml.includes('lockout/tagout outline')) {
     throw new Error('integrator faq is missing from the page');
   }
+  const proCard = index.slice(index.indexOf('<h3 class="plan">Pro</h3>'), index.indexOf('<h3 class="plan">Integrator</h3>'));
+  const proDocs = (proCard.match(/<dt>Documents<\/dt>\s*<dd>([^<]*)<\/dd>/) || [])[1] || '';
+  const manualAt = proDocs.indexOf('Operator and maintenance manual');
+  const scheduleAt = proDocs.toLowerCase().indexOf('preventive maintenance schedule');
+  if (manualAt < 0 || scheduleAt < 0 || manualAt > scheduleAt) throw new Error('pro documents: ' + proDocs);
   const offers = ld['@graph'].find((node) => node['@type'] === 'SoftwareApplication').offers;
-  const monthlyOffer = offers.find((offer) => offer.name === 'Integrator');
-  const yearlyOffer = offers.find((offer) => offer.name === 'Integrator yearly');
-  if (!monthlyOffer || monthlyOffer.price !== '249' || monthlyOffer.priceCurrency !== 'USD') throw new Error('integrator offer');
-  if (!yearlyOffer || yearlyOffer.price !== '2490' || yearlyOffer.priceCurrency !== 'USD') throw new Error('integrator yearly offer');
+  const visiblePlans = [...index.matchAll(/<h3 class="plan">([^<]*)<\/h3>/g)].map((match) => match[1]);
+  if (visiblePlans.join('|') !== 'Starter|Pro|Integrator') throw new Error('plan headings ' + visiblePlans.join('|'));
+  for (const offer of offers) {
+    if (!visiblePlans.includes(offer.name)) throw new Error('structured plan name ' + offer.name);
+  }
+  const monthlyOffer = offers.find((offer) => offer.price === '249');
+  const yearlyOffer = offers.find((offer) => offer.price === '2490');
+  if (!monthlyOffer || monthlyOffer.name !== 'Integrator' || monthlyOffer.priceCurrency !== 'USD') throw new Error('integrator offer');
+  if (!yearlyOffer || yearlyOffer.name !== 'Integrator' || yearlyOffer.priceCurrency !== 'USD') throw new Error('integrator yearly offer');
+  const reviewMarkup = [];
+  (function walk(node) {
+    if (!node || typeof node !== 'object') return;
+    if (Array.isArray(node)) {
+      node.forEach(walk);
+      return;
+    }
+    const type = node['@type'];
+    const types = Array.isArray(type) ? type : (type ? [type] : []);
+    for (const item of types) {
+      if (item === 'AggregateRating' || item === 'Review' || item === 'Rating') reviewMarkup.push(String(item));
+    }
+    for (const key of Object.keys(node)) {
+      if (key === 'aggregateRating' || key === 'review' || key === 'reviews' || key === 'ratingValue') reviewMarkup.push(key);
+      walk(node[key]);
+    }
+  })(ld);
+  if (reviewMarkup.length || /aggregateRating|schema\.org\/Review|schema\.org\/AggregateRating|itemprop="review"/i.test(index)) {
+    throw new Error('review markup ' + reviewMarkup.join(', '));
+  }
   note('headline surfaces do not say export, and each plan has one checkout button', true);
   await assertDevUrls404(root);
   await assertNoBrandNames(root);
@@ -942,8 +973,8 @@ async function main() {
       window.fetch = async (url, opts) => {
         let body = null;
         try { body = opts && opts.body ? JSON.parse(opts.body) : null; } catch (err) { body = null; }
-        window.__calls.push({ url: String(url), body });
-        const status = String(url).endsWith('/checkout') ? 503 : 500;
+        window.__calls.push({ url: String(url), method: opts && opts.method, headers: opts && opts.headers, body });
+        const status = body && body.plan === 'integrator' ? 503 : 500;
         return new Response('{}', { status, headers: { 'Content-Type': 'application/json' } });
       };
     });
@@ -963,7 +994,7 @@ async function main() {
     }
     if (monthState.label !== 'Start Integrator') throw new Error('button label ' + monthState.label);
     const monthCall = monthState.calls[0];
-    if (!monthCall || !monthCall.url.endsWith('/checkout') || !monthCall.body || monthCall.body.plan !== 'integrator' || monthCall.body.interval !== 'month') {
+    if (!monthCall || !monthCall.url.endsWith('/create-checkout-session') || monthCall.method !== 'POST' || !monthCall.headers || monthCall.headers['Content-Type'] !== 'application/json' || !monthCall.body || monthCall.body.plan !== 'integrator' || monthCall.body.interval !== 'month' || Object.keys(monthCall.body).sort().join(',') !== 'interval,plan') {
       throw new Error('month checkout ' + JSON.stringify(monthCall));
     }
     await checkoutPage.click('[data-set-interval="year"]');
@@ -974,7 +1005,7 @@ async function main() {
       price: document.getElementById('integrator-price').textContent,
       bill: document.getElementById('integrator-bill').textContent,
     }));
-    if (!yearState.call.url.endsWith('/checkout') || yearState.call.body.plan !== 'integrator' || yearState.call.body.interval !== 'year') {
+    if (!yearState.call.url.endsWith('/create-checkout-session') || yearState.call.body.plan !== 'integrator' || yearState.call.body.interval !== 'year' || Object.keys(yearState.call.body).sort().join(',') !== 'interval,plan') {
       throw new Error('year checkout ' + JSON.stringify(yearState.call));
     }
     if (yearState.price !== '$2,490' || yearState.bill !== 'per year') throw new Error('year price ' + JSON.stringify(yearState));
@@ -988,7 +1019,7 @@ async function main() {
       throw new Error('pro checkout ' + JSON.stringify(proCall));
     }
     await checkoutPage.close();
-    note('Integrator checkout posts /checkout with month or year and explains a 503', true);
+    note('Integrator checkout posts /create-checkout-session with month or year and explains a 503', true);
 
     if (external.length) throw new Error('external requests: ' + external.join(', '));
     note('no production or Stripe requests', true);

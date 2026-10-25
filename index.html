@@ -239,7 +239,7 @@ figcaption{padding:.6rem .7rem .75rem;font-size:.92rem;border-top:1px solid var(
           "priceCurrency": "USD",
           "availability": "https://schema.org/InStock",
           "url": "https://manualos.com/#pricing",
-          "description": "Monthly subscription with unlimited manuals, a preventive maintenance schedule, startup and shutdown procedures with a lockout/tagout outline, and other documents on request. Cancel anytime."
+          "description": "Monthly subscription with unlimited manuals. Includes an operator and maintenance manual, a preventive maintenance schedule, startup and shutdown procedures with a lockout/tagout outline, and other documents on request. Cancel anytime."
         },
         {
           "@type": "Offer",
@@ -252,7 +252,7 @@ figcaption{padding:.6rem .7rem .75rem;font-size:.92rem;border-top:1px solid var(
         },
         {
           "@type": "Offer",
-          "name": "Integrator yearly",
+          "name": "Integrator",
           "price": "2490",
           "priceCurrency": "USD",
           "availability": "https://schema.org/InStock",
@@ -665,7 +665,7 @@ figcaption{padding:.6rem .7rem .75rem;font-size:.92rem;border-top:1px solid var(
           </div>
           <div>
             <dt>Documents</dt>
-            <dd>Preventive maintenance schedule, startup and shutdown procedures with a lockout/tagout outline, and other documents on request.</dd>
+            <dd>Operator and maintenance manual, preventive maintenance schedule, startup and shutdown procedures with a lockout/tagout outline, and other documents on request.</dd>
           </div>
         </dl>
         <button type="button" class="btn btn-primary btn-price" data-checkout="pro">Start Pro</button>
@@ -759,13 +759,6 @@ figcaption{padding:.6rem .7rem .75rem;font-size:.92rem;border-top:1px solid var(
 <script>
 (function () {
   var API_BASE = 'https://manualforge-backend-production.up.railway.app';
-  // Integrator checkout route. Change this if the backend PR uses another path.
-  var INTEGRATOR_CHECKOUT_PATH = '/checkout';
-  var CHECKOUT_PATHS = {
-    starter: '/create-checkout-session',
-    pro: '/create-checkout-session',
-    integrator: INTEGRATOR_CHECKOUT_PATH
-  };
   var checkoutError = document.getElementById('checkout-error');
   var buttons = document.querySelectorAll('[data-checkout]');
   var intervalButtons = document.querySelectorAll('[data-set-interval]');
@@ -827,7 +820,7 @@ figcaption{padding:.6rem .7rem .75rem;font-size:.92rem;border-top:1px solid var(
       if (plan === 'integrator') {
         payload.interval = button.getAttribute('data-interval') === 'year' ? 'year' : 'month';
       }
-      var res = await fetch(API_BASE + (CHECKOUT_PATHS[plan] || '/create-checkout-session'), {
+      var res = await fetch(API_BASE + '/create-checkout-session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
