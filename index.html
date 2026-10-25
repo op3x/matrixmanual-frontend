@@ -3,130 +3,185 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>ManualOS — Plain-English manuals from PLC programs</title>
-<meta name="description" content="Turn PLC programs into plain-English equipment manuals for small manufacturers, techs, and integrators. Starter is $39 once for 3 manuals. Pro is $79/month.">
+<!-- Headline lives in #hero-title. The title describes the page. -->
+<title>ManualOS | Operator and maintenance manuals from PLC and CAD files</title>
+<meta name="description" content="Upload your PLC or CAD files. PLC program files (.L5X, .L5K, .scl, .st and more) and CAD files (STEP, IGES, DXF). Starter is $39 once for 3 manuals. Pro is $79/month.">
 <meta name="robots" content="index, follow">
 <link rel="canonical" href="https://manualos.com/">
 <meta property="og:site_name" content="ManualOS">
 <meta property="og:type" content="website">
 <meta property="og:locale" content="en_US">
 <meta property="og:url" content="https://manualos.com/">
-<meta property="og:title" content="ManualOS — Plain-English manuals from PLC programs">
-<meta property="og:description" content="Turn PLC programs into plain-English equipment manuals for small manufacturers, techs, and integrators. Starter is $39 once for 3 manuals. Pro is $79/month.">
+<meta property="og:title" content="ManualOS — Upload your PLC or CAD files">
+<meta property="og:description" content="Upload your PLC or CAD files. PLC program files (.L5X, .L5K, .scl, .st and more) and CAD files (STEP, IGES, DXF). Starter is $39 once for 3 manuals. Pro is $79/month.">
 <meta property="og:image" content="https://manualos.com/assets/og-image.jpg">
 <meta property="og:image:secure_url" content="https://manualos.com/assets/og-image.jpg">
 <meta property="og:image:type" content="image/jpeg">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
-<meta property="og:image:alt" content="ManualOS: plain-English equipment manuals from PLC programs. Starter is $39 once. Pro is $79 per month. The cover of a 60-page sample for a case packer (fictional CP-200) sits beside the title.">
+<meta property="og:image:alt" content="ManualOS. Upload your PLC or CAD files. PLC program files (.L5X, .L5K, .scl, .st and more) and CAD files (STEP, IGES, DXF). Starter is $39 once. Pro is $79 per month. The cover of a 60-page sample for the SAMPLE-A Case Packer, Example Machinery Co. (fictional), document OM-SAMPLE-A-EN, sits beside the title.">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="ManualOS — Plain-English manuals from PLC programs">
-<meta name="twitter:description" content="Turn PLC programs into plain-English equipment manuals for small manufacturers, techs, and integrators. Starter is $39 once for 3 manuals. Pro is $79/month.">
+<meta name="twitter:title" content="ManualOS — Upload your PLC or CAD files">
+<meta name="twitter:description" content="Upload your PLC or CAD files. PLC program files (.L5X, .L5K, .scl, .st and more) and CAD files (STEP, IGES, DXF). Starter is $39 once for 3 manuals. Pro is $79/month.">
 <meta name="twitter:image" content="https://manualos.com/assets/og-image.jpg">
-<meta name="twitter:image:alt" content="ManualOS: plain-English equipment manuals from PLC programs. Starter is $39 once. Pro is $79 per month. The cover of a 60-page sample for a case packer (fictional CP-200) sits beside the title.">
+<meta name="twitter:image:alt" content="ManualOS. Upload your PLC or CAD files. PLC program files (.L5X, .L5K, .scl, .st and more) and CAD files (STEP, IGES, DXF). Starter is $39 once. Pro is $79 per month. The cover of a 60-page sample for the SAMPLE-A Case Packer, Example Machinery Co. (fictional), document OM-SAMPLE-A-EN, sits beside the title.">
 <link rel="icon" href="/favicon.ico" sizes="32x32">
-<meta name="theme-color" content="#fdf6ed">
+<link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
+<link rel="manifest" href="/site.webmanifest">
+<meta name="theme-color" content="#f3f0e6">
+<link rel="preload" href="/assets/fonts/ibm-plex-sans-600.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/assets/fonts/ibm-plex-sans-400.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/assets/sample/fan-01.webp" as="image" type="image/webp">
 <link rel="preconnect" href="https://manualforge-backend-production.up.railway.app" crossorigin>
 <style>
-:root{--cream:#fdf6ed;--ink:#1c1917;--text:#3f3a36;--muted:#57534e;--line:#e7d7c3;--accent:#9a3412;--accent-dark:#7c2d12;--pale:#fef3c7;--card:#fff;--focus:#1c1917}
+@font-face{font-family:"IBM Plex Sans";font-style:normal;font-weight:400;font-display:swap;src:url("/assets/fonts/ibm-plex-sans-400.woff2") format("woff2");ascent-override:102%;descent-override:27%;line-gap-override:0%}
+@font-face{font-family:"IBM Plex Sans";font-style:normal;font-weight:600;font-display:swap;src:url("/assets/fonts/ibm-plex-sans-600.woff2") format("woff2");ascent-override:102%;descent-override:27%;line-gap-override:0%}
+@font-face{font-family:"IBM Plex Mono";font-style:normal;font-weight:400;font-display:swap;src:url("/assets/fonts/ibm-plex-mono-400.woff2") format("woff2");ascent-override:102%;descent-override:27%;line-gap-override:0%}
+@font-face{font-family:"IBM Plex Mono";font-style:normal;font-weight:500;font-display:swap;src:url("/assets/fonts/ibm-plex-mono-500.woff2") format("woff2");ascent-override:102%;descent-override:27%;line-gap-override:0%}
+:root{--paper:#f3f0e6;--sheet:#f7f4ec;--ink:#17181a;--muted:#3a3f44;--rule:#cfc6b6;--yellow:#e6b400;--focus:#17181a}
 *,*::before,*::after{box-sizing:border-box}
-html{scroll-behavior:smooth;scroll-padding-top:5.5rem}
-body{margin:0;font-family:"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;background:var(--cream);color:var(--text);line-height:1.6;font-size:1rem}
+html{scroll-behavior:smooth;scroll-padding-top:7.5rem;color-scheme:light}
+body{margin:0;font-family:"IBM Plex Sans","Arial","Helvetica Neue",sans-serif;background:var(--paper);color:var(--ink);line-height:1.5;font-size:1rem}
 img{max-width:100%;height:auto}
-h1,h2,h3{font-family:Georgia,"Iowan Old Style","Palatino Linotype",Palatino,serif;color:var(--ink);line-height:1.2;font-weight:700}
-h1{font-size:clamp(2rem,5vw,3.25rem);margin:0}
-h2{font-size:clamp(1.7rem,3vw,2.4rem);margin:0 0 .5rem}
-h3{font-size:1.15rem;margin:0 0 .4rem}
+h1,h2,h3{font-family:"IBM Plex Sans",Arial,sans-serif;font-weight:600;color:var(--ink);line-height:1.15;letter-spacing:-0.02em}
+h1{font-size:clamp(1.85rem,6vw,3.05rem);margin:0}
+h2{font-size:clamp(1.45rem,3vw,2rem);margin:0 0 .45rem}
+h3{font-size:1.05rem;margin:0 0 .35rem;letter-spacing:0}
 p{margin:0}
-a{color:var(--accent)}
-a:hover{color:var(--accent-dark)}
-:focus-visible{outline:3px solid var(--focus);outline-offset:3px}
-.skip-link{position:absolute;left:.75rem;top:-3rem;background:var(--ink);color:#fff;padding:.7rem 1rem;z-index:20;border-radius:.4rem;text-decoration:none}
+a{color:var(--ink)}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+.skip-link{position:absolute;left:.75rem;top:-3rem;background:var(--ink);color:var(--paper);padding:.7rem 1rem;z-index:30;text-decoration:none}
 .skip-link:focus{top:.5rem}
-.site-header{position:sticky;top:0;z-index:10;background:rgba(253,246,237,.94);border-bottom:1px solid var(--line)}
-.bar{max-width:72rem;margin:0 auto;padding:.5rem 1rem;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:.5rem 1rem}
-.logo{display:inline-flex;align-items:center;gap:.6rem;min-height:3rem;color:var(--ink);text-decoration:none;font-family:Georgia,serif;font-weight:700;font-size:1.25rem}
-.logo-mark{width:2rem;height:2rem;border-radius:.4rem;background:var(--accent);color:#fff;display:grid;place-items:center;font-family:Georgia,serif}
-.nav{display:flex;flex-wrap:wrap;gap:.25rem}
-.nav a{display:inline-flex;align-items:center;min-height:3rem;padding:.4rem .75rem;color:var(--ink);text-decoration:none;font-weight:600}
-.nav a:hover{color:var(--accent)}
-.nav a.btn-nav,.nav a.btn-nav:hover{color:#fff}
-.nav a.btn-nav:hover{background:var(--accent)}
-.btn{display:inline-flex;align-items:center;justify-content:center;min-height:3rem;padding:.7rem 1.1rem;border-radius:.6rem;font-weight:700;text-decoration:none;border:2px solid transparent;cursor:pointer;font:inherit}
-.btn-primary{background:var(--accent);color:#fff}
-.btn-primary:hover{background:var(--accent-dark);color:#fff}
-.btn-ghost{background:transparent;color:var(--ink);border-color:transparent;text-decoration:underline;text-underline-offset:.2rem}
-.btn-nav{background:var(--ink);color:#fff}
-.btn-nav:hover{background:var(--accent);color:#fff}
-.hero{max-width:72rem;margin:0 auto;padding:2.5rem 1rem 1.5rem;text-align:center}
-.eyebrow{display:inline-block;margin-bottom:.9rem;background:var(--pale);color:var(--accent-dark);font-weight:700;font-size:.875rem;padding:.35rem .8rem;border-radius:999px}
-.lede{max-width:40rem;margin:.9rem auto 0;font-size:1.125rem;color:var(--text)}
-.hero-cta{display:flex;flex-wrap:wrap;justify-content:center;gap:.75rem;margin-top:1.4rem}
-.hero-note{margin-top:1rem;color:var(--muted);font-size:.95rem}
-.demo{margin:2rem auto 0;max-width:56rem;display:grid;gap:.75rem;text-align:left}
-.demo-card{background:var(--card);border:1px solid var(--line);border-radius:1rem;padding:1rem}
-.demo-label{font-size:.875rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--accent);margin-bottom:.6rem}
-.code-block{margin:0;font-family:"Cascadia Mono","Segoe UI Mono",ui-monospace,monospace;font-size:.875rem;line-height:1.55;background:#f6efe4;border-radius:.5rem;padding:.8rem;overflow-x:auto;color:var(--ink);white-space:pre}
-.formats{background:var(--accent);color:#fff}
-.formats-inner{max-width:72rem;margin:0 auto;padding:1rem;display:flex;flex-wrap:wrap;align-items:center;gap:.5rem .75rem}
-.formats p{font-weight:700;font-size:.875rem;letter-spacing:.04em;text-transform:uppercase}
-.formats ul{display:flex;flex-wrap:wrap;gap:.5rem;list-style:none;margin:0;padding:0}
-.formats li{background:#fff;color:#9a3412;border-radius:999px;padding:.45rem .8rem;font-weight:700;font-size:.875rem}
-.section{max-width:72rem;margin:0 auto;padding:3.2rem 1rem}
-.section-intro{max-width:40rem;color:var(--text);margin-bottom:1.4rem}
-.steps{list-style:none;margin:0;padding:0;display:grid;gap:1rem}
-.steps li{background:var(--card);border:1px solid var(--line);border-radius:1rem;padding:1.1rem 1.1rem 1.2rem}
-.step-num{display:inline-grid;place-items:center;width:2.5rem;height:2.5rem;border-radius:50%;background:var(--accent);color:#fff;font-weight:700;margin-bottom:.7rem}
-.gallery{display:grid;gap:1rem}
-figure{margin:0;background:var(--card);border:1px solid var(--line);border-radius:.8rem;overflow:hidden}
-figure img{display:block;width:100%;background:#fff}
-figcaption{padding:.75rem .9rem 1rem;font-size:.95rem;color:var(--text)}
-.sample-actions{display:flex;flex-wrap:wrap;gap:.75rem;align-items:center;margin:1rem 0 1.2rem}
-.sample-sections{margin:.6rem 0 0;padding-left:1.2rem;max-width:40rem}
-.sample-sections li{margin:.25rem 0}
-.features,.who-list,.pricing-grid{display:grid;gap:1rem;padding-top:.8rem}
-.feature,.who-list li,.price-card{background:var(--card);border:1px solid var(--line);border-radius:1rem;padding:1.15rem}
-.who-list{list-style:none;margin:0;padding:0}
-.privacy{margin-top:1rem;background:#fff;border:1px solid var(--line);border-left:.4rem solid var(--accent);border-radius:.8rem;padding:1rem 1.1rem}
-.price-card{display:flex;flex-direction:column;position:relative}
-.price-card.featured{border:2px solid var(--accent)}
-.badge{position:absolute;top:-.8rem;left:1rem;background:var(--accent);color:#fff;font-size:.875rem;font-weight:700;padding:.2rem .7rem;border-radius:999px}
-.tier{font-size:.875rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);margin-top:.4rem}
-.amount{font-family:Georgia,serif;font-size:2.6rem;color:var(--ink);line-height:1;margin:.3rem 0}
-.amount span{font-size:1.2rem;vertical-align:super}
-.period{color:var(--muted);margin-bottom:.7rem}
-.price-card ul{margin:.2rem 0 1rem;padding-left:1.1rem}
-.price-card li{margin:.25rem 0}
-.btn-price{width:100%;margin-top:auto}
-.btn-outline{background:#fff;color:var(--accent);border-color:var(--accent)}
-.btn-outline:hover{background:var(--pale);color:var(--accent-dark)}
-.btn-price:disabled{background:#57534e;border-color:#57534e;color:#fff;cursor:wait}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.site-header{position:sticky;top:0;z-index:10;background:var(--paper);border-bottom:1px solid var(--ink)}
+.bar{max-width:76rem;margin:0 auto;padding:.35rem .75rem;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:.25rem .75rem}
+.logo{display:inline-flex;align-items:center;gap:.55rem;min-height:2.75rem;color:var(--ink);text-decoration:none;font-weight:600;font-size:1.05rem;letter-spacing:-0.02em}
+.logo-mark{width:1.7rem;height:1.7rem;background:var(--ink);color:var(--paper);display:grid;place-items:center;font-size:.95rem;border-bottom:3px solid var(--yellow)}
+.nav{display:flex;flex-wrap:wrap;align-items:center}
+.nav a{display:inline-flex;align-items:center;min-height:2.75rem;padding:.3rem .55rem;color:var(--ink);text-decoration:none;font-weight:600;font-size:.92rem}
+.nav a:hover{text-decoration:underline;text-underline-offset:.18em}
+.btn{display:inline-flex;align-items:center;justify-content:center;min-height:2.75rem;padding:.55rem .9rem;font:inherit;font-weight:600;text-decoration:none;border:1px solid var(--ink);cursor:pointer;background:var(--ink);color:var(--paper);border-radius:0}
+.btn:hover{background:var(--yellow);color:var(--ink)}
+.nav a.btn{color:var(--paper)}
+.nav a.btn:hover{color:var(--ink);background:var(--yellow);text-decoration:none}
+.btn-ghost,.btn-outline{background:var(--sheet);color:var(--ink)}
+.btn-ghost:hover,.btn-outline:hover{background:var(--yellow);color:var(--ink)}
+.btn-nav{margin-left:.25rem}
+.btn:disabled,.btn-price:disabled{background:#3e444b;border-color:#3e444b;color:#f3f0e6;cursor:wait}
+.hero-sheet{margin:.75rem;border:1px solid var(--ink);background:var(--sheet);padding:.85rem .85rem 1rem}
+.titleblock{display:grid;grid-template-columns:1.5fr .7fr .7fr;border:1px solid var(--ink);font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:.68rem;letter-spacing:.04em;text-transform:uppercase;margin:0 0 .9rem;background:var(--paper)}
+.titleblock span{padding:.32rem .45rem;border-left:1px solid var(--ink);min-width:0;overflow-wrap:anywhere}
+.titleblock span:first-child{border-left:0}
+.hero-grid{display:grid;gap:1rem;align-items:start}
+.hero-copy{display:grid;gap:.7rem;align-content:start}
+.kicker{display:flex;align-items:center;gap:.45rem;margin:0 0 .45rem;font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--ink)}
+.hero-copy .kicker{margin:0}
+.idx{display:inline-grid;place-items:center;min-width:1.7rem;height:1.25rem;padding:0 .25rem;background:var(--yellow);color:var(--ink);letter-spacing:0;font-weight:500}
+.lede,.lede-next{max-width:40rem;margin:0;color:var(--ink);font-size:1.05rem}
+.hero-cta{display:flex;flex-wrap:wrap;gap:.6rem;margin:.15rem 0 0}
+.hero-price{margin:0;font-weight:600;max-width:40rem}
+.hero-note{margin:0;color:var(--muted);font-size:.95rem;max-width:40rem}
+.hero-note a,.pay-note a,.need-more a,.faq-item a,.privacy a{text-decoration:underline;text-underline-offset:.15em}
+.fan{margin:0}
+.fan-stage{position:relative;height:300px;margin:.15rem 0 .75rem;overflow:hidden;border:1px solid var(--ink);background-color:#e5dfd1;background-image:linear-gradient(to right,rgba(23,24,26,.07) 1px,transparent 1px),linear-gradient(to bottom,rgba(23,24,26,.07) 1px,transparent 1px);background-size:18px 18px}
+.sheet-page{position:absolute;top:18px;width:min(58%,230px);background:#fff;border:1px solid var(--ink);line-height:0}
+.sheet-page img{display:block;width:100%;height:auto}
+.sheet-pm{left:1%;width:min(50%,200px);transform:rotate(-8deg)}
+.sheet-alarm{left:16%;top:12px;width:min(52%,210px);transform:rotate(-3deg)}
+.sheet-lock{left:30%;top:6px;width:min(54%,220px);transform:rotate(1deg)}
+.sheet-front{left:42%;top:20px;width:min(56%,230px);transform:rotate(5deg)}
+.callouts{list-style:none;margin:0;padding:0;display:grid;gap:0;border-top:1px solid var(--ink)}
+.callouts li{display:grid;grid-template-columns:4.4rem 1fr;gap:.5rem;align-items:baseline;padding:.4rem 0;border-bottom:1px solid var(--rule);font-size:.92rem}
+.callouts span{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:.75rem;letter-spacing:.04em}
+.flow{max-width:76rem;margin:0 auto;padding:0 .75rem 1.25rem}
+.flow-grid{display:grid;gap:.7rem;border-top:1px solid var(--ink);border-bottom:1px solid var(--ink);padding:1rem 0}
+.flow-label{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;margin:0 0 .5rem}
+.flow-to{margin:0;font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:1.25rem}
+.exts,.chapters{list-style:none;margin:0;padding:0}
+.exts{display:flex;flex-wrap:wrap;gap:.35rem}
+.exts li{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:.8rem;border:1px solid var(--ink);background:var(--sheet);padding:.32rem .4rem}
+.chapters{counter-reset:ch;display:grid;grid-template-columns:1fr 1fr;gap:.15rem 1rem}
+.chapters li{counter-increment:ch;border-top:1px solid var(--rule);padding:.28rem 0;font-size:.95rem}
+.chapters li::before{content:counter(ch,decimal-leading-zero) "  ";font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:.78rem}
+.section{max-width:76rem;margin:0 auto;padding:2.4rem .85rem 0}
+.section-intro{max-width:40rem;margin:0 0 1rem;color:var(--ink)}
+.spec{width:100%;border-collapse:collapse;font-size:.95rem}
+.spec th,.spec td{border:1px solid var(--ink);padding:.5rem .6rem;text-align:left;vertical-align:top;background:var(--sheet)}
+.spec thead th{background:var(--ink);color:#f3f0e6;font-weight:600;font-size:.78rem;letter-spacing:.05em;text-transform:uppercase}
+.spec td:first-child,.mono{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:.8rem}
+.plan-cards{display:grid;gap:1rem}
+.plan-card{border:1px solid var(--ink);background:var(--sheet);padding:1rem .95rem 1.05rem;display:flex;flex-direction:column;gap:.7rem}
+.plan-card.is-pro{box-shadow:inset 0 4px 0 var(--yellow)}
+.plan-card .plan{margin:0;font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:.78rem;letter-spacing:.06em;text-transform:uppercase;font-weight:500}
+.plan-card .price{margin:0;font-size:2rem;letter-spacing:-.03em;line-height:1}
+.plan-card .bill{margin:-.35rem 0 0;font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:.75rem;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+.plan-card dl{margin:0;display:grid;gap:.65rem}
+.plan-card dt{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;font-weight:500}
+.plan-card dd{margin:.12rem 0 0}
+.need-more{margin-top:1rem}
+.steps,.features,.who-list{list-style:none;margin:0;padding:0}
+.steps li,.feature,.who-list li{border-top:1px solid var(--ink);padding:.9rem 0}
+.step-num{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:.8rem;letter-spacing:.06em;display:block;margin-bottom:.35rem}
+.sample-actions{margin:.9rem 0 1rem}
+.sample-sections{margin:.55rem 0 0;padding-left:1.15rem;max-width:40rem}
+.sample-sections li{margin:.2rem 0}
+.gallery{display:grid;gap:1.25rem}
+figure.page{margin:0;background:var(--sheet);border:1px solid var(--ink)}
+figure.page img{display:block;width:100%;background:#fff}
+figcaption{padding:.6rem .7rem .75rem;font-size:.92rem;border-top:1px solid var(--rule)}
+.privacy{margin-top:1rem;border:1px solid var(--ink);border-left:4px solid var(--yellow);background:var(--sheet);padding:.85rem .95rem}
+.privacy h3{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:.75rem;letter-spacing:.08em;text-transform:uppercase;font-weight:500}
+.btn-price{width:100%;margin-top:auto;padding:.55rem .9rem;font-size:1rem;line-height:1.2}
 .checkout-error:empty{margin:0}
-.checkout-error:not(:empty){margin-top:1rem;padding:.8rem 1rem;border:2px solid var(--accent);border-radius:.6rem;background:#fff;color:var(--accent-dark);font-weight:700}
+.checkout-error:not(:empty){margin-top:1rem;padding:.75rem .85rem;border:1px solid var(--ink);border-left:4px solid #6b2a14;background:var(--sheet);color:var(--ink);font-weight:600}
 .pay-note{margin-top:1rem;color:var(--muted);max-width:42rem}
-.faq-item{padding:1rem 0;border-top:1px solid var(--line)}
+.faq-item{padding:.9rem 0;border-top:1px solid var(--ink)}
 .faq-item p{margin-top:.35rem;max-width:46rem}
-.site-footer{background:var(--ink);color:#f5f5f4;padding:2rem 1rem}
-.footer-inner{max-width:72rem;margin:0 auto;display:grid;gap:1rem}
-.footer-brand{margin:0;font-family:Georgia,"Iowan Old Style",serif;font-size:1.25rem;font-weight:700;color:#fff}
-.site-footer a{color:#fdba74}
-.site-footer a:focus-visible{outline-color:#fbbf24}
-.footer-nav{display:flex;flex-wrap:wrap;gap:.25rem 1rem}
-.footer-nav a{display:inline-flex;align-items:center;min-height:3rem;font-weight:600}
-.legal{color:#d6d3d1;font-size:.95rem}
-@media(min-width:700px){
-  .demo{grid-template-columns:1fr 1fr}
-  .steps,.features,.who-list{grid-template-columns:repeat(3,1fr)}
-  .gallery{grid-template-columns:repeat(2,1fr)}
-  .pricing-grid{grid-template-columns:repeat(3,1fr);align-items:stretch}
-  .section{padding:4.2rem 1.5rem}
-  .hero{padding-top:3.5rem}
+.site-footer{background:var(--ink);color:#f3f0e6;margin-top:2.5rem;border-top:4px solid var(--yellow);padding:1.5rem .85rem 1.75rem}
+.site-footer a{color:#f3f0e6}
+.site-footer a:hover{color:var(--yellow)}
+.site-footer a:focus-visible{outline-color:#f3f0e6}
+.footer-inner{max-width:76rem;margin:0 auto;display:grid;gap:.8rem}
+.footer-brand{margin:0;font-size:1.15rem;font-weight:600;letter-spacing:-.02em;color:#f3f0e6}
+.footer-nav{display:flex;flex-wrap:wrap;gap:.15rem .9rem}
+.footer-nav a{display:inline-flex;align-items:center;min-height:2.75rem;font-weight:600;text-underline-offset:.15em}
+.legal{color:#d9d2c3;font-size:.95rem}
+@media(min-width:768px){
+  html{scroll-padding-top:4.5rem}
+  .hero-sheet{margin:1rem auto;max-width:76rem;padding:1rem 1.1rem 1.15rem}
+  .hero-grid{grid-template-columns:minmax(0,1.05fr) minmax(0,.95fr);align-items:start;gap:.5rem 1.25rem}
+  .fan-stage{height:430px}
+  .sheet-page{top:28px}
+  .sheet-pm{left:0}
+  .sheet-alarm{left:14%;top:20px}
+  .sheet-lock{left:28%;top:12px}
+  .sheet-front{left:40%;top:32px}
+  .flow{padding:0 1rem 1.5rem}
+  .flow-grid{grid-template-columns:minmax(0,1.15fr) auto minmax(0,.9fr);align-items:center;gap:1.25rem;padding:1rem 0}
+  .flow-to{transform:none}
+  .section{padding:3.2rem 1.25rem 0}
+  .steps{display:grid;grid-template-columns:repeat(3,1fr)}
+  .steps li{border-top:1px solid var(--ink);border-left:1px solid var(--ink);padding:1rem .9rem 1.1rem}
+  .steps li:first-child{border-left:0}
+  .gallery{grid-template-columns:1fr 1fr;gap:1rem}
+  .gallery figure.page:last-child{grid-column:1 / -1}
+  .plan-cards{grid-template-columns:1fr 1fr;align-items:stretch}
 }
-@media(min-width:1100px){
-  .gallery{grid-template-columns:repeat(3,1fr)}
+@media(min-width:900px){
+  .gallery{grid-template-columns:1fr 1fr 1fr}
+  .gallery figure.page:last-child{grid-column:auto}
 }
-@media(max-width:699px){
-  html{scroll-padding-top:8.5rem}
+@media(max-width:767px){
+  .flow-to{transform:rotate(90deg);transform-origin:left center;height:1.25rem}
+  .titleblock{font-size:.62rem}
+  .bar,.nav{flex-wrap:nowrap}
+  .nav a:not(.btn){display:none}
+  html{scroll-padding-top:4.25rem}
+  .callouts{display:none}
+  .fan-stage{margin-bottom:0}
+}
+@media(max-width:639px){
+  .gallery .page-extra{display:none}
 }
 @media(prefers-reduced-motion:reduce){
   html{scroll-behavior:auto}
@@ -141,8 +196,8 @@ figcaption{padding:.75rem .9rem 1rem;font-size:.95rem;color:var(--text)}
       "@id": "https://manualos.com/#organization",
       "name": "ManualOS",
       "url": "https://manualos.com/",
-      "email": "hello@manualos.com",
-      "description": "ManualOS turns PLC programs into plain-English equipment manuals for small manufacturers, maintenance technicians, and integrators.",
+      "email": "support@manualos.com",
+      "description": "Upload your PLC or CAD files. PLC program files (.L5X, .L5K, .scl, .st and more) and CAD files (STEP, IGES, DXF).",
       "logo": {
         "@type": "ImageObject",
         "url": "https://manualos.com/assets/logo.png",
@@ -157,7 +212,7 @@ figcaption{padding:.75rem .9rem 1rem;font-size:.95rem;color:var(--text)}
       "operatingSystem": "Web",
       "url": "https://manualos.com/",
       "image": "https://manualos.com/assets/og-image.jpg",
-      "description": "ManualOS turns PLC programs into plain-English equipment manuals for small manufacturers, maintenance technicians, and integrators.",
+      "description": "Upload your PLC or CAD files. PLC program files (.L5X, .L5K, .scl, .st and more) and CAD files (STEP, IGES, DXF).",
       "publisher": { "@id": "https://manualos.com/#organization" },
       "offers": [
         {
@@ -189,7 +244,7 @@ figcaption{padding:.75rem .9rem 1rem;font-size:.95rem;color:var(--text)}
           "name": "Which files can I upload?",
           "acceptedAnswer": {
             "@type": "Answer",
-            "text": "ManualOS accepts Rockwell L5X and L5K, Siemens SCL, TwinCAT TcPOU, CODESYS PLCopen XML, CSV tag lists, and STEP, IGES, and DXF models."
+            "text": "PLC: .L5X, .L5K, .scl, .st, .exp, PLCopen .xml, and .TcPOU. Tag lists: .csv and .xlsx. A tag-table XML is tags only, not the program. CAD: .step and .stp, .iges and .igs, and ASCII .dxf. Archives: a .zip of those files."
           }
         },
         {
@@ -197,7 +252,7 @@ figcaption{padding:.75rem .9rem 1rem;font-size:.95rem;color:var(--text)}
           "name": "What is in a manual?",
           "acceptedAnswer": {
             "@type": "Answer",
-            "text": "You get a PDF operating and maintenance manual. The 60-page sample on this page is a case packer (fictional CP-200). It includes safety, machine description and theory of operation, transport, installation, commissioning, controls, operation, alarms and troubleshooting, maintenance, spare parts, and appendices. Where a sentence is tied back to the PLC program, the manual shows a code reference note."
+            "text": "You get a PDF operating and maintenance manual. The 60-page sample on this page is the SAMPLE-A Case Packer from Example Machinery Co. (fictional), document OM-SAMPLE-A-EN. It includes safety, machine description and theory of operation, transport, installation, commissioning, controls, operation, alarms and troubleshooting, maintenance, spare parts, and appendices. Where a sentence is tied back to the PLC program, the manual shows a code reference note."
           }
         },
         {
@@ -205,7 +260,7 @@ figcaption{padding:.75rem .9rem 1rem;font-size:.95rem;color:var(--text)}
           "name": "What counts as one manual?",
           "acceptedAnswer": {
             "@type": "Answer",
-            "text": "Each time ManualOS generates a manual from a PLC file, that counts as one manual. Starter is a one-time $39 purchase and includes 3 manuals. Pro is $79 per month and includes unlimited manuals while the subscription is active."
+            "text": "One generation run is one manual: one upload of up to 25 files or a .zip, whether those files are PLC, CAD, or both. A failed run doesn’t use a credit. Starter is a one-time $39 purchase and includes 3 manuals. Pro is $79 per month and includes unlimited manuals while the subscription is active."
           }
         },
         {
@@ -213,7 +268,7 @@ figcaption{padding:.75rem .9rem 1rem;font-size:.95rem;color:var(--text)}
           "name": "Who can see my PLC program?",
           "acceptedAnswer": {
             "@type": "Answer",
-            "text": "Your file is sent to ManualOS only so it can write the manual. Programs are not sold, and they are not used to train models. Files are processed for your manual and then discarded."
+            "text": "ManualOS processes your files to write the manual. Extracted program logic, comments, and part details are sent to a third-party AI model provider to write the manual. We don’t use your files to train models, and our AI provider doesn’t train on API data by default. Uploaded files are processed in memory and never stored. The finished PDF is available to download for 24 hours, then no longer available. Programs are not sold."
           }
         },
         {
@@ -221,7 +276,7 @@ figcaption{padding:.75rem .9rem 1rem;font-size:.95rem;color:var(--text)}
           "name": "Can I cancel Pro, and what about refunds?",
           "acceptedAnswer": {
             "@type": "Answer",
-            "text": "Pro is month to month. You can cancel anytime by emailing hello@manualos.com, and you will not be billed again after the current period. Starter is not a subscription. It is a one-time $39 purchase for 3 manuals. If a payment or a generated manual is wrong, email hello@manualos.com and we will help."
+            "text": "Pro is month to month. You can cancel anytime by emailing support@manualos.com, and you will not be billed again after the current period. Starter is not a subscription. It is a one-time $39 purchase for 3 manuals. If a payment or a generated manual is wrong, email support@manualos.com and we will help."
           }
         }
       ]
@@ -245,56 +300,172 @@ figcaption{padding:.75rem .9rem 1rem;font-size:.95rem;color:var(--text)}
   </div>
 </header>
 <main id="main" tabindex="-1">
-  <section class="hero" aria-labelledby="hero-title">
-    <p class="eyebrow">For small manufacturers</p>
-    <h1 id="hero-title">Turn a PLC program into a manual the crew can use.</h1>
-    <p class="lede">ManualOS reads the PLC export you already have and writes a plain-English equipment manual. Built for maintenance techs and integrators, too. Starter is $39 once for 3 manuals. Pro is $79 a month for unlimited manuals.</p>
-    <div class="hero-cta">
-      <a class="btn btn-primary" href="#pricing">See pricing</a>
-      <a class="btn btn-ghost" href="#sample">View a sample manual</a>
+  <section class="hero-sheet" aria-labelledby="hero-title">
+    <div class="titleblock">
+      <span>Doc no. MOS-HOME</span>
+      <span>Rev —</span>
+      <span>Sheet 01</span>
     </div>
-    <p class="hero-note">Upload PLC exports, CAD models, or both. <a href="/upload.html">Already purchased? Upload a file</a>.</p>
-    <div class="demo">
-      <div class="demo-card">
-        <p class="demo-label">Example input</p>
-        <pre class="code-block"><code>XIC  Conv_Ready
-XIC  Gate_Closed
-OTE  Conv_Run</code></pre>
+    <div class="hero-grid">
+      <div class="hero-copy">
+      <p class="kicker"><span class="idx">01</span> For small manufacturers</p>
+      <!-- Headline. This h1 is the wording to change. -->
+      <h1 id="hero-title">Upload your PLC or CAD files.</h1>
+      <p class="lede">PLC program files (.L5X, .L5K, .scl, .st and more) and CAD files (STEP, IGES, DXF).</p>
+      <p class="lede-next">ManualOS writes a plain-English equipment manual from them. Built for maintenance techs and integrators, too.</p>
+      <div class="hero-cta">
+        <a class="btn btn-primary" href="#pricing">See pricing</a>
+        <a class="btn btn-ghost" href="#sample">View a sample manual</a>
       </div>
-      <div class="demo-card">
-        <p class="demo-label">Example manual text</p>
-        <p>The conveyor runs only when it is ready and the safety gate is closed. If either signal drops, the conveyor stops.</p>
+      <p class="hero-price">Starter $39 once · 3 manuals. Pro $79 a month · unlimited.</p>
+      <p class="hero-note">A .zip of those files is fine. <a href="/upload.html">Already purchased? Upload a file</a>.</p>
+      </div>
+      <figure class="fan">
+        <div class="fan-stage" aria-hidden="true">
+          <picture class="sheet-page sheet-pm">
+            <source srcset="/assets/sample/fan-05.webp" type="image/webp">
+            <img src="/assets/sample/fan-05.jpg" width="480" height="621" alt="">
+          </picture>
+          <picture class="sheet-page sheet-alarm">
+            <source srcset="/assets/sample/fan-04.webp" type="image/webp">
+            <img src="/assets/sample/fan-04.jpg" width="480" height="621" alt="">
+          </picture>
+          <picture class="sheet-page sheet-lock">
+            <source srcset="/assets/sample/fan-03.webp" type="image/webp">
+            <img src="/assets/sample/fan-03.jpg" width="480" height="621" alt="">
+          </picture>
+          <picture class="sheet-page sheet-front">
+            <source srcset="/assets/sample/fan-01.webp" type="image/webp">
+            <img src="/assets/sample/fan-01.jpg" width="480" height="621" alt="" fetchpriority="high" decoding="async">
+          </picture>
+        </div>
+        <figcaption>
+          <ol class="callouts">
+            <li><span>SHT 01</span> Cover</li>
+            <li><span>SHT 20</span> Theory of operation, interlocks</li>
+            <li><span>SHT 40</span> Alarms and troubleshooting</li>
+            <li><span>SHT 43</span> PM schedule</li>
+          </ol>
+        </figcaption>
+      </figure>
+    </div>
+  </section>
+  <section class="flow" aria-labelledby="flow-title">
+    <h2 id="flow-title" class="sr-only">From the file to the manual</h2>
+    <div class="flow-grid">
+      <div>
+        <p class="flow-label">Input</p>
+        <ul class="exts">
+          <li>.L5X</li>
+          <li>.L5K</li>
+          <li>.SCL</li>
+          <li>.ST</li>
+          <li>.EXP</li>
+          <li>.XML</li>
+          <li>.TcPOU</li>
+          <li>.CSV</li>
+          <li>.XLSX</li>
+          <li>.STEP</li>
+          <li>.STP</li>
+          <li>.IGES</li>
+          <li>.IGS</li>
+          <li>.DXF</li>
+          <li>.ZIP</li>
+        </ul>
+      </div>
+      <p class="flow-to" aria-hidden="true">→</p>
+      <div>
+        <p class="flow-label">Manual chapters</p>
+        <ol class="chapters">
+          <li>Safety</li>
+          <li>Theory of operation</li>
+          <li>Installation and commissioning</li>
+          <li>Controls and operation</li>
+          <li>Alarms and troubleshooting</li>
+          <li>Maintenance and spare parts</li>
+        </ol>
       </div>
     </div>
   </section>
-  <div class="formats">
-    <div class="formats-inner">
-      <p id="formats-label">Accepted today</p>
-      <ul aria-labelledby="formats-label">
-        <li>Allen-Bradley</li>
-        <li>Siemens</li>
-        <li>TwinCAT</li>
-        <li>STEP / DXF</li>
-        <li>Schneider</li>
-      </ul>
+  <section class="section" id="formats" aria-labelledby="formats-title">
+    <p class="kicker"><span class="idx">02</span> Accepted today</p>
+    <h2 id="formats-title">Supported formats</h2>
+    <p class="section-intro">PLC: .L5X, .L5K, .scl, .st, .exp, PLCopen .xml, and .TcPOU. Tag lists: .csv and .xlsx. A tag-table XML is tags only, not the program. CAD: .step and .stp, .iges and .igs, and ASCII .dxf. Archives: a .zip of those files.</p>
+    <div class="table-scroll">
+      <table class="spec">
+        <caption class="sr-only">Accepted file formats</caption>
+        <thead>
+          <tr>
+            <th scope="col">Ref</th>
+            <th scope="col">Format</th>
+            <th scope="col">Files</th>
+            <th scope="col">Notes</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>01</td>
+            <td>PLC program export</td>
+            <td class="mono">.L5X .L5K</td>
+            <td>XML export, including ladder</td>
+          </tr>
+          <tr>
+            <td>02</td>
+            <td>Structured text</td>
+            <td class="mono">.SCL .ST .EXP</td>
+            <td>IEC 61131-3</td>
+          </tr>
+          <tr>
+            <td>03</td>
+            <td>PLC object</td>
+            <td class="mono">.TcPOU</td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>04</td>
+            <td>PLCopen XML</td>
+            <td class="mono">.XML</td>
+            <td>Program export</td>
+          </tr>
+          <tr>
+            <td>05</td>
+            <td>Tag list</td>
+            <td class="mono">.CSV .XLSX</td>
+            <td>A tag-table XML is tags only, not the program.</td>
+          </tr>
+          <tr>
+            <td>06</td>
+            <td>CAD</td>
+            <td class="mono">.STEP .STP .IGES .IGS .DXF</td>
+            <td>DXF is ASCII. STEP and IGES are the 3D model. DXF is a 2D drawing.</td>
+          </tr>
+          <tr>
+            <td>07</td>
+            <td>Zip</td>
+            <td class="mono">.ZIP</td>
+            <td>A zip of the files above</td>
+          </tr>
+        </tbody>
+      </table>
     </div>
-  </div>
+  </section>
   <section class="section" id="how" aria-labelledby="how-title">
+    <p class="kicker"><span class="idx">03</span> How it works</p>
     <h2 id="how-title">From file to manual in three steps</h2>
-    <p class="section-intro">No documentation department required. You bring the program. ManualOS writes the explanation.</p>
+    <p class="section-intro">You upload the file. ManualOS writes the manual.</p>
     <ol class="steps">
       <li>
-        <span class="step-num">1</span>
-        <h3>Upload a PLC export</h3>
-        <p>After checkout, upload an L5X, L5K, SCL, TcPOU, PLCopen XML, or tag list, or a STEP, IGES, or DXF model.</p>
+        <span class="step-num">01</span>
+        <h3>Upload the file</h3>
+        <p>After checkout, upload a file from the supported list, or a .zip of those files.</p>
       </li>
       <li>
-        <span class="step-num">2</span>
+        <span class="step-num">02</span>
         <h3>ManualOS writes the manual</h3>
         <p>It reads the routines, tags, and comments in the file and drafts a plain-English explanation of what the equipment does.</p>
       </li>
       <li>
-        <span class="step-num">3</span>
+        <span class="step-num">03</span>
         <h3>Download the PDF</h3>
         <p>You get a manual you can print, hand to a technician, or leave with the machine.</p>
       </li>
@@ -305,13 +476,14 @@ OTE  Conv_Run</code></pre>
     PDF: /assets/sample/manual.pdf
     Previews, in order: preview-01 through preview-05, each as .webp and .jpg at the same pixel size.
     Also update the page count, the section list, the figcaptions, and the alt text so they match the new PDF.
-    Current file: case packer (fictional CP-200), Operating and Maintenance Manual, revision D, 60 pages.
+    Current file: SAMPLE-A Case Packer, Example Machinery Co. (fictional), document OM-SAMPLE-A-EN, revision D, 60 pages.
     preview-01 cover, page 1. preview-02 residual risks, page 10. preview-03 machine states, page 20.
     preview-04 alarms and troubleshooting, page 40. preview-05 preventive maintenance, page 43.
   -->
   <section class="section" id="sample" aria-labelledby="sample-title">
+    <p class="kicker"><span class="idx">04</span> Sample manual</p>
     <h2 id="sample-title">Sample manual</h2>
-    <p class="section-intro">A 60-page operating and maintenance manual for a case packer (fictional CP-200). A fictional example showing the ManualOS manual format. The machine and data are invented.</p>
+    <p class="section-intro">A 60-page operating and maintenance manual for the SAMPLE-A Case Packer, Example Machinery Co. (fictional), document OM-SAMPLE-A-EN. The machine and data are invented.</p>
     <ul class="sample-sections">
       <li>Safety, including residual risk</li>
       <li>Machine description and theory of operation</li>
@@ -323,47 +495,48 @@ OTE  Conv_Run</code></pre>
       <li>Appendices, including an I/O list and a tag list</li>
     </ul>
     <div class="sample-actions">
-      <a class="btn btn-primary" href="/assets/sample/manual.pdf" download="Acme-CP-200-sample-manual.pdf">Download the 60-page sample PDF (2.2 MB)</a>
+      <a class="btn btn-primary" href="/assets/sample/manual.pdf" download="SAMPLE-A-case-packer-manual.pdf">Download the 60-page sample PDF (2.1 MB)</a>
     </div>
     <div class="gallery">
-      <figure>
+      <figure class="page">
         <picture>
-          <source srcset="/assets/sample/preview-01.webp" type="image/webp">
-          <img src="/assets/sample/preview-01.jpg" width="1200" height="1553" alt="Cover, page 1, of a fictional operating and maintenance manual. Acme Packaging Machinery Co. is marked fictional. The model is CP-200, document OM-CP200-EN, revision D, October 2026. A layout shows product infeed, collation and pick-and-place, the case erector, glue and flap closing, and discharge. The note says the machine, company, and data are invented." loading="lazy" decoding="async">
+          <source type="image/webp" srcset="/assets/sample/preview-01-600.webp 600w, /assets/sample/preview-01.webp 1200w" sizes="(max-width: 639px) 92vw, (max-width: 899px) 46vw, 30vw">
+          <img src="/assets/sample/preview-01.jpg" srcset="/assets/sample/preview-01-600.jpg 600w, /assets/sample/preview-01.jpg 1200w" sizes="(max-width: 639px) 92vw, (max-width: 899px) 46vw, 30vw" width="1200" height="1553" alt="Cover, page 1, of a sample operating and maintenance manual. Example Machinery Co. (fictional). The machine is the SAMPLE-A Case Packer, document OM-SAMPLE-A-EN, revision D, October 2026. A layout shows product infeed, collation and pick-and-place, the case erector, glue and flap closing, and discharge. The machine, company, and data are invented." loading="lazy" decoding="async">
         </picture>
-        <figcaption>Cover, page 1. Fictional company, model CP-200, revision D, October 2026.</figcaption>
+        <figcaption>Cover, page 1. SAMPLE-A Case Packer, Example Machinery Co. (fictional), document OM-SAMPLE-A-EN, revision D.</figcaption>
       </figure>
-      <figure>
+      <figure class="page page-extra">
         <picture>
-          <source srcset="/assets/sample/preview-02.webp" type="image/webp">
-          <img src="/assets/sample/preview-02.jpg" width="1200" height="1553" alt="Page 10, residual risks. The table lists drawing-in at the infeed, a falling head, crushing by the gantry and by the swing arm, hot-melt burns, residual air pressure, electric shock, and lifting change parts. Hazard boxes warn about hazardous voltage, crushing points, and rotating rollers and belts." loading="lazy" decoding="async">
+          <source type="image/webp" srcset="/assets/sample/preview-02-600.webp 600w, /assets/sample/preview-02.webp 1200w" sizes="(max-width: 639px) 92vw, (max-width: 899px) 46vw, 30vw">
+          <img src="/assets/sample/preview-02.jpg" srcset="/assets/sample/preview-02-600.jpg 600w, /assets/sample/preview-02.jpg 1200w" sizes="(max-width: 639px) 92vw, (max-width: 899px) 46vw, 30vw" width="1200" height="1553" alt="Page 10, residual risks. The table lists drawing-in at the infeed, a falling head, crushing by the gantry and by the swing arm, hot-melt burns, residual air pressure, electric shock, and lifting change parts. Hazard boxes warn about hazardous voltage, crushing points, and rotating rollers and belts." loading="lazy" decoding="async">
         </picture>
         <figcaption>Page 10. Residual risks by zone, then hazard boxes for voltage, crushing, and rotating parts.</figcaption>
       </figure>
-      <figure>
+      <figure class="page">
         <picture>
-          <source srcset="/assets/sample/preview-03.webp" type="image/webp">
-          <img src="/assets/sample/preview-03.jpg" width="1200" height="1553" alt="Page 20, machine states. Figure 2-7 is a state model with Stopped, Idle, Execute, and the hold, suspend, stop, and abort paths. A table says what each state does. An interlock table starts with an open guard door, low air pressure, glue that is not at temperature, and a full collation." loading="lazy" decoding="async">
+          <source type="image/webp" srcset="/assets/sample/preview-03-600.webp 600w, /assets/sample/preview-03.webp 1200w" sizes="(max-width: 639px) 92vw, (max-width: 899px) 46vw, 30vw">
+          <img src="/assets/sample/preview-03.jpg" srcset="/assets/sample/preview-03-600.jpg 600w, /assets/sample/preview-03.jpg 1200w" sizes="(max-width: 639px) 92vw, (max-width: 899px) 46vw, 30vw" width="1200" height="1553" alt="Page 20, machine states. Figure 2-7 is a state model with Stopped, Idle, Execute, and the hold, suspend, stop, and abort paths. A table says what each state does. An interlock table starts with an open guard door, low air pressure, glue that is not at temperature, and a full collation." loading="lazy" decoding="async">
         </picture>
         <figcaption>Page 20. Machine state diagram, then the start of the interlock table.</figcaption>
       </figure>
-      <figure>
+      <figure class="page page-extra">
         <picture>
-          <source srcset="/assets/sample/preview-04.webp" type="image/webp">
-          <img src="/assets/sample/preview-04.jpg" width="1200" height="1553" alt="Page 40, alarms and troubleshooting. The alarm table continues from a glue-unit fault through low air pressure, a full downstream conveyor, a discharge jam, a low or empty magazine, a light-curtain break, maintenance due, high cabinet temperature, and a low controller battery. The troubleshooting guide then lists infeed problems and collation and pick-and-place problems." loading="lazy" decoding="async">
+          <source type="image/webp" srcset="/assets/sample/preview-04-600.webp 600w, /assets/sample/preview-04.webp 1200w" sizes="(max-width: 639px) 92vw, (max-width: 899px) 46vw, 30vw">
+          <img src="/assets/sample/preview-04.jpg" srcset="/assets/sample/preview-04-600.jpg 600w, /assets/sample/preview-04.jpg 1200w" sizes="(max-width: 639px) 92vw, (max-width: 899px) 46vw, 30vw" width="1200" height="1553" alt="Page 40, alarms and troubleshooting. The alarm table continues from a glue-unit fault through low air pressure, a full downstream conveyor, a discharge jam, a low or empty magazine, a light-curtain break, maintenance due, high cabinet temperature, and a low controller battery. The troubleshooting guide then lists infeed problems and collation and pick-and-place problems." loading="lazy" decoding="async">
         </picture>
         <figcaption>Page 40. The rest of the alarm list, then troubleshooting for the infeed and the pick-and-place.</figcaption>
       </figure>
-      <figure>
+      <figure class="page page-extra">
         <picture>
-          <source srcset="/assets/sample/preview-05.webp" type="image/webp">
-          <img src="/assets/sample/preview-05.jpg" width="1200" height="1553" alt="Page 43, maintenance. A danger box covers hazardous voltage inside electrical enclosures. The preventive maintenance schedule starts with daily checks, weekly tasks, monthly tasks, and the start of the 3-month and 6-month tasks." loading="lazy" decoding="async">
+          <source type="image/webp" srcset="/assets/sample/preview-05-600.webp 600w, /assets/sample/preview-05.webp 1200w" sizes="(max-width: 639px) 92vw, (max-width: 899px) 46vw, 30vw">
+          <img src="/assets/sample/preview-05.jpg" srcset="/assets/sample/preview-05-600.jpg 600w, /assets/sample/preview-05.jpg 1200w" sizes="(max-width: 639px) 92vw, (max-width: 899px) 46vw, 30vw" width="1200" height="1553" alt="Page 43, maintenance. A danger box covers hazardous voltage inside electrical enclosures. The preventive maintenance schedule starts with daily checks, weekly tasks, monthly tasks, and the start of the 3-month and 6-month tasks." loading="lazy" decoding="async">
         </picture>
         <figcaption>Page 43. Maintenance safety, then the start of the preventive maintenance schedule.</figcaption>
       </figure>
     </div>
   </section>
   <section class="section" id="features" aria-labelledby="features-title">
+    <p class="kicker"><span class="idx">05</span> What you get</p>
     <h2 id="features-title">What you get</h2>
     <div class="features">
       <article class="feature">
@@ -381,98 +554,109 @@ OTE  Conv_Run</code></pre>
     </div>
   </section>
   <section class="section" id="who" aria-labelledby="who-title">
+    <p class="kicker"><span class="idx">06</span> Who it is for</p>
     <h2 id="who-title">Who it is for</h2>
     <ul class="who-list">
       <li>
         <h3>Small manufacturers</h3>
-        <p>You have a machine and a PLC program, and no one on staff whose job is writing manuals.</p>
+        <p>You have a machine and the files for it, and no one on staff whose job is writing manuals.</p>
       </li>
       <li>
         <h3>Maintenance techs</h3>
-        <p>You need the rung explained in plain language while you are at the panel.</p>
+        <p>You need the equipment explained in plain language while you are at the machine.</p>
       </li>
       <li>
         <h3>Integrators</h3>
-        <p>You are handing a cell to a customer and need a manual that matches the program you shipped.</p>
+        <p>You are handing a cell to a customer and need a manual that matches the files you shipped.</p>
       </li>
     </ul>
     <div class="privacy">
       <h3>Privacy</h3>
-      <p>Your file is sent to ManualOS only so it can write the manual. Programs are not sold, and they are not used to train models. Files are processed for your manual and then discarded. Card numbers are entered on Stripe, not on this site.</p>
+      <p>ManualOS processes your files to write the manual. Extracted program logic, comments, and part details are sent to a third-party AI model provider to write the manual. We don’t use your files to train models, and our AI provider doesn’t train on API data by default. Uploaded files are processed in memory and never stored. The finished PDF is available to download for 24 hours, then no longer available. Programs are not sold. Card numbers are entered at secure checkout, not on this site.</p>
     </div>
   </section>
   <section class="section" id="pricing" aria-labelledby="pricing-title">
+    <p class="kicker"><span class="idx">07</span> Pricing</p>
     <h2 id="pricing-title">Pricing</h2>
     <p class="section-intro">Starter is a one-time purchase of 3 manuals. Pro is a monthly plan you can cancel anytime.</p>
-    <div class="pricing-grid">
-      <article class="price-card">
-        <h3 class="tier">Starter</h3>
-        <p class="amount"><span>$</span>39</p>
-        <p class="period">one-time</p>
-        <p>Includes 3 manuals. Pay once and generate them when you are ready.</p>
-        <ul>
-          <li>3 manuals</li>
-          <li>Same PLC exports as Pro</li>
-          <li>Code reference notes</li>
-          <li>PDF download</li>
-        </ul>
-        <button type="button" class="btn btn-outline btn-price" data-checkout="starter">Get started</button>
+    <div class="plan-cards">
+      <article class="plan-card">
+        <h3 class="plan">Starter</h3>
+        <p class="price">$39</p>
+        <p class="bill">one-time</p>
+        <dl>
+          <div>
+            <dt>Files</dt>
+            <dd>PLC program files and CAD files from the list above.</dd>
+          </div>
+          <div>
+            <dt>Best for</dt>
+            <dd>A one-off machine.</dd>
+          </div>
+          <div>
+            <dt>Manuals</dt>
+            <dd>3 manuals. Pay once and generate them when you are ready.</dd>
+          </div>
+        </dl>
+        <button type="button" class="btn btn-outline btn-price" data-checkout="starter">Buy Starter</button>
       </article>
-      <article class="price-card featured">
-        <p class="badge">Monthly</p>
-        <h3 class="tier">Pro</h3>
-        <p class="amount"><span>$</span>79</p>
-        <p class="period">per month</p>
-        <p>Unlimited manuals while the subscription is active.</p>
-        <ul>
-          <li>Unlimited manuals</li>
-          <li>Same PLC exports as Starter</li>
-          <li>Code reference notes</li>
-          <li>Cancel anytime</li>
-          <li>PDF download</li>
-        </ul>
+      <article class="plan-card is-pro">
+        <h3 class="plan">Pro</h3>
+        <p class="price">$79</p>
+        <p class="bill">per month · Monthly</p>
+        <dl>
+          <div>
+            <dt>Files</dt>
+            <dd>PLC program files and CAD files from the list above.</dd>
+          </div>
+          <div>
+            <dt>Best for</dt>
+            <dd>Ongoing builds or several machines.</dd>
+          </div>
+          <div>
+            <dt>Manuals</dt>
+            <dd>Unlimited manuals while the subscription is active. Cancel anytime.</dd>
+          </div>
+        </dl>
         <button type="button" class="btn btn-primary btn-price" data-checkout="pro">Start Pro</button>
       </article>
-      <article class="price-card">
-        <h3 class="tier">Enterprise</h3>
-        <p>Custom volume pricing — contact us.</p>
-        <a class="btn btn-outline btn-price" href="mailto:hello@manualos.com?subject=Enterprise%20pricing">Contact us</a>
-      </article>
     </div>
+    <p class="need-more">Need more? <a href="mailto:support@manualos.com">Email us</a>.</p>
     <p id="checkout-error" class="checkout-error" role="alert" aria-live="assertive" tabindex="-1"></p>
     <noscript>
-      <p class="checkout-error">Checkout needs JavaScript. Email <a href="mailto:hello@manualos.com">hello@manualos.com</a> and we will help you buy a plan.</p>
+      <p class="checkout-error">Checkout needs JavaScript. Email <a href="mailto:support@manualos.com">support@manualos.com</a> and we will help you buy a plan.</p>
     </noscript>
-    <p class="pay-note">Checkout opens on Stripe. ManualOS does not see or store your card number. <a href="/upload.html">Already purchased? Go to upload</a>.</p>
+    <p class="pay-note">Secure checkout. ManualOS does not see or store your card number. A rejected file doesn’t use a credit. <a href="/upload.html">Already purchased? Go to upload</a>.</p>
   </section>
   <section class="section" id="faq" aria-labelledby="faq-title">
+    <p class="kicker"><span class="idx">08</span> Questions</p>
     <h2 id="faq-title">Questions</h2>
     <div class="faq-item">
       <h3>Which files can I upload?</h3>
-      <p>ManualOS accepts Rockwell L5X and L5K, Siemens SCL, TwinCAT TcPOU, CODESYS PLCopen XML, CSV tag lists, and STEP, IGES, and DXF models.</p>
+      <p>PLC: .L5X, .L5K, .scl, .st, .exp, PLCopen .xml, and .TcPOU. Tag lists: .csv and .xlsx. A tag-table XML is tags only, not the program. CAD: .step and .stp, .iges and .igs, and ASCII .dxf. Archives: a .zip of those files.</p>
     </div>
     <div class="faq-item">
       <h3>What is in a manual?</h3>
-      <p>You get a PDF operating and maintenance manual. The 60-page sample on this page is a case packer (fictional CP-200). It includes safety, machine description and theory of operation, transport, installation, commissioning, controls, operation, alarms and troubleshooting, maintenance, spare parts, and appendices. Where a sentence is tied back to the PLC program, the manual shows a code reference note.</p>
+      <p>You get a PDF operating and maintenance manual. The 60-page sample on this page is the SAMPLE-A Case Packer from Example Machinery Co. (fictional), document OM-SAMPLE-A-EN. It includes safety, machine description and theory of operation, transport, installation, commissioning, controls, operation, alarms and troubleshooting, maintenance, spare parts, and appendices. Where a sentence is tied back to the PLC program, the manual shows a code reference note.</p>
     </div>
     <div class="faq-item">
       <h3>What counts as one manual?</h3>
-      <p>Each time ManualOS generates a manual from a PLC file, that counts as one manual. Starter is a one-time $39 purchase and includes 3 manuals. Pro is $79 per month and includes unlimited manuals while the subscription is active.</p>
+      <p>One generation run is one manual: one upload of up to 25 files or a .zip, whether those files are PLC, CAD, or both. A failed run doesn’t use a credit. Starter is a one-time $39 purchase and includes 3 manuals. Pro is $79 per month and includes unlimited manuals while the subscription is active.</p>
     </div>
     <div class="faq-item">
       <h3>Who can see my PLC program?</h3>
-      <p>Your file is sent to ManualOS only so it can write the manual. Programs are not sold, and they are not used to train models. Files are processed for your manual and then discarded.</p>
+      <p>ManualOS processes your files to write the manual. Extracted program logic, comments, and part details are sent to a third-party AI model provider to write the manual. We don’t use your files to train models, and our AI provider doesn’t train on API data by default. Uploaded files are processed in memory and never stored. The finished PDF is available to download for 24 hours, then no longer available. Programs are not sold.</p>
     </div>
     <div class="faq-item">
       <h3>Can I cancel Pro, and what about refunds?</h3>
-      <p>Pro is month to month. You can cancel anytime by emailing <a href="mailto:hello@manualos.com">hello@manualos.com</a>, and you will not be billed again after the current period. Starter is not a subscription. It is a one-time $39 purchase for 3 manuals. If a payment or a generated manual is wrong, email hello@manualos.com and we will help.</p>
+      <p>Pro is month to month. You can cancel anytime by emailing <a href="mailto:support@manualos.com">support@manualos.com</a>, and you will not be billed again after the current period. Starter is not a subscription. It is a one-time $39 purchase for 3 manuals. If a payment or a generated manual is wrong, email support@manualos.com and we will help.</p>
     </div>
   </section>
 </main>
 <footer class="site-footer">
   <div class="footer-inner">
     <p class="footer-brand">ManualOS</p>
-    <p>Plain-English equipment manuals from the PLC program you already have.</p>
+    <p>Plain-English equipment manuals. Upload your PLC or CAD files.</p>
     <nav class="footer-nav" aria-label="Footer">
       <a href="#how">How it works</a>
       <a href="#sample">Sample</a>
@@ -480,7 +664,7 @@ OTE  Conv_Run</code></pre>
       <a href="#faq">FAQ</a>
       <a href="/upload.html">Upload</a>
       <a href="/sitemap.xml">Sitemap</a>
-      <a href="mailto:hello@manualos.com">hello@manualos.com</a>
+      <a href="mailto:support@manualos.com">support@manualos.com</a>
     </nav>
     <p class="legal">© 2026 ManualOS. manualos.com</p>
   </div>
