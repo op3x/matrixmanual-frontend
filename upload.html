@@ -76,6 +76,7 @@
     .file-remove{background:var(--sheet);border:1px solid var(--ink);border-radius:0;min-height:2.75rem;min-width:5.5rem;padding:.4rem .75rem;font:inherit;font-weight:600;cursor:pointer;color:var(--ink)}
     .file-remove:hover{background:var(--yellow)}
     .credit-note{margin:1rem 0 0;color:var(--muted);font-size:.95rem}
+    .credit-note a{color:var(--ink);font-weight:600;text-decoration:underline;text-underline-offset:.15em}
     .generate-btn-wrap{margin-top:1rem}
     .progress-wrap{margin-top:1rem}
     .progress-row{display:flex;justify-content:space-between;gap:1rem;align-items:baseline}
@@ -217,7 +218,7 @@
         </div>
       </div>
       <ul class="file-list" id="file-list" hidden></ul>
-      <p class="credit-note" id="credit-note">If a run fails with an error, we give the credit back; if anything goes wrong on our side, email support and we'll restore it.</p>
+      <p class="credit-note" id="credit-note">If we can't read your files, we turn them away before any credit is used. If a run ends in an error or doesn't finish, your credit comes back automatically. A finished manual uses a credit, even if it includes warnings. If a credit doesn't come back, or anything else goes wrong on our side, email <a href="mailto:support@manualos.com">support@manualos.com</a> and we'll restore it.</p>
       <div class="generate-btn-wrap">
         <button class="btn-primary" id="generate-btn" type="submit" disabled>Generate my manual</button>
       </div>
@@ -319,7 +320,8 @@
   var MAX_BYTES = 50 * 1024 * 1024;
   var PLC_EXT = ['l5x', 'l5k', 'xml', 'tcpou', 'st', 'scl', 'exp', 'awl', 'csv', 'xlsx', 'acd', 'stl', 'zip'];
   var CAD_EXT = ['step', 'stp', 'iges', 'igs', 'dxf', 'stl', 'zip'];
-  var CREDIT_LINE = "If a run fails with an error, we give the credit back; if anything goes wrong on our side, email support and we'll restore it.";
+  var CREDIT_UNTOUCHED = "This didn't use a credit.";
+  var CREDIT_RETURN = "Your credit will come back automatically. If it doesn't, email support@manualos.com.";
   var BLOCKED = {
     gx3: '.gx3 files aren’t accepted. Export a format from the list below, such as CSV or structured text, if the project can produce one.',
     cxp: '.cxp files aren’t accepted.',
@@ -502,13 +504,13 @@
     var list = document.createElement('ul');
     items.forEach(function (text) {
       var li = document.createElement('li');
-      li.textContent = text;
+      appendWithSupportLink(li, text);
       list.appendChild(li);
     });
     uploadError.appendChild(list);
     if (opts.server) {
       var extra = document.createElement('p');
-      extra.textContent = opts.server;
+      appendWithSupportLink(extra, opts.server);
       uploadError.appendChild(extra);
     }
     if (opts.pricing) {
@@ -636,11 +638,11 @@
   function rejectReason(file, source) {
     if (!file) return 'Choose a file.';
     if (file.size <= 0) return file.name + ' is empty.';
-    if (file.size > MAX_BYTES) return file.name + ' is ' + formatSize(file.size) + '. Each file must be 50 MB or smaller. ' + CREDIT_LINE;
+    if (file.size > MAX_BYTES) return file.name + ' is ' + formatSize(file.size) + '. Each file must be 50 MB or smaller. ' + CREDIT_UNTOUCHED;
     var ext = extensionOf(file.name);
-    if (BLOCKED[ext]) return BLOCKED[ext] + ' ' + CREDIT_LINE;
+    if (BLOCKED[ext]) return BLOCKED[ext] + ' ' + CREDIT_UNTOUCHED;
     if (!ext || extensionsFor(source).indexOf(ext) === -1) {
-      return file.name + ' isn’t an accepted ' + sourceNoun(source) + ' file. ' + CREDIT_LINE;
+      return file.name + ' isn’t an accepted ' + sourceNoun(source) + ' file. ' + CREDIT_UNTOUCHED;
     }
     return '';
   }
@@ -774,24 +776,50 @@
     return text;
   }
 
-  function friendlyHttpError(status, data) {
+  function creditHandback() {
+    if (sessionPlan !== 'starter') return '';
+    return ' ' + CREDIT_RETURN;
+  }
+
+  function withHandback(text) {
+    return text + creditHandback();
+  }
+
+  function appendWithSupportLink(parent, text) {
+    var address = 'support@manualos.com';
+    var parts = String(text).split(address);
+    parts.forEach(function (part, index) {
+      if (part) parent.appendChild(document.createTextNode(part));
+      if (index < parts.length - 1) {
+        var link = document.createElement('a');
+        link.href = 'mailto:' + address;
+        link.textContent = address;
+        parent.appendChild(link);
+      }
+    });
+  }
+
+  function friendlyHttpError(status, data, options) {
     var server = safeServerMessage(data);
+    var settled = !!(options && options.settled);
+    var untouched = settled ? '' : ' ' + CREDIT_UNTOUCHED;
+    var handback = settled ? '' : creditHandback();
     if (status === 402) {
-      return { message: 'There are no manuals left on this plan, or the purchase isn’t active. No credit was used.', pricing: true, server: server };
+      return { message: 'There are no manuals left on this plan, or the purchase isn’t active.' + untouched, pricing: true, server: server };
     }
     if (status === 415) {
-      return { message: 'We couldn’t use that file. It isn’t a PLC or CAD format this generator accepts. ' + CREDIT_LINE, server: server };
+      return { message: 'We couldn’t use that file. It isn’t a PLC or CAD format this generator accepts.' + untouched, server: server };
     }
     if (status === 422) {
-      return { message: 'We opened that file, but it doesn’t contain equipment data we can turn into a manual. ' + CREDIT_LINE, server: server };
+      return { message: 'We opened that file, but it doesn’t contain equipment data we can turn into a manual.' + untouched, server: server };
     }
     if (status === 503) {
-      return { message: 'The manual generator is unavailable right now. ' + CREDIT_LINE + ' Please try again in a few minutes.', server: server };
+      return { message: 'The manual generator is unavailable right now.' + untouched + ' Please try again in a few minutes.', server: server };
     }
     if (status === 400 || status === 413) {
-      return { message: 'We couldn’t use that upload. Check the file type and size, then try again. ' + CREDIT_LINE, server: server };
+      return { message: 'We couldn’t use that upload. Check the file type and size, then try again.' + untouched, server: server };
     }
-    return { message: 'We couldn’t generate your manual. Please try again.', server: server };
+    return { message: 'We couldn’t generate your manual. Please try again.' + handback, server: server };
   }
 
   function equipmentPairs() {
@@ -898,14 +926,14 @@
       if (res.status === 404) {
         resetProgress();
         setBusy(false);
-        showUploadError("This manual isn't available. Manuals are deleted 24 hours after they're made. Generate it again from your files.");
+        showUploadError(withHandback("This manual isn't available. Manuals are deleted 24 hours after they're made. Generate it again from your files."));
         return null;
       }
       var job = await readJson(res);
       if (!res.ok) {
         resetProgress();
         setBusy(false);
-        showUploadError('We couldn’t read progress for this manual. Please try again.');
+        showUploadError(withHandback('We couldn’t read progress for this manual. Please try again.'));
         return null;
       }
       paintJob(job);
@@ -964,7 +992,7 @@
         var errBody = await readJson(res);
         showUploadError(res.status === 404
           ? "This manual isn't available. Manuals are deleted 24 hours after they're made. Generate it again from your files."
-          : (friendlyHttpError(res.status, errBody).message));
+          : friendlyHttpError(res.status, errBody, { settled: true }).message);
         return false;
       }
       var buffer = await res.arrayBuffer();
@@ -981,7 +1009,7 @@
   }
 
   function networkMessage() {
-    return 'We couldn’t reach ManualOS. Check your connection and try again. If the upload never started, no credit was used.';
+    return withHandback('We couldn’t reach ManualOS. Check your connection and try again.');
   }
 
   function firstPlcFile(files) {
@@ -998,14 +1026,14 @@
       setBusy(false);
       generateBtn.textContent = 'Generate my manual';
       showUploadError('CAD models need the new generator, which isn\u2019t live yet. ' + (becauseMissing
-        ? 'Nothing was processed and no credit was used.'
-        : 'Nothing was uploaded and no credit was used.'));
+        ? 'Nothing was processed. ' + CREDIT_UNTOUCHED
+        : 'Nothing was uploaded. ' + CREDIT_UNTOUCHED));
       return;
     }
     document.body.dataset.api = 'legacy';
     var note = 'The multi-file generator isn’t on this server yet, so this manual uses the current single-file generator.';
     if (filesToSend.length > 1) {
-      note += ' Only ' + file.name + ' was sent. The other files were not used. ' + CREDIT_LINE;
+      note += ' Only ' + file.name + ' was sent. The other files were not used. ' + CREDIT_UNTOUCHED;
     }
     showModeNote(note);
     generateBtn.textContent = 'Generating\u2026';
@@ -1115,7 +1143,7 @@
       resetProgress();
       setBusy(false);
       generateBtn.textContent = 'Generate my manual';
-      showUploadError('The multi-file generator isn’t available on this server yet. Nothing was charged.');
+      showUploadError('The multi-file generator isn’t available on this server yet. ' + CREDIT_UNTOUCHED);
       return;
     }
     if (res.status !== 202 || !data.id) {
@@ -1140,8 +1168,7 @@
       setBusy(false);
       generateBtn.textContent = 'Generate my manual';
       var reason = safeServerMessage({ error: job.error }) || 'Please try again.';
-      var finished = 'The manual couldn’t be finished. ' + reason;
-      if (sessionPlan === 'starter') finished += ' ' + CREDIT_LINE;
+      var finished = withHandback('The manual couldn’t be finished. ' + reason);
       showUploadError(finished);
       return;
     }
