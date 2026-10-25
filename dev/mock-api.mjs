@@ -14,6 +14,8 @@ const jobs = new Map();
 const pdfs = new Map();
 const holds = new Map();
 const requests = [];
+const branding = new Map();
+const LOGO_MAX_BYTES = 256 * 1024;
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -123,8 +125,41 @@ function scenarioOf(filenames) {
   return 'ok';
 }
 
+function isIntegratorSession(sessionId) {
+  return sessionId === 'cs_test_integrator'
+    || sessionId === 'cs_test_integrator_year'
+    || sessionId === 'cs_test_integrator_empty'
+    || sessionId === 'cs_test_integrator_store';
+}
+
 function sessionAllowed(sessionId) {
-  return sessionId === 'cs_test_local' || sessionId === 'cs_test_pro';
+  return sessionId === 'cs_test_local' || sessionId === 'cs_test_pro' || isIntegratorSession(sessionId);
+}
+
+function overageBody() {
+  return {
+    error: 'Integrator credits are used up. Purchase an extra manual for $9 to continue.',
+    overage: { plan: 'integrator_overage', amount_cents: 900, currency: 'usd' },
+  };
+}
+
+function publicBranding(sessionId) {
+  const saved = branding.get(sessionId) || { company_name: '', has_logo: false, logo_type: null };
+  return {
+    company_name: saved.company_name,
+    has_logo: saved.has_logo,
+    logo_type: saved.logo_type,
+  };
+}
+
+function logoTypeOf(part) {
+  const name = String(part.filename || '').toLowerCase();
+  const body = part.body || Buffer.alloc(0);
+  const png = body.length >= 8 && body[0] === 0x89 && body[1] === 0x50 && body[2] === 0x4e && body[3] === 0x47;
+  if (png || name.endsWith('.png')) return 'png';
+  const text = body.toString('utf8');
+  if (name.endsWith('.svg') || /<svg[\s>]/i.test(text)) return 'svg';
+  return '';
 }
 
 function errorForScenario(scenario) {
@@ -235,6 +270,11 @@ async function handleJobsPost(req, res) {
     || req.headers['x-session-id']
     || ''
   ).trim();
+  if (session === 'cs_test_integrator_empty') {
+    requests.push({ method: 'POST', path: '/jobs', status: 402, files: filenames, fields });
+    sendJson(res, 402, overageBody());
+    return;
+  }
   const scenario = !sessionAllowed(session) ? '402' : scenarioOf(filenames);
   if (scenario === 'drop') {
     requests.push({ method: 'POST', path: '/jobs', status: 0, files: filenames, fields });
@@ -279,6 +319,11 @@ async function handleLegacy(req, res) {
     || req.headers['x-session-id']
     || ''
   ).trim();
+  if (session === 'cs_test_integrator_empty') {
+    requests.push({ method: 'POST', path: '/generate-manual', status: 402, files, fields });
+    sendJson(res, 402, overageBody());
+    return;
+  }
   const scenario = !sessionAllowed(session) ? '402' : scenarioOf(files);
   if (scenario === 'drop') {
     requests.push({ method: 'POST', path: '/generate-manual', status: 0, files, fields });
@@ -317,7 +362,91 @@ const server = http.createServer(async (req, res) => {
       if (sessionId === 'cs_test_local') return sendJson(res, 200, { valid: true, plan: 'starter', remaining: 3 });
       if (sessionId === 'cs_test_pro') return sendJson(res, 200, { valid: true, plan: 'pro', remaining: null });
       if (sessionId === 'cs_test_empty') return sendJson(res, 200, { valid: true, plan: 'starter', remaining: 0 });
+      if (sessionId === 'cs_test_integrator' || sessionId === 'cs_test_integrator_store') {
+        return sendJson(res, 200, { valid: true, plan: 'integrator', remaining: 18, overage_remaining: 0 });
+      }
+      if (sessionId === 'cs_test_integrator_year') {
+        return sendJson(res, 200, { valid: true, plan: 'integrator', remaining: 7, overage_remaining: 0 });
+      }
+      if (sessionId === 'cs_test_integrator_empty') {
+        return sendJson(res, 200, { valid: true, plan: 'integrator', remaining: 0, overage_remaining: 0 });
+      }
       return sendJson(res, 200, { valid: false, plan: null, remaining: null });
+    }
+    if (req.method === 'GET' && url.pathname === '/integrator/branding') {
+      const sessionId = (url.searchParams.get('session_id') || req.headers['x-session-id'] || '').trim();
+      if (!isIntegratorSession(sessionId)) {
+        requests.push({ method: 'GET', path: '/integrator/branding', status: 402, files: [], fields: [] });
+        return sendJson(res, 402, { error: 'Payment required. This checkout session is not an active Integrator plan.' });
+      }
+      requests.push({ method: 'GET', path: '/integrator/branding', status: 200, files: [], fields: [], session_id: sessionId });
+      return sendJson(res, 200, publicBranding(sessionId));
+    }
+    if (req.method === 'POST' && url.pathname === '/integrator/branding') {
+      const body = await readBody(req);
+      const parts = parseMultipart(body, req.headers['content-type']);
+      const sessionId = (
+        parts.find((part) => part.name === 'session_id')?.body.toString('utf8')
+        || req.headers['x-session-id']
+        || ''
+      ).trim();
+      const companyName = (parts.find((part) => part.name === 'company_name')?.body.toString('utf8') || '').trim();
+      const logo = parts.find((part) => part.name === 'logo' && part.filename);
+      const fields = parts.filter((part) => part.name).map((part) => part.name);
+      if (sessionId === 'cs_test_integrator_store') {
+        requests.push({ method: 'POST', path: '/integrator/branding', status: 503, files: logo ? [logo.filename] : [], fields, session_id: sessionId, company_name: companyName });
+        return sendJson(res, 503, { error: 'Company logo storage is temporarily unavailable.' });
+      }
+      if (!isIntegratorSession(sessionId)) {
+        requests.push({ method: 'POST', path: '/integrator/branding', status: 402, files: [], fields, session_id: sessionId });
+        return sendJson(res, 402, { error: 'Payment required. This checkout session is not an active Integrator plan.' });
+      }
+      if (!companyName && !logo) {
+        requests.push({ method: 'POST', path: '/integrator/branding', status: 400, files: [], fields, session_id: sessionId });
+        return sendJson(res, 400, { error: 'Provide a company name or a logo.' });
+      }
+      if (logo && logo.body.length > LOGO_MAX_BYTES) {
+        requests.push({ method: 'POST', path: '/integrator/branding', status: 400, files: [logo.filename], fields, session_id: sessionId });
+        return sendJson(res, 400, { error: 'Logo file is too large.' });
+      }
+      const logoType = logo ? logoTypeOf(logo) : '';
+      if (logo && !logoType) {
+        requests.push({ method: 'POST', path: '/integrator/branding', status: 400, files: [logo.filename], fields, session_id: sessionId });
+        return sendJson(res, 400, { error: 'Logo must be a PNG or SVG file.' });
+      }
+      const current = branding.get(sessionId) || { company_name: '', has_logo: false, logo_type: null };
+      const next = {
+        company_name: companyName,
+        has_logo: logo ? true : current.has_logo,
+        logo_type: logo ? logoType : current.logo_type,
+      };
+      branding.set(sessionId, next);
+      const payload = publicBranding(sessionId);
+      requests.push({
+        method: 'POST',
+        path: '/integrator/branding',
+        status: 200,
+        files: logo ? [logo.filename] : [],
+        fields,
+        session_id: sessionId,
+        company_name: companyName,
+        logo_type: next.logo_type,
+        logo_bytes: logo ? logo.body.length : 0,
+        response_keys: Object.keys(payload).sort(),
+      });
+      return sendJson(res, 200, payload);
+    }
+    if (req.method === 'POST' && url.pathname === '/create-checkout-session') {
+      const raw = await readBody(req);
+      let body = {};
+      try { body = JSON.parse(raw.toString('utf8') || '{}'); } catch { body = {}; }
+      if (body.plan === 'integrator_overage' && typeof body.session_id === 'string' && body.session_id.trim()) {
+        const target = '/upload.html?session_id=' + encodeURIComponent(body.session_id.trim()) + '&extra=1';
+        requests.push({ method: 'POST', path: '/create-checkout-session', status: 200, files: [], fields: [], body });
+        return sendJson(res, 200, { url: target });
+      }
+      requests.push({ method: 'POST', path: '/create-checkout-session', status: 400, files: [], fields: [], body });
+      return sendJson(res, 400, { error: 'plan must be "starter" or "pro"' });
     }
     if (req.method === 'POST' && url.pathname === '/jobs') return await handleJobsPost(req, res);
     if (req.method === 'POST' && url.pathname === '/generate-manual') return await handleLegacy(req, res);

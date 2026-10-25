@@ -839,7 +839,7 @@ figcaption{padding:.6rem .7rem .75rem;font-size:.92rem;border-top:1px solid var(
         body: JSON.stringify(payload)
       });
       var data = await res.json().catch(function () { return {}; });
-      if (plan === 'integrator' && res.status === 503) {
+      if (plan === 'integrator' && (res.status === 503 || res.status === 400)) {
         busy = false;
         setBusyState(false);
         button.textContent = originalLabel;

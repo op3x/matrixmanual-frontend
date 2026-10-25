@@ -254,6 +254,9 @@ async function main() {
     exp: path.join(fixtureDir, 'routine.exp'),
     zip: path.join(fixtureDir, 'drawings.zip'),
     long: path.join(fixtureDir, 'VeryLongProgramNameForTheMobileFileListCheck.L5X'),
+    logo: path.join(fixtureDir, 'mark.png'),
+    logoBad: path.join(fixtureDir, 'mark.jpg'),
+    logoBig: path.join(fixtureDir, 'huge.png'),
   };
   await writeFile(fixtures.line, '<RSLogix5000Content></RSLogix5000Content>');
   await writeFile(fixtures.step, 'ISO-10303-21;\n');
@@ -273,6 +276,9 @@ async function main() {
   await writeFile(fixtures.exp, 'PROGRAM Main\nEND_PROGRAM');
   await writeFile(fixtures.zip, 'PK');
   await writeFile(fixtures.long, '<RSLogix5000Content></RSLogix5000Content>');
+  await writeFile(fixtures.logo, Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==', 'base64'));
+  await writeFile(fixtures.logoBad, 'not a logo');
+  await writeFile(fixtures.logoBig, Buffer.alloc(256 * 1024 + 1, 7));
 
   const html = await readFile(path.join(root, 'upload.html'), 'utf8');
   const index = await readFile(path.join(root, 'index.html'), 'utf8');
@@ -450,6 +456,8 @@ async function main() {
     await openUpload(page, base, '?session_id=cs_test_local');
     const banner = await page.$eval('#access-message', (el) => el.textContent);
     if (!/Starter plan/.test(banner) || !/3 manuals remaining/.test(banner)) throw new Error('banner: ' + banner);
+    if (!(await page.$eval('#white-label', (el) => el.hidden))) throw new Error('starter shows white-label');
+    if (!(await page.$eval('#overage-offer', (el) => el.hidden))) throw new Error('starter shows overage');
     const acceptPlc = await page.$eval('#file-input', (el) => el.getAttribute('accept'));
     if (!acceptPlc.includes('.l5x') || !acceptPlc.includes('.acd') || acceptPlc.includes('.step')) {
       throw new Error('plc accept ' + acceptPlc);
@@ -679,6 +687,7 @@ async function main() {
     await openUpload(page, base, '?session_id=cs_test_pro');
     const pro = await page.$eval('#access-message', (el) => el.textContent);
     if (!/Pro plan/.test(pro) || !/Unlimited/.test(pro)) throw new Error(pro);
+    if (!(await page.$eval('#white-label', (el) => el.hidden))) throw new Error('pro shows white-label');
     await runAxe(page, 'pro session');
     note('pro session shows unlimited manuals', true);
 
@@ -973,6 +982,133 @@ async function main() {
     await runAxe(page, 'home 1280');
     note('home at 1280 top-aligns the hero, puts prices under the buttons, shows three pricing cards, and does not leave the last preview alone', true);
 
+    async function brandingPosts() {
+      const logged = await requests(base);
+      return logged.filter((item) => item.method === 'POST' && item.path === '/integrator/branding');
+    }
+
+    await openUpload(page, base, '?session_id=cs_test_integrator');
+    await page.waitForFunction(() => !document.getElementById('white-label').hidden);
+    const monthAccess = await page.evaluate(() => ({
+      banner: document.getElementById('access-message').textContent,
+      welcome: document.getElementById('payment-welcome-text').textContent,
+      overage: document.getElementById('overage-offer').hidden,
+      phase: document.body.dataset.phase,
+    }));
+    if (monthAccess.banner !== 'Integrator plan · 18 of 25 manuals left this month') throw new Error('integrator banner ' + monthAccess.banner);
+    if (monthAccess.welcome !== 'Payment confirmed. You are on the Integrator plan, with 18 of 25 manuals left this month. Upload a PLC program, a CAD model, or both when you are ready.') {
+      throw new Error('integrator welcome ' + monthAccess.welcome);
+    }
+    if (!monthAccess.overage || monthAccess.phase !== 'ready') throw new Error('integrator ready ' + JSON.stringify(monthAccess));
+    await shoot(page, 'integrator_month', '#access-banner');
+    await runAxe(page, 'integrator month');
+    note('Integrator month label and welcome', true);
+
+    const beforeBad = (await brandingPosts()).length;
+    const badLogo = await page.$('#logo-input');
+    await badLogo.uploadFile(fixtures.logoBad);
+    await page.click('#brand-save');
+    await page.waitForFunction(() => {
+      const el = document.getElementById('brand-error');
+      return el && !el.hidden && /PNG or SVG/.test(el.textContent);
+    });
+    if ((await brandingPosts()).length !== beforeBad) throw new Error('bad logo was posted');
+    await shoot(page, 'white_label_type', '#brand-error');
+    const bigLogo = await page.$('#logo-input');
+    await bigLogo.uploadFile(fixtures.logoBig);
+    await page.click('#brand-save');
+    await page.waitForFunction(() => /too large/i.test(document.getElementById('brand-error').textContent));
+    if ((await brandingPosts()).length !== beforeBad) throw new Error('oversized logo was posted');
+    await shoot(page, 'white_label_size', '#brand-error');
+    note('client rejects a logo that is not PNG or SVG, or is over 256 KB', true);
+
+    await page.$eval('#company_name', (el) => { el.value = 'Harbor Line Co.'; });
+    const goodLogo = await page.$('#logo-input');
+    await goodLogo.uploadFile(fixtures.logo);
+    await page.click('#brand-save');
+    await page.waitForFunction(() => {
+      const name = document.getElementById('brand-company');
+      const img = document.getElementById('brand-logo');
+      return name && !name.hidden && name.textContent === 'Harbor Line Co.' && img && !img.hidden && img.getAttribute('src');
+    });
+    const savedCall = (await brandingPosts()).at(-1);
+    if (!savedCall || savedCall.session_id !== 'cs_test_integrator' || savedCall.company_name !== 'Harbor Line Co.' || !savedCall.files.length || !(savedCall.logo_bytes > 0) || savedCall.logo_type !== 'png' || savedCall.response_keys.join(',') !== 'company_name,has_logo,logo_type') {
+      throw new Error('branding save ' + JSON.stringify(savedCall));
+    }
+    if (!savedCall.fields.includes('session_id') || !savedCall.fields.includes('company_name') || !savedCall.fields.includes('logo')) {
+      throw new Error('branding fields ' + savedCall.fields.join(','));
+    }
+    await shoot(page, 'white_label', '#white-label');
+    await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 1 });
+    await runAxe(page, 'white-label 390');
+    await page.setViewport({ width: 1280, height: 1000, deviceScaleFactor: 1 });
+    await runAxe(page, 'white-label 1280');
+    note('white-label save shows the company name and logo', true);
+
+    await page.reload({ waitUntil: 'networkidle0' });
+    await page.waitForFunction(() => document.getElementById('brand-company').textContent === 'Harbor Line Co.' && document.getElementById('brand-logo-note').textContent === 'PNG logo saved.');
+    note('saved white-label name and logo come back from the server', true);
+
+    await openUpload(page, base, '?session_id=cs_test_integrator_year');
+    await page.waitForFunction(() => document.getElementById('payment-welcome-text').textContent.includes('7 of 25 manuals left this month'));
+    const yearAccess = await page.evaluate(() => ({
+      banner: document.getElementById('access-message').textContent,
+      welcome: document.getElementById('payment-welcome-text').textContent,
+    }));
+    if (yearAccess.banner !== 'Integrator plan · 7 of 25 manuals left this month') throw new Error('year banner ' + yearAccess.banner);
+    if (!/Integrator plan, with 7 of 25 manuals left this month/.test(yearAccess.welcome)) throw new Error('year welcome ' + yearAccess.welcome);
+    await shoot(page, 'integrator_year', '#access-banner');
+    note('Integrator year label and welcome use this month’s allowance', true);
+
+    await openUpload(page, base, '?session_id=cs_test_integrator_store');
+    await page.$eval('#company_name', (el) => { el.value = 'Harbor Line Co.'; });
+    await page.click('#brand-save');
+    await page.waitForFunction(() => document.getElementById('brand-error').textContent === 'Company logo storage is temporarily unavailable.');
+    await shoot(page, 'white_label_503', '#brand-error');
+    note('branding 503 is shown in plain words', true);
+
+    await openUpload(page, base, '?session_id=cs_test_integrator_empty');
+    const emptyIntegrator = await page.evaluate(() => ({
+      banner: document.getElementById('access-message').textContent,
+      phase: document.body.dataset.phase,
+      inputDisabled: document.getElementById('file-input').disabled,
+      overage: document.getElementById('overage-offer').hidden,
+    }));
+    if (emptyIntegrator.banner !== 'Integrator plan · 0 of 25 manuals left this month' || emptyIntegrator.phase !== 'ready' || emptyIntegrator.inputDisabled || !emptyIntegrator.overage) {
+      throw new Error('empty integrator ' + JSON.stringify(emptyIntegrator));
+    }
+    await addFile(page, fixtures.line);
+    await page.click('#generate-btn');
+    await page.waitForFunction(() => !document.getElementById('overage-offer').hidden && !document.getElementById('overage-checkout').disabled);
+    const overageState = await page.evaluate(() => ({
+      copy: document.getElementById('overage-copy').textContent,
+      uploadError: document.getElementById('upload-error').hidden ? '' : document.getElementById('upload-error').innerText,
+      phase: document.body.dataset.phase,
+      welcome: document.getElementById('payment-welcome-text').textContent,
+    }));
+    if (overageState.copy !== 'You’ve used this month’s 25 manuals. An extra manual is $9, plus applicable taxes.') {
+      throw new Error('overage copy ' + overageState.copy);
+    }
+    if (/no manuals left|No credit was used|Starter credits/i.test(overageState.uploadError) || /Starter credits/.test(overageState.welcome) || overageState.phase === 'locked') {
+      throw new Error('overage fell through to the generic lock ' + JSON.stringify(overageState));
+    }
+    await shoot(page, 'overage', '#overage-offer');
+    await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 1 });
+    await runAxe(page, 'overage 390');
+    await page.setViewport({ width: 1280, height: 1000, deviceScaleFactor: 1 });
+    await runAxe(page, 'overage 1280');
+    const returned = page.waitForNavigation({ waitUntil: 'networkidle0' });
+    await page.click('#overage-checkout');
+    await returned;
+    const checkoutCalls = (await requests(base)).filter((item) => item.path === '/create-checkout-session');
+    const overageCall = checkoutCalls.at(-1);
+    if (!overageCall || overageCall.body.plan !== 'integrator_overage' || overageCall.body.session_id !== 'cs_test_integrator_empty' || Object.keys(overageCall.body).sort().join(',') !== 'plan,session_id') {
+      throw new Error('overage checkout ' + JSON.stringify(overageCall));
+    }
+    if (!page.url().includes('session_id=cs_test_integrator_empty')) throw new Error('return url ' + page.url());
+    await page.waitForFunction(() => document.body.dataset.phase === 'ready' && document.getElementById('overage-offer').hidden);
+    note('extra manual checkout posts integrator_overage and returns to upload', true);
+
     const checkoutPage = await browser.newPage();
     await checkoutPage.setViewport({ width: 1280, height: 900, deviceScaleFactor: 1 });
     await checkoutPage.goto(base + '/#pricing', { waitUntil: 'networkidle0' });
@@ -982,7 +1118,8 @@ async function main() {
         let body = null;
         try { body = opts && opts.body ? JSON.parse(opts.body) : null; } catch (err) { body = null; }
         window.__calls.push({ url: String(url), method: opts && opts.method, headers: opts && opts.headers, body });
-        const status = body && body.plan === 'integrator' ? 503 : 500;
+        window.__integratorStatuses = window.__integratorStatuses || [503, 503, 400];
+        const status = body && body.plan === 'integrator' ? (window.__integratorStatuses.shift() || 400) : 500;
         return new Response('{}', { status, headers: { 'Content-Type': 'application/json' } });
       };
     });
@@ -1005,6 +1142,7 @@ async function main() {
     if (!monthCall || !monthCall.url.endsWith('/create-checkout-session') || monthCall.method !== 'POST' || !monthCall.headers || monthCall.headers['Content-Type'] !== 'application/json' || !monthCall.body || monthCall.body.plan !== 'integrator' || monthCall.body.interval !== 'month' || Object.keys(monthCall.body).sort().join(',') !== 'interval,plan') {
       throw new Error('month checkout ' + JSON.stringify(monthCall));
     }
+    await shoot(checkoutPage, 'integrator_checkout_503', '#checkout-error');
     await checkoutPage.click('[data-set-interval="year"]');
     await checkoutPage.click('[data-checkout="integrator"]');
     await checkoutPage.waitForFunction(() => window.__calls.length >= 2 && !document.querySelector('[data-checkout="integrator"]').disabled);
@@ -1034,8 +1172,21 @@ async function main() {
     if (!String(proCall.url).endsWith('/create-checkout-session') || !proCall.body || proCall.body.plan !== 'pro' || Object.prototype.hasOwnProperty.call(proCall.body, 'interval')) {
       throw new Error('pro checkout ' + JSON.stringify(proCall));
     }
+    await checkoutPage.click('[data-checkout="integrator"]');
+    await checkoutPage.waitForFunction(() => window.__calls.length >= 4 && !document.querySelector('[data-checkout="integrator"]').disabled);
+    const denied = await checkoutPage.evaluate(() => ({
+      text: document.getElementById('checkout-error').textContent,
+      call: window.__calls[3],
+    }));
+    if (denied.text !== 'Integrator checkout is opening soon. Email support@manualos.com to get set up.' || /try again/i.test(denied.text)) {
+      throw new Error('400 message: ' + denied.text);
+    }
+    if (!denied.call || denied.call.body.plan !== 'integrator' || denied.call.body.interval !== 'year') {
+      throw new Error('400 checkout ' + JSON.stringify(denied.call));
+    }
+    await shoot(checkoutPage, 'integrator_checkout_400', '#checkout-error');
     await checkoutPage.close();
-    note('Integrator checkout posts /create-checkout-session with month or year and explains a 503', true);
+    note('Integrator checkout posts /create-checkout-session with month or year and explains a 400 or 503', true);
 
     if (external.length) throw new Error('external requests: ' + external.join(', '));
     note('no production or Stripe requests', true);
