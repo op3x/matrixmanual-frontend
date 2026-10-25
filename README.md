@@ -13,7 +13,7 @@ The page prefers `POST /jobs` (several files, real progress, then `GET /jobs/:id
 
 On `localhost` / `127.0.0.1` the page calls the same origin, so the mock below can serve the site and the API together. A `?api=` override is honored only when it is also a localhost origin. On manualos.com the page calls the production host.
 
-Accepted uploads: Rockwell L5X and L5K, PLCopen XML, TwinCAT TcPOU, IEC ST, SCL, and EXP, CSV and XLSX tag lists, STEP, IGES, DXF, a best-effort ACD, and a zip of those. Up to 25 files, 50 MB each. `.gx3`, `.cxp`, and `.zap15` are not accepted.
+Accepted uploads: L5X and L5K XML, PLCopen XML, IEC 61131-3 structured text (.st, .scl, and .exp), .TcPOU, CSV and XLSX tag lists, STEP, IGES, DXF, a best-effort ACD, and a zip of those. Up to 25 files, 50 MB each. `.gx3`, `.cxp`, and `.zap15` are not accepted.
 
 ## Local check
 

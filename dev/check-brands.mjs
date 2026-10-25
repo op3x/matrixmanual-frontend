@@ -1,6 +1,7 @@
-// Fails when shipped HTML or JS names a real vendor or product.
-// README, dev/, and assets are out of scope: the sample PDF still carries a
-// fictional cover until those files are replaced, and the README may name formats.
+// Fails when shipped HTML or JS names a real vendor or product,
+// or the retired sample names CP-200, CP200, and Acme.
+// dev/ is out of scope: the upload check types sample values into the form.
+// Binary assets are not scanned.
 import { readdir, readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -29,6 +30,8 @@ export const BRAND_NAMES = [
   'AutoCAD',
   'Stripe',
   'Acme',
+  'CP-200',
+  'CP200',
 ];
 
 function brandPattern(name) {
