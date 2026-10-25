@@ -91,7 +91,6 @@ a{color:var(--ink)}
     </div>
     <h1>Manage plan</h1>
     <p class="lede"><strong>Cancelling Pro.</strong> Pro renews automatically every month until you cancel. Cancellation takes effect at the end of your current billing period: you keep Pro until then and won't be charged again. We'll email you a confirmation.</p>
-    <p data-mp-section hidden id="mp-cancel-lead" tabindex="-1">You can manage or cancel your subscription online at the reseller's order-management site, <a href="https://app.link.com">app.link.com</a>. That is a full online alternative.</p>
     <p>Starter doesn't need to be cancelled, because it is a one-time purchase.</p>
     <h2 id="online-title"><span class="idx">01</span>Manage plan</h2>
     <form id="cancel-form" method="post" action="#cancel-form" novalidate>
@@ -109,7 +108,8 @@ a{color:var(--ink)}
         <p class="form-error">JavaScript is off, so Manage plan cannot be opened from this page. Use the email backup below.</p>
       </noscript>
     </form>
-    <p id="email-backup">If you cannot use an online option, email <a id="cancel-mail" href="mailto:support@manualos.com?subject=Cancel%20my%20ManualOS%20Pro%20subscription&amp;body=Please%20cancel%20my%20ManualOS%20Pro%20subscription%20at%20the%20end%20of%20the%20current%20billing%20period.">support@manualos.com</a>.</p>
+    <p data-mp-section hidden id="mp-cancel-lead" tabindex="-1">You can manage or cancel your subscription online at the reseller's order-management site, <a href="https://app.link.com">app.link.com</a>. That is a full online alternative.</p>
+    <p id="email-backup"><strong>Email backup.</strong> If you cannot use an online option, email <a id="cancel-mail" href="mailto:support@manualos.com?subject=Cancel%20my%20ManualOS%20Pro%20subscription&amp;body=Please%20cancel%20my%20ManualOS%20Pro%20subscription%20at%20the%20end%20of%20the%20current%20billing%20period.">support@manualos.com</a>.</p>
   </article>
 </main>
 <footer class="site-footer">
@@ -137,6 +137,9 @@ a{color:var(--ink)}
   if (host === 'localhost' || host === '127.0.0.1' || host === '[::1]') API_BASE = location.origin;
   // Customer portal from backend PR #15. One string to change if that route moves.
   var BILLING_PORTAL_PATH = '/billing-portal';
+  var ACCESS_LINK_PATH = '/access-link';
+  var ACCESS_LINK_OK = 'Check your email for a secure Manage plan link';
+  var ACCESS_LINK_DOWN = 'Online cancellation is temporarily unavailable, please try again shortly';
   var BILLING_SESSION_FIELD = 'session_id';
   var BILLING_URL_FIELD = 'url';
   var SESSION_STORAGE_KEY = 'manualos_session_id';
@@ -165,22 +168,6 @@ a{color:var(--ink)}
     try { return (localStorage.getItem(SESSION_STORAGE_KEY) || '').trim(); } catch (err) { return ''; }
   }
 
-  function managedPaymentsOn() {
-    return window.manualosManagedPayments === true;
-  }
-
-  function showPortalFallback() {
-    var lead = document.getElementById('mp-cancel-lead');
-    if (managedPaymentsOn() && lead) {
-      lead.hidden = false;
-      errorEl.textContent = 'Manage plan did not open. Use the online option above, or email support@manualos.com.';
-      lead.focus();
-      return;
-    }
-    errorEl.textContent = 'Manage plan is unavailable. Email support@manualos.com.';
-    errorEl.focus();
-  }
-
   if (readSessionId()) {
     hint.textContent = 'This browser already has your checkout reference. You can submit now, or add the email you used at checkout.';
   }
@@ -203,21 +190,75 @@ a{color:var(--ink)}
     return false;
   }
 
+  function resetButton() {
+    sending = false;
+    submitBtn.disabled = false;
+    submitBtn.removeAttribute('aria-busy');
+    submitBtn.textContent = 'Manage plan';
+  }
+
+  function showMessage(text, isError) {
+    if (isError) {
+      statusEl.hidden = true;
+      errorEl.textContent = text;
+      errorEl.focus();
+    } else {
+      errorEl.textContent = '';
+      statusText.textContent = text;
+      statusEl.hidden = false;
+      statusEl.focus();
+    }
+    resetButton();
+  }
+
+  function postJson(path, payload) {
+    return fetch(API_BASE + path, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    }).then(function (res) {
+      return res.json().catch(function () { return {}; }).then(function (data) {
+        return { status: res.status, ok: res.ok, data: data || {} };
+      });
+    });
+  }
+
+  function sendAccessLink(email) {
+    return postJson(ACCESS_LINK_PATH, { email: email }).then(function (result) {
+      if (result.status === 202) {
+        showMessage(ACCESS_LINK_OK, false);
+        return;
+      }
+      showMessage(ACCESS_LINK_DOWN, true);
+    }).catch(function () {
+      showMessage(ACCESS_LINK_DOWN, true);
+    });
+  }
+
   form.addEventListener('submit', function (event) {
     event.preventDefault();
     if (sending) return;
     errorEl.textContent = '';
     statusEl.hidden = true;
     var email = emailInput.value.trim();
-    var sessionId = readSessionId();
     if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       errorEl.textContent = 'Enter a valid email address.';
       emailInput.focus();
       return;
     }
     var token = readToken();
+    var sessionId = readSessionId();
     if (!token && !sessionId) {
-      showPortalFallback();
+      if (!email) {
+        errorEl.textContent = 'Enter the email you used at checkout.';
+        emailInput.focus();
+        return;
+      }
+      sending = true;
+      submitBtn.disabled = true;
+      submitBtn.setAttribute('aria-busy', 'true');
+      submitBtn.textContent = 'Sending\u2026';
+      sendAccessLink(email);
       return;
     }
     var payload = {};
@@ -226,41 +267,20 @@ a{color:var(--ink)}
     sending = true;
     submitBtn.disabled = true;
     submitBtn.setAttribute('aria-busy', 'true');
-    var original = submitBtn.textContent;
     submitBtn.textContent = 'Opening\u2026';
-    fetch(API_BASE + BILLING_PORTAL_PATH, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    }).then(function (res) {
-      return res.json().catch(function () { return {}; }).then(function (data) {
-        if (!res.ok) throw new Error('portal failed');
-        return data || {};
-      });
-    }).then(function (data) {
-      if (safeRedirect(data[BILLING_URL_FIELD])) return;
-      if (managedPaymentsOn()) {
-        statusText.textContent = 'Manage plan did not open. Use the online option above, or email support@manualos.com.';
-        var lead = document.getElementById('mp-cancel-lead');
-        if (lead) {
-          lead.hidden = false;
-          lead.focus();
-        }
-      } else {
-        statusText.textContent = 'Request received. If Manage plan did not open, email support@manualos.com.';
+    postJson(BILLING_PORTAL_PATH, payload).then(function (result) {
+      if (result.ok && safeRedirect(result.data[BILLING_URL_FIELD])) return;
+      if (result.status >= 500) {
+        showMessage(ACCESS_LINK_DOWN, true);
+        return;
       }
-      statusEl.hidden = false;
-      statusEl.focus();
-      sending = false;
-      submitBtn.disabled = false;
-      submitBtn.removeAttribute('aria-busy');
-      submitBtn.textContent = original;
+      if (email) {
+        sendAccessLink(email);
+        return;
+      }
+      showMessage(ACCESS_LINK_DOWN, true);
     }).catch(function () {
-      sending = false;
-      submitBtn.disabled = false;
-      submitBtn.removeAttribute('aria-busy');
-      submitBtn.textContent = original;
-      showPortalFallback();
+      showMessage(ACCESS_LINK_DOWN, true);
     });
   });
 })();

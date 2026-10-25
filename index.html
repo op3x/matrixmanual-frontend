@@ -643,9 +643,10 @@ figcaption{padding:.6rem .7rem .75rem;font-size:.92rem;border-top:1px solid var(
           <p class="renew-terms" id="pro-renew-terms">$79/month plus applicable taxes, charged today and every month until you cancel. Cancel online, self-serve, from <a href="/cancel">Manage plan</a>. Each month is refundable until it ends, if no manual was delivered that month.</p>
           <p class="seller-note" id="pro-seller-note" data-seller-note hidden>Your purchase is processed by our authorized reseller, which is the merchant of record. ManualOS is provided by Op3x LLC.</p>
           <div class="consent-row">
-            <input id="pro-consent" name="pro-consent" type="checkbox" required aria-describedby="pro-renew-terms pro-seller-note pro-statement">
-            <label for="pro-consent">I agree to the <a href="/terms.html">Terms</a> and authorize <span data-seller-direct>Op3x LLC to charge my card $79</span><span data-seller-mp hidden>ManualOS's authorized reseller to charge my card $79</span> each month until I cancel.</label>
+            <input id="pro-consent" name="pro-consent" type="checkbox" required aria-describedby="pro-renew-terms pro-auto-renew pro-seller-note pro-statement">
+            <label for="pro-consent">I agree to the <a href="/terms.html">Terms</a> and authorize <span data-seller-direct>Op3x LLC to charge my card $79</span><span data-seller-mp hidden>ManualOS's authorized reseller to charge my card $79 plus applicable taxes</span> each month until I cancel.</label>
           </div>
+          <p class="renew-terms" id="pro-auto-renew">Renews automatically at $79 plus applicable taxes each month until you cancel at <a href="/cancel">manualos.com/cancel</a>.</p>
           <button type="button" class="btn btn-primary btn-price" data-checkout="pro" data-consent="pro-consent" data-subscription="true" data-disclosure="pro-renew-b2" disabled>Start Pro</button>
           <p class="statement" id="pro-statement" data-statement hidden>Appears on your card statement as LINK.COM* MANUALOS</p>
           <p data-mp-section hidden>You can manage or cancel your subscription online at the reseller's order-management site, <a href="https://app.link.com">app.link.com</a>. That is a full online alternative.</p>
@@ -721,11 +722,16 @@ figcaption{padding:.6rem .7rem .75rem;font-size:.92rem;border-top:1px solid var(
     return id ? document.getElementById(id) : null;
   }
 
+  function configReady() {
+    var mode = document.documentElement.getAttribute('data-checkout-config');
+    return mode === 'mp' || mode === 'direct';
+  }
+
   function syncButtons() {
     if (busy) return;
     buttons.forEach(function (button) {
       var box = boxFor(button);
-      button.disabled = !(box && box.checked);
+      button.disabled = !(configReady() && box && box.checked);
     });
   }
 
@@ -739,11 +745,12 @@ figcaption{padding:.6rem .7rem .75rem;font-size:.92rem;border-top:1px solid var(
 
   syncButtons();
   document.addEventListener('manualos-checkout-config', function (event) {
-    if (!event.detail || event.detail.managedPayments !== true) return;
-    ['starter-consent', 'pro-consent'].forEach(function (id) {
-      var consentBox = document.getElementById(id);
-      if (consentBox) consentBox.checked = false;
-    });
+    if (event.detail && event.detail.managedPayments === true) {
+      ['starter-consent', 'pro-consent'].forEach(function (id) {
+        var consentBox = document.getElementById(id);
+        if (consentBox) consentBox.checked = false;
+      });
+    }
     syncButtons();
   });
   window.addEventListener('pageshow', function () {
@@ -753,7 +760,7 @@ figcaption{padding:.6rem .7rem .75rem;font-size:.92rem;border-top:1px solid var(
   async function startCheckout(plan, button) {
     if (busy) return;
     var box = boxFor(button);
-    if (!box || !box.checked) {
+    if (!configReady() || !box || !box.checked) {
       if (box) box.focus();
       return;
     }
@@ -765,7 +772,7 @@ figcaption{padding:.6rem .7rem .75rem;font-size:.92rem;border-top:1px solid var(
     var payload = {
       plan: plan,
       renewalConsent: subscription,
-      termsConsent: true,
+      termsAccepted: true,
       termsVersion: TERMS_VERSION,
       disclosureVersion: disclosureVersion
     };

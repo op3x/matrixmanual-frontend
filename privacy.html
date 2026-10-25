@@ -81,9 +81,7 @@ code{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:.88em}
       <span>Rev A</span>
       <span>Eff. <span class="placeholder">[[EFFECTIVE_DATE]]</span></span>
     </div>
-    <div class="fill-note">
-      <p><strong>Open items.</strong> A dashed token is a placeholder. The effective date is filled with the production deploy date when this page is merged.</p>
-    </div>
+    <!-- Delete at merge. The effective date is filled with the production deploy date when this page is merged. -->
     <h1>Privacy policy</h1>
     <p class="lede">ManualOS turns PLC program files and CAD files into equipment manuals. This page explains what we collect, what happens to your files, and who else handles them. ManualOS is operated by Op3x LLC ("we", "us").</p>
     <div class="callout">
@@ -128,10 +126,11 @@ code{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:.88em}
       <li>CAD assembly names, part numbers, and part descriptions</li>
     </ul>
     <p>We don't send your original file as a whole, the equipment details you type in, or any payment information.</p>
-    <p>Under the provider's standard terms for business customers, it does not use this data to train its models. It deletes the data within 30 days, except where longer retention is needed to enforce its usage policies or is required by law.</p>
+    <p>Under the provider's standard terms for business customers, it does not use this data to train its models. Our AI model provider deletes the text we send it, and what it returns, within 30 days, unless it must keep it longer to enforce its usage policy or to comply with the law.</p>
 
     <h2><span class="idx">04</span>Payments</h2>
     <p>Our payment processor handles checkout, cards, receipts, and subscriptions under its own privacy policy. We store a few facts with the processor about your purchase:</p>
+    <p data-mp-section hidden>Link collects payment and billing details as the merchant of record under its own privacy policy.</p>
     <ul>
       <li>which plan you bought</li>
       <li>for Starter, how many manuals you have used</li>
@@ -160,6 +159,8 @@ code{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:.88em}
       <li>the AI model provider and the payment processor, as described above</li>
       <li>our hosting providers, to run the service</li>
       <li>a messaging provider, only to deliver text messages you opted in to</li>
+      <li>an email provider, to receive and answer support emails</li>
+      <li>automated tools, including AI assistants, that help us run and support the service; they access your information only to do that work.</li>
       <li>others when the law requires it</li>
     </ul>
     <p>Mobile numbers and SMS opt-in consent are not shared with or sold to third parties or affiliates for marketing. See <a href="#sms">Text messages</a>.</p>
@@ -170,7 +171,7 @@ code{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:.88em}
       <li>Some file types are briefly written to temporary storage during conversion and deleted right after.</li>
       <li><strong>Generated PDFs:</strong> stay on the server for up to 24 hours for download, then are deleted.</li>
       <li><strong>Job status:</strong> in memory for up to 24 hours.</li>
-      <li><strong>Data sent to the AI provider:</strong> deleted by the provider within 30 days under its standard terms, with the exceptions in section 03.</li>
+      <li><strong>Data sent to the AI provider:</strong> Our AI model provider deletes the text we send it, and what it returns, within 30 days, unless it must keep it longer to enforce its usage policy or to comply with the law.</li>
       <li><strong>Purchase records:</strong> held by the payment processor for as long as it, and the law, require.</li>
       <li><strong>Your checkout reference:</strong> kept in your browser until you clear it.</li>
       <li><strong>Text-message opt-in:</strong> kept so we can send the messages you agreed to and honor STOP, until you opt out or ask us to delete it.</li>
@@ -239,5 +240,6 @@ code{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:.88em}
     <p class="legal">© 2026 ManualOS. manualos.com</p>
   </div>
 </footer>
+<script src="/checkout-config.js"></script>
 </body>
 </html>

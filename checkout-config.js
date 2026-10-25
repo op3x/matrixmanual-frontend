@@ -24,15 +24,27 @@
     }));
   }
 
+  var finished = false;
+  var timer = setTimeout(function () {
+    if (finished) return;
+    publish(false);
+  }, 3000);
+
+  function finish(on) {
+    finished = true;
+    clearTimeout(timer);
+    publish(on);
+  }
+
   fetch(API_BASE + '/api/checkout-config', { headers: { Accept: 'application/json' } })
     .then(function (res) {
       if (!res.ok) throw new Error('config');
       return res.json();
     })
     .then(function (data) {
-      publish(!!(data && data.managedPayments === true));
+      finish(!!(data && data.managedPayments === true));
     })
     .catch(function () {
-      publish(false);
+      finish(false);
     });
 })();

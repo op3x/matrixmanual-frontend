@@ -15,7 +15,7 @@ const pdfs = new Map();
 const holds = new Map();
 const requests = [];
 const configWaiters = [];
-const checkoutConfig = { managedPayments: true, fail: false, hold: false, portalFail: false };
+const checkoutConfig = { managedPayments: true, fail: false, hold: false, portalFail: false, accessFail: false };
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -340,6 +340,7 @@ const server = http.createServer(async (req, res) => {
       if (typeof body.fail === 'boolean') checkoutConfig.fail = body.fail;
       if (typeof body.hold === 'boolean') checkoutConfig.hold = body.hold;
       if (typeof body.portalFail === 'boolean') checkoutConfig.portalFail = body.portalFail;
+      if (typeof body.accessFail === 'boolean') checkoutConfig.accessFail = body.accessFail;
       if (body.release === true) {
         checkoutConfig.hold = false;
         const pending = configWaiters.splice(0, configWaiters.length);
@@ -378,7 +379,7 @@ const server = http.createServer(async (req, res) => {
       try { body = JSON.parse(raw.toString('utf8') || '{}'); } catch { body = {}; }
       const plan = body && body.plan;
       const known = plan === 'starter' || plan === 'pro' || plan === 'integrator';
-      const ok = known && body.termsConsent === true && typeof body.renewalConsent === 'boolean' && typeof body.termsVersion === 'string' && typeof body.disclosureVersion === 'string';
+      const ok = known && body.termsAccepted === true && !Object.prototype.hasOwnProperty.call(body, 'termsConsent') && typeof body.renewalConsent === 'boolean' && typeof body.termsVersion === 'string' && typeof body.disclosureVersion === 'string';
       requests.push({
         method: 'POST',
         path: '/create-checkout-session',
@@ -387,7 +388,7 @@ const server = http.createServer(async (req, res) => {
         fields: body && typeof body === 'object' ? Object.keys(body) : [],
         plan,
         renewalConsent: body.renewalConsent,
-        termsConsent: body.termsConsent,
+        termsAccepted: body.termsAccepted,
         termsVersion: body.termsVersion,
         disclosureVersion: body.disclosureVersion,
         interval: body.interval,
@@ -418,6 +419,25 @@ const server = http.createServer(async (req, res) => {
       if (checkoutConfig.portalFail) return sendJson(res, 500, { error: 'Portal unavailable.' });
       if (!ok) return sendJson(res, 400, { error: 'A cancel link is required.' });
       return sendJson(res, 200, { url: '/refunds.html?portal=1' });
+    }
+    if (req.method === 'POST' && url.pathname === '/access-link') {
+      const raw = await readBody(req);
+      let body = {};
+      try { body = JSON.parse(raw.toString('utf8') || '{}'); } catch { body = {}; }
+      const email = body && typeof body.email === 'string' ? body.email.trim() : '';
+      const validEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+      const status = checkoutConfig.accessFail ? 500 : (validEmail ? 202 : 400);
+      requests.push({
+        method: 'POST',
+        path: '/access-link',
+        status,
+        files: [],
+        fields: body && typeof body === 'object' ? Object.keys(body) : [],
+        email,
+      });
+      if (checkoutConfig.accessFail) return sendJson(res, 500, { error: 'Access link unavailable.' });
+      if (!validEmail) return sendJson(res, 400, { error: 'Email required.' });
+      return sendJson(res, 202, { ok: true });
     }
     if (req.method === 'POST' && url.pathname === '/jobs') return await handleJobsPost(req, res);
     if (req.method === 'POST' && url.pathname === '/generate-manual') return await handleLegacy(req, res);
