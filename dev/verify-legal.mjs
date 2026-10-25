@@ -255,7 +255,19 @@ async function main() {
   for (const name of ['index.html', 'upload.html', '404.html', 'privacy.html', 'terms.html', 'refunds.html', 'support.html', 'cancel/index.html']) {
     if (!html[name].includes('<p class="legal">' + footerLine + '</p>')) throw new Error(name + ' footer is not the Op3x product line');
   }
-  if (/\btrain\b|24 hours|\bAI\b/i.test(html['index.html'])) throw new Error('homepage still mentions training, AI, or a 24-hour PDF');
+  if (/24 hours/i.test(html['index.html'])) throw new Error('homepage still mentions a 24-hour PDF');
+  const trainNearModel = /\btrain\w{0,3}\b[\s\S]{0,40}\bmodels?\b|\bmodels?\b[\s\S]{0,40}\btrain\w{0,3}\b/i;
+  for (const name of pages) {
+    if (trainNearModel.test(html[name])) throw new Error(name + ' still says files are used to train models');
+  }
+  const indexOutsideCredit = html['index.html'].replace(/<([a-z0-9]+)\b[^>]*\bclass="[^"]*\bcredit(?:-note)?\b[^"]*"[^>]*>[\s\S]*?<\/\1>/gi, '');
+  if (/\bAI\b/i.test(indexOutsideCredit)) throw new Error('homepage mentions AI outside the credit');
+  const homepageProvider = 'a third-party service provider that helps write the manual';
+  if ((html['index.html'].match(new RegExp(homepageProvider.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g')) || []).length < 3) {
+    throw new Error('homepage provider wording is missing from the privacy box, FAQ, or JSON-LD');
+  }
+  if (!html['privacy.html'].includes('to a third-party AI model provider')) throw new Error('privacy dropped the outside AI provider line');
+  if (!html['terms.html'].includes('partly by an AI model')) throw new Error('terms dropped the outside AI model line');
   if (!html['index.html'].includes('Full details are in our <a href="/privacy.html">Privacy Policy</a>.')) throw new Error('homepage privacy link missing');
   if (html['index.html'].includes('at https://manualos.com/privacy.html')) throw new Error('JSON-LD still appends the privacy URL');
   if (!html['index.html'].includes('Full details are in our Privacy Policy."')) throw new Error('JSON-LD privacy sentence does not end on Privacy Policy');
