@@ -893,7 +893,7 @@
       if (res.status === 404) {
         resetProgress();
         setBusy(false);
-        showUploadError('This manual isn\'t available. Manuals are deleted 24 hours after they\'re made. Generate it again from your files.');
+        showUploadError("This manual isn't available. Manuals are deleted 24 hours after they're made. Generate it again from your files.");
         return null;
       }
       var job = await readJson(res);
@@ -923,8 +923,8 @@
     paintNotes(opts.warnings, opts.coverage);
     var updated = await verifySession({ keepAccessOnError: true });
     var successText = opts.legacy
-      ? 'Your PDF is ready. Download it now, because it isn\'t kept.'
-      : 'Your PDF is ready. Download it right away, because it\'s deleted 24 hours after it\'s made.';
+      ? "Your PDF is ready. Download it now, because it isn't kept."
+      : "Your PDF is ready. Download it right away, because it's deleted 24 hours after it's made.";
     if (updated && updated.remaining === null) successText += ' Unlimited manuals remaining.';
     else if (updated) successText += ' ' + remainingLabel(updated.remaining) + '.';
     successSub.textContent = successText;
@@ -958,7 +958,7 @@
       if (!res.ok) {
         var errBody = await readJson(res);
         showUploadError(res.status === 404
-          ? 'This manual isn\'t available. Manuals are deleted 24 hours after they\'re made. Generate it again from your files.'
+          ? "This manual isn't available. Manuals are deleted 24 hours after they're made. Generate it again from your files."
           : (friendlyHttpError(res.status, errBody).message));
         return false;
       }
