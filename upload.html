@@ -135,6 +135,16 @@
     body[data-phase="locked"] #upload-form{pointer-events:none}
     .upload-box.is-disabled .btn-primary{background:#3e444b;border-color:#3e444b;color:#f3f0e6}
     .payment-welcome{display:none;margin:0 0 .8rem;padding:.75rem .85rem;border-radius:0;background:var(--sheet);border:1px solid var(--ink);color:var(--ink);font-weight:600}
+    .white-label,.overage-offer{margin:0 0 1.1rem;padding:.9rem .95rem 1rem;background:var(--sheet);border:1px solid var(--ink)}
+    .white-label h2,.overage-offer h2{font-size:1.05rem;margin-bottom:.35rem}
+    .white-label .hint,.overage-offer p{color:var(--ink)}
+    .white-label .field{margin-top:.75rem}
+    .white-label .field input[type="file"]{width:100%;font:inherit;font-weight:400}
+    .brand-actions{margin-top:.85rem}
+    .brand-company{font-weight:600;margin-top:.75rem}
+    .brand-logo{display:block;width:6rem;height:auto;margin-top:.55rem;background:#fff;border:1px solid var(--ink)}
+    .brand-note{margin-top:.45rem;color:var(--muted);font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:.82rem}
+    .overage-offer .btn-primary{margin-top:.75rem}
     .noscript{margin-bottom:1rem}
     @media (min-width:720px){
       .source-options{grid-template-columns:repeat(3,1fr)}
@@ -176,6 +186,26 @@
     <p class="page-eyebrow">Generate a manual</p>
     <h1 class="page-title">Upload your files</h1>
     <p class="page-sub">Choose a PLC program, a CAD model, or both. ManualOS writes a plain-English operator and maintenance manual from the equipment in the files.</p>
+    <section id="white-label" class="white-label" hidden aria-labelledby="white-label-title">
+      <h2 id="white-label-title">White-label</h2>
+      <p class="hint">PDFs for your customers use this company name and logo.</p>
+      <form id="brand-form">
+        <label class="field"><span>Company name</span><input id="company_name" name="company_name" maxlength="80" autocomplete="organization"></label>
+        <label class="field"><span>Logo</span><input id="logo-input" name="logo" type="file" accept=".png,.svg,image/png,image/svg+xml"></label>
+        <p class="hint">PNG or SVG. 256 KB maximum.</p>
+        <p id="brand-company" class="brand-company" hidden></p>
+        <img id="brand-logo" class="brand-logo" alt="Company logo" hidden>
+        <p id="brand-logo-note" class="brand-note" hidden></p>
+        <p id="brand-error" class="upload-error" role="alert" hidden></p>
+        <div class="brand-actions"><button type="submit" class="btn-outline" id="brand-save">Save white-label</button></div>
+      </form>
+    </section>
+    <section id="overage-offer" class="overage-offer" tabindex="-1" hidden aria-labelledby="overage-title">
+      <h2 id="overage-title">Extra manual</h2>
+      <p id="overage-copy">You’ve used this month’s 25 manuals. An extra manual is $9, plus applicable taxes.</p>
+      <button type="button" class="btn-primary" id="overage-checkout">Buy an extra manual</button>
+      <p id="overage-error" class="upload-error" role="alert" hidden></p>
+    </section>
     <form id="upload-form" novalidate aria-disabled="true">
       <fieldset id="source-picker">
         <legend>What are you uploading?</legend>
@@ -428,14 +458,25 @@
     return 'PLC program';
   }
 
+  var LOGO_MAX_BYTES = 256 * 1024;
+  var INTEGRATOR_MONTHLY = 25;
+  var brandPreviewUrl = '';
+  var brandToken = 0;
+
   function planLabel(plan) {
     var value = String(plan || '').toLowerCase();
     if (value === 'starter') return 'Starter';
     if (value === 'pro') return 'Pro';
+    if (value === 'integrator') return 'Integrator';
     return plan ? String(plan) : 'Paid';
   }
 
-  function remainingLabel(remaining) {
+  function remainingLabel(remaining, plan) {
+    if (String(plan || '').toLowerCase() === 'integrator') {
+      var left = Number(remaining);
+      if (!Number.isFinite(left)) return 'Manuals remaining unavailable';
+      return Math.max(0, Math.floor(left)) + ' of ' + INTEGRATOR_MONTHLY + ' manuals left this month';
+    }
     if (remaining === null) return 'Unlimited manuals';
     var count = Number(remaining);
     if (!Number.isFinite(count)) return 'Manuals remaining unavailable';
@@ -536,13 +577,18 @@
 
   function lockUpload(message) {
     setUploadEnabled(false);
+    setWhiteLabel(false);
+    hideOverageOffer();
     showAccess('', { showPricing: true, ok: false, hideMessage: true });
     fillReservedWelcome(message, true);
     if (document.body.dataset.phase !== 'progress' && document.body.dataset.phase !== 'success') setPhase('locked');
   }
 
   function applySession(data) {
-    if (data.remaining === 0) {
+    var integrator = String(data.plan || '').toLowerCase() === 'integrator';
+    hideOverageOffer();
+    setWhiteLabel(integrator);
+    if (data.remaining === 0 && !integrator) {
       setUploadEnabled(false);
       showAccess('', { showPricing: true, ok: false, hideMessage: true });
       fillReservedWelcome('Starter credits are used up', true);
@@ -552,17 +598,18 @@
       return;
     }
     setUploadEnabled(true);
-    showAccess(planLabel(data.plan) + ' plan \u00b7 ' + remainingLabel(data.remaining), { showPricing: false, ok: true });
+    showAccess(planLabel(data.plan) + ' plan \u00b7 ' + remainingLabel(data.remaining, data.plan), { showPricing: false, ok: true });
     if (document.body.dataset.phase !== 'progress' && document.body.dataset.phase !== 'success' && document.body.dataset.phase !== 'error') {
       setPhase('ready');
     }
     if (sessionFromQuery && paymentWelcome) {
       var planName = planLabel(data.plan);
-      var detail = data.remaining === null
+      var detail = !integrator && data.remaining === null
         ? 'Payment confirmed. You are on the ' + planName + ' plan, with unlimited manuals.'
-        : 'Payment confirmed. You are on the ' + planName + ' plan, with ' + remainingLabel(data.remaining) + '.';
+        : 'Payment confirmed. You are on the ' + planName + ' plan, with ' + remainingLabel(data.remaining, data.plan) + '.';
       fillReservedWelcome(detail + ' Upload a PLC program, a CAD model, or both when you are ready.', false);
     }
+    if (integrator) loadBranding();
   }
 
   async function verifySession(options) {
@@ -902,7 +949,7 @@
       ? 'Your PDF is ready. Download it here.'
       : 'Your PDF is ready. Download it here. This copy stays available for 24 hours.';
     if (updated && updated.remaining === null) successText += ' Unlimited manuals remaining.';
-    else if (updated) successText += ' ' + remainingLabel(updated.remaining) + '.';
+    else if (updated) successText += ' ' + remainingLabel(updated.remaining, updated.plan) + '.';
     successSub.textContent = successText;
     dismissWelcome();
     uploadSection.hidden = true;
@@ -1009,6 +1056,7 @@
       var data = await readJson(res);
       resetProgress();
       setBusy(false);
+      if (presentOverage(res.status, data)) return;
       if (res.status === 402) await verifySession();
       var mapped = friendlyHttpError(res.status, data);
       showUploadError(mapped.message, { server: mapped.server, pricing: mapped.pricing });
@@ -1093,6 +1141,7 @@
       resetProgress();
       setBusy(false);
       generateBtn.textContent = 'Generate my manual';
+      if (presentOverage(res.status, data)) return;
       if (res.status === 402) await verifySession();
       var mapped = friendlyHttpError(res.status, data);
       showUploadError(mapped.message, { server: mapped.server, pricing: mapped.pricing });
@@ -1143,6 +1192,200 @@
     if (firstRadio) firstRadio.focus();
   }
 
+  function setWhiteLabel(show) {
+    var panel = document.getElementById('white-label');
+    if (!panel) return;
+    panel.hidden = !show;
+    if (!show) brandToken += 1;
+  }
+
+  function hideOverageOffer() {
+    var panel = document.getElementById('overage-offer');
+    if (panel) panel.hidden = true;
+    var err = document.getElementById('overage-error');
+    if (err) {
+      err.hidden = true;
+      err.textContent = '';
+    }
+  }
+
+  function showBrandError(message) {
+    var err = document.getElementById('brand-error');
+    if (!err) return;
+    err.textContent = message || '';
+    err.hidden = !message;
+  }
+
+  function logoProblem(file) {
+    if (!file) return '';
+    var ext = extensionOf(file.name);
+    var type = String(file.type || '').toLowerCase();
+    var png = ext === 'png' || type === 'image/png';
+    var svg = ext === 'svg' || type === 'image/svg+xml';
+    if (!png && !svg) return 'Logo must be a PNG or SVG file.';
+    if (file.size <= 0) return 'Logo file is empty.';
+    if (file.size > LOGO_MAX_BYTES) return 'Logo file is too large. Use a PNG or SVG that is 256 KB or smaller.';
+    return '';
+  }
+
+  function paintBranding(data, previewUrl) {
+    var company = document.getElementById('brand-company');
+    var note = document.getElementById('brand-logo-note');
+    var img = document.getElementById('brand-logo');
+    var nameInput = document.getElementById('company_name');
+    var savedName = data && typeof data.company_name === 'string' ? data.company_name : '';
+    if (company) {
+      company.textContent = savedName;
+      company.hidden = !savedName;
+    }
+    if (nameInput && document.activeElement !== nameInput) nameInput.value = savedName;
+    var logoNote = '';
+    if (data && data.has_logo && !previewUrl) {
+      logoNote = data.logo_type === 'svg' ? 'SVG logo saved.' : 'PNG logo saved.';
+    }
+    if (note) {
+      note.textContent = logoNote;
+      note.hidden = !logoNote;
+    }
+    if (!img) return;
+    if (previewUrl) {
+      img.src = previewUrl;
+      img.hidden = false;
+    } else {
+      img.removeAttribute('src');
+      img.hidden = true;
+    }
+  }
+
+  async function loadBranding() {
+    var token = ++brandToken;
+    var panel = document.getElementById('white-label');
+    if (!panel || panel.hidden || !sessionId) return;
+    var res;
+    try {
+      res = await fetch(apiBase + '/integrator/branding?session_id=' + encodeURIComponent(sessionId), {
+        cache: 'no-store',
+        headers: { 'X-Session-Id': sessionId }
+      });
+    } catch (err) {
+      if (token !== brandToken) return;
+      showBrandError('We couldn\u2019t load the saved company name and logo. Refresh the page and try again.');
+      return;
+    }
+    if (token !== brandToken) return;
+    var data = await readJson(res);
+    if (res.status === 503) {
+      showBrandError(safeServerMessage(data) || 'Company logo storage is temporarily unavailable.');
+      return;
+    }
+    if (!res.ok) {
+      showBrandError(safeServerMessage(data) || 'We couldn\u2019t load the saved company name and logo.');
+      return;
+    }
+    showBrandError('');
+    paintBranding(data, brandPreviewUrl);
+  }
+
+  async function saveBranding(event) {
+    event.preventDefault();
+    var nameInput = document.getElementById('company_name');
+    var logoInput = document.getElementById('logo-input');
+    var button = document.getElementById('brand-save');
+    var name = nameInput ? nameInput.value.trim() : '';
+    var file = logoInput && logoInput.files && logoInput.files[0];
+    var problem = logoProblem(file);
+    if (problem) {
+      showBrandError(problem);
+      return;
+    }
+    if (!name && !file) {
+      showBrandError('Enter a company name or choose a logo.');
+      return;
+    }
+    showBrandError('');
+    if (button) button.disabled = true;
+    var formData = new FormData();
+    formData.append('session_id', sessionId);
+    formData.append('company_name', name);
+    if (file) formData.append('logo', file, file.name);
+    var res;
+    try {
+      res = await fetch(apiBase + '/integrator/branding', {
+        method: 'POST',
+        headers: { 'X-Session-Id': sessionId },
+        body: formData
+      });
+    } catch (err) {
+      if (button) button.disabled = false;
+      showBrandError('We couldn\u2019t save the company name and logo. Check your connection and try again.');
+      return;
+    }
+    var data = await readJson(res);
+    if (button) button.disabled = false;
+    if (res.status === 503) {
+      showBrandError(safeServerMessage(data) || 'Company logo storage is temporarily unavailable.');
+      return;
+    }
+    if (!res.ok) {
+      showBrandError(safeServerMessage(data) || 'We couldn\u2019t save the company name and logo. Please try again.');
+      return;
+    }
+    if (file) {
+      if (brandPreviewUrl) URL.revokeObjectURL(brandPreviewUrl);
+      brandPreviewUrl = URL.createObjectURL(file);
+    }
+    paintBranding(data, brandPreviewUrl);
+    if (logoInput) logoInput.value = '';
+  }
+
+  function presentOverage(status, data) {
+    if (status !== 402 || !data || !data.overage || data.overage.plan !== 'integrator_overage') return false;
+    var panel = document.getElementById('overage-offer');
+    var copy = document.getElementById('overage-copy');
+    if (copy) copy.textContent = 'You\u2019ve used this month\u2019s 25 manuals. An extra manual is $9, plus applicable taxes.';
+    clearUploadError();
+    if (document.body.dataset.phase === 'progress') setPhase('ready');
+    if (panel) {
+      panel.hidden = false;
+      panel.focus();
+    }
+    return true;
+  }
+
+  async function startOverageCheckout(button) {
+    if (!button || button.disabled) return;
+    var errEl = document.getElementById('overage-error');
+    if (errEl) {
+      errEl.hidden = true;
+      errEl.textContent = '';
+    }
+    var original = button.textContent;
+    button.disabled = true;
+    button.textContent = 'Starting checkout\u2026';
+    try {
+      var res = await fetch(apiBase + '/create-checkout-session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Session-Id': sessionId },
+        body: JSON.stringify({ plan: 'integrator_overage', session_id: sessionId })
+      });
+      var data = await readJson(res);
+      if (!res.ok || !data || !data.url) {
+        var server = safeServerMessage(data);
+        throw new Error(server || 'checkout failed');
+      }
+      window.location.href = data.url;
+    } catch (err) {
+      button.disabled = false;
+      button.textContent = original;
+      if (!errEl) return;
+      var message = err && err.message && err.message !== 'checkout failed'
+        ? err.message
+        : 'We couldn\u2019t start checkout. Please try again in a moment.';
+      errEl.textContent = message;
+      errEl.hidden = false;
+    }
+  }
+
   fileInput.addEventListener('change', function () {
     addFiles(fileInput.files);
     fileInput.value = '';
@@ -1162,6 +1405,13 @@
     event.preventDefault();
     handleGenerate();
   });
+
+  var brandForm = document.getElementById('brand-form');
+  if (brandForm) brandForm.addEventListener('submit', saveBranding);
+  var overageButton = document.getElementById('overage-checkout');
+  if (overageButton) {
+    overageButton.addEventListener('click', function () { startOverageCheckout(overageButton); });
+  }
 
   document.querySelectorAll('input[name="source"]').forEach(function (input) {
     input.addEventListener('change', syncSource);

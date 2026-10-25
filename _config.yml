@@ -1,0 +1,15 @@
+# GitHub Pages builds this repo with Jekyll. Setting exclude replaces the
+# defaults, so the default entries stay listed. dev/ is local test tooling,
+# including the vendor-name blocklist, and must not be published.
+exclude:
+  - .sass-cache
+  - .jekyll-cache
+  - gemfiles
+  - Gemfile
+  - Gemfile.lock
+  - node_modules
+  - vendor/bundle/
+  - vendor/cache/
+  - vendor/gems/
+  - vendor/ruby/
+  - dev

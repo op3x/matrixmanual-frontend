@@ -2,6 +2,7 @@
 // Requires puppeteer-core and Chrome. Does not call production or Stripe.
 import { spawn } from 'node:child_process';
 import { mkdir, mkdtemp, readFile, writeFile } from 'node:fs/promises';
+import http from 'node:http';
 import { createRequire } from 'node:module';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
@@ -61,8 +62,13 @@ async function shoot(page, name, scrollSelector) {
     await page.setViewport({ ...viewport, deviceScaleFactor: 1 });
     const handle = await page.$(scrollSelector);
     if (!handle) throw new Error(`${name} missing ${scrollSelector}`);
-    await handle.evaluate((el) => el.scrollIntoView({ block: 'center', inline: 'nearest' }));
-    await new Promise((resolve) => setTimeout(resolve, 200));
+    await handle.evaluate((el) => el.scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'instant' }));
+    await page.waitForFunction((selector) => {
+      const el = document.querySelector(selector);
+      if (!el) return false;
+      const box = el.getBoundingClientRect();
+      return box.width >= 40 && box.height >= 20 && box.bottom > 0 && box.top < window.innerHeight;
+    }, {}, scrollSelector);
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
     if (overflow > 1) throw new Error(`${name} at ${viewport.width}px overflows by ${overflow}px`);
     const file = path.join(shotDir, `${name}_${viewport.width}.png`);
@@ -113,6 +119,85 @@ async function runAxe(page, label) {
   });
   if (violations.length) throw new Error(label + ' axe: ' + JSON.stringify(violations));
   note('axe 0 violations: ' + label, true);
+}
+
+function parseExclude(configText) {
+  const entries = [];
+  const lines = configText.split(/\r?\n/);
+  let inExclude = false;
+  for (const line of lines) {
+    if (/^\s*#/.test(line) || !line.trim()) continue;
+    if (/^exclude:\s*$/.test(line)) {
+      inExclude = true;
+      continue;
+    }
+    const inline = line.match(/^exclude:\s*\[(.*)\]\s*$/);
+    if (inline) {
+      for (const part of inline[1].split(',')) {
+        const name = part.trim().replace(/^['"]|['"]$/g, '').replace(/\/$/, '');
+        if (name) entries.push(name);
+      }
+      inExclude = false;
+      continue;
+    }
+    if (!inExclude) continue;
+    const item = line.match(/^\s+-\s+(.+?)\s*$/);
+    if (item) {
+      entries.push(item[1].replace(/^['"]|['"]$/g, '').replace(/\/$/, ''));
+      continue;
+    }
+    if (/^\S/.test(line)) inExclude = false;
+  }
+  return entries;
+}
+
+function isPublishedPath(relPosix, entries) {
+  return !entries.some((entry) => relPosix === entry || relPosix.startsWith(entry + '/'));
+}
+
+async function assertDevUrls404(rootDir) {
+  const config = await readFile(path.join(rootDir, '_config.yml'), 'utf8');
+  const entries = parseExclude(config);
+  if (!entries.includes('dev')) throw new Error('Pages exclude list is missing dev: ' + entries.join(', '));
+  const notFound = await readFile(path.join(rootDir, '404.html'));
+  const server = http.createServer(async (req, res) => {
+    let rel = '/';
+    try { rel = decodeURIComponent(new URL(req.url, 'http://127.0.0.1').pathname); } catch { rel = '/'; }
+    if (rel.endsWith('/')) rel += 'index.html';
+    rel = path.posix.normalize(rel).replace(/^\/+/, '');
+    const full = path.resolve(rootDir, rel);
+    const inside = full === rootDir || full.startsWith(path.resolve(rootDir) + path.sep);
+    const published = rel && inside && !rel.split('/').some((part) => part.startsWith('.')) && isPublishedPath(rel, entries);
+    try {
+      if (!published) throw new Error('unpublished');
+      const body = await readFile(full);
+      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' });
+      res.end(body);
+    } catch {
+      res.writeHead(404, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' });
+      res.end(notFound);
+    }
+  });
+  await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+  const { port } = server.address();
+  const origin = `http://127.0.0.1:${port}`;
+  try {
+    for (const route of ['/dev/verify-upload.mjs', '/dev/check-brands.mjs', '/dev/mock-api.mjs', '/dev/', '/dev']) {
+      const res = await fetch(origin + route);
+      const text = await res.text();
+      if (res.status !== 404) throw new Error(route + ' status ' + res.status);
+      if (!/That page is not here/.test(text)) throw new Error(route + ' did not serve the site 404 page');
+      if (/BRAND_NAMES|Rockwell|Allen-Bradley|Mitsubishi/.test(text)) throw new Error(route + ' leaked a test script');
+    }
+    const home = await fetch(origin + '/');
+    const homeText = await home.text();
+    if (home.status !== 200 || !homeText.includes('data-checkout="integrator"')) throw new Error('home was not published');
+    const upload = await fetch(origin + '/upload.html');
+    if (upload.status !== 200) throw new Error('upload status ' + upload.status);
+  } finally {
+    await new Promise((resolve) => server.close(resolve));
+  }
+  note('dev/ URLs 404 on the Pages build', true);
 }
 
 async function assertButtonContrast(page, label) {
@@ -174,6 +259,9 @@ async function main() {
     exp: path.join(fixtureDir, 'routine.exp'),
     zip: path.join(fixtureDir, 'drawings.zip'),
     long: path.join(fixtureDir, 'VeryLongProgramNameForTheMobileFileListCheck.L5X'),
+    logo: path.join(fixtureDir, 'mark.png'),
+    logoBad: path.join(fixtureDir, 'mark.jpg'),
+    logoBig: path.join(fixtureDir, 'huge.png'),
   };
   await writeFile(fixtures.line, '<RSLogix5000Content></RSLogix5000Content>');
   await writeFile(fixtures.step, 'ISO-10303-21;\n');
@@ -193,6 +281,9 @@ async function main() {
   await writeFile(fixtures.exp, 'PROGRAM Main\nEND_PROGRAM');
   await writeFile(fixtures.zip, 'PK');
   await writeFile(fixtures.long, '<RSLogix5000Content></RSLogix5000Content>');
+  await writeFile(fixtures.logo, Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==', 'base64'));
+  await writeFile(fixtures.logoBad, 'not a logo');
+  await writeFile(fixtures.logoBig, Buffer.alloc(256 * 1024 + 1, 7));
 
   const html = await readFile(path.join(root, 'upload.html'), 'utf8');
   const index = await readFile(path.join(root, 'index.html'), 'utf8');
@@ -219,8 +310,74 @@ async function main() {
   if (exportHits.length) throw new Error('export wording remains: ' + exportHits.join(' | '));
   const starterButtons = (index.match(/data-checkout="starter"/g) || []).length;
   const proButtons = (index.match(/data-checkout="pro"/g) || []).length;
-  if (starterButtons !== 1 || proButtons !== 1) throw new Error('checkout buttons starter=' + starterButtons + ' pro=' + proButtons);
+  const integratorButtons = (index.match(/data-checkout="integrator"/g) || []).length;
+  if (starterButtons !== 1 || proButtons !== 1 || integratorButtons !== 1) {
+    throw new Error('checkout buttons starter=' + starterButtons + ' pro=' + proButtons + ' integrator=' + integratorButtons);
+  }
+  if (!/fetch\(API_BASE \+ '\/create-checkout-session'/.test(index)) throw new Error('checkout path is not /create-checkout-session');
+  if (/INTEGRATOR_CHECKOUT_PATH|['"`]\/checkout['"`]/.test(index)) throw new Error('integrator still posts to /checkout');
+  const ld = JSON.parse(index.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/)[1]);
+  const faq = ld['@graph'].find((node) => node['@type'] === 'FAQPage');
+  if (/team seats/i.test(index)) throw new Error('team seats are still mentioned');
+  const integratorFaq = faq.mainEntity.find((item) => item.name === 'What does the Integrator plan include?');
+  const faqText = integratorFaq && integratorFaq.acceptedAnswer && integratorFaq.acceptedAnswer.text;
+  if (!faqText || !/white-label PDFs/.test(faqText) || !/same extra documents as Pro/.test(faqText) || !/\$9/.test(faqText) || !/2,490/.test(faqText) || /team seats/i.test(faqText)) {
+    throw new Error('integrator faq json-ld');
+  }
+  const docsFaq = faq.mainEntity.find((item) => item.name === 'What documents does each plan include?');
+  const docsText = docsFaq && docsFaq.acceptedAnswer && docsFaq.acceptedAnswer.text;
+  if (!docsText || !/operator and maintenance manual/.test(docsText) || !/preventive maintenance schedule/.test(docsText) || !/lockout\/tagout outline/.test(docsText) || !/other documents on request/.test(docsText) || !/white-label/.test(docsText)) {
+    throw new Error('documents faq json-ld');
+  }
+  const faqHtml = index.slice(index.indexOf('id="faq"'), index.indexOf('<footer'));
+  if (!faqHtml.includes('What does the Integrator plan include?') || !faqHtml.includes('white-label PDFs with your own logo and company name') || !faqHtml.includes('same extra documents as Pro') || !faqHtml.includes('$9') || !faqHtml.includes('operator and maintenance manual') || !faqHtml.includes('lockout/tagout outline')) {
+    throw new Error('integrator faq is missing from the page');
+  }
+  const proCard = index.slice(index.indexOf('<h3 class="plan">Pro</h3>'), index.indexOf('<h3 class="plan">Integrator</h3>'));
+  const proDocs = (proCard.match(/<dt>Documents<\/dt>\s*<dd>([^<]*)<\/dd>/) || [])[1] || '';
+  const manualAt = proDocs.indexOf('Operator and maintenance manual');
+  const scheduleAt = proDocs.toLowerCase().indexOf('preventive maintenance schedule');
+  if (manualAt < 0 || scheduleAt < 0 || manualAt > scheduleAt) throw new Error('pro documents: ' + proDocs);
+  const offers = ld['@graph'].find((node) => node['@type'] === 'SoftwareApplication').offers;
+  const visiblePlans = [...index.matchAll(/<h3 class="plan">([^<]*)<\/h3>/g)].map((match) => match[1]);
+  if (visiblePlans.join('|') !== 'Starter|Pro|Integrator') throw new Error('plan headings ' + visiblePlans.join('|'));
+  for (const offer of offers) {
+    if (!visiblePlans.includes(offer.name)) throw new Error('structured plan name ' + offer.name);
+  }
+  const monthlyOffer = offers.find((offer) => offer.price === '249');
+  const yearlyOffer = offers.find((offer) => offer.price === '2490');
+  if (!monthlyOffer || monthlyOffer.name !== 'Integrator' || monthlyOffer.priceCurrency !== 'USD') throw new Error('integrator offer');
+  if (!yearlyOffer || yearlyOffer.name !== 'Integrator' || yearlyOffer.priceCurrency !== 'USD') throw new Error('integrator yearly offer');
+  const offerPrices = offers.map((offer) => offer.price).join(',');
+  if (offerPrices !== '39,79,249,2490') throw new Error('offer prices changed ' + offerPrices);
+  const planCards = [...index.matchAll(/<article class="plan-card[\s\S]*?<\/article>/g)].map((match) => match[0]);
+  if (planCards.length !== 3 || planCards.some((card) => (card.match(/class="tax"/g) || []).length !== 1 || !card.includes('plus applicable taxes'))) {
+    throw new Error('tax notes missing from a plan card');
+  }
+  if (!planCards[0].includes('>$39<') || !planCards[1].includes('>$79<') || !planCards[2].includes('>$249<')) throw new Error('card prices changed');
+  if (!planCards[2].includes('$2,490 a year, two months free, plus applicable taxes.')) throw new Error('yearly price tax note');
+  const reviewMarkup = [];
+  (function walk(node) {
+    if (!node || typeof node !== 'object') return;
+    if (Array.isArray(node)) {
+      node.forEach(walk);
+      return;
+    }
+    const type = node['@type'];
+    const types = Array.isArray(type) ? type : (type ? [type] : []);
+    for (const item of types) {
+      if (item === 'AggregateRating' || item === 'Review' || item === 'Rating') reviewMarkup.push(String(item));
+    }
+    for (const key of Object.keys(node)) {
+      if (key === 'aggregateRating' || key === 'review' || key === 'reviews' || key === 'ratingValue') reviewMarkup.push(key);
+      walk(node[key]);
+    }
+  })(ld);
+  if (reviewMarkup.length || /aggregateRating|schema\.org\/Review|schema\.org\/AggregateRating|itemprop="review"/i.test(index)) {
+    throw new Error('review markup ' + reviewMarkup.join(', '));
+  }
   note('headline surfaces do not say export, and each plan has one checkout button', true);
+  await assertDevUrls404(root);
   await assertNoBrandNames(root);
   note('shipped HTML and JS do not name vendors', true);
 
@@ -304,6 +461,8 @@ async function main() {
     await openUpload(page, base, '?session_id=cs_test_local');
     const banner = await page.$eval('#access-message', (el) => el.textContent);
     if (!/Starter plan/.test(banner) || !/3 manuals remaining/.test(banner)) throw new Error('banner: ' + banner);
+    if (!(await page.$eval('#white-label', (el) => el.hidden))) throw new Error('starter shows white-label');
+    if (!(await page.$eval('#overage-offer', (el) => el.hidden))) throw new Error('starter shows overage');
     const acceptPlc = await page.$eval('#file-input', (el) => el.getAttribute('accept'));
     if (!acceptPlc.includes('.l5x') || !acceptPlc.includes('.acd') || acceptPlc.includes('.step')) {
       throw new Error('plc accept ' + acceptPlc);
@@ -533,6 +692,7 @@ async function main() {
     await openUpload(page, base, '?session_id=cs_test_pro');
     const pro = await page.$eval('#access-message', (el) => el.textContent);
     if (!/Pro plan/.test(pro) || !/Unlimited/.test(pro)) throw new Error(pro);
+    if (!(await page.$eval('#white-label', (el) => el.hidden))) throw new Error('pro shows white-label');
     await runAxe(page, 'pro session');
     note('pro session shows unlimited manuals', true);
 
@@ -778,7 +938,7 @@ async function main() {
         overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
         header: Math.round(bar.height),
         ctaBeforeImage: cta.bottom <= fan.top + 1,
-        stacked: cards.length === 2 && cards[1].top >= cards[0].bottom - 2,
+        stacked: cards.length === 3 && cards[1].top >= cards[0].bottom - 2 && cards[2].top >= cards[1].bottom - 2,
         previews: previews.length,
         pdf: pdfBox.height > 20 && getComputedStyle(pdf).display !== 'none',
       };
@@ -788,6 +948,10 @@ async function main() {
     if (!homeMobile.ctaBeforeImage || !homeMobile.stacked || homeMobile.previews !== 2 || !homeMobile.pdf) {
       throw new Error('home mobile layout ' + JSON.stringify(homeMobile));
     }
+    await new Promise((resolve) => setTimeout(resolve, 400));
+    const homeMobileCls = await page.evaluate(() => window.__cls || 0);
+    if (homeMobileCls >= 0.1) throw new Error('home 390 CLS ' + homeMobileCls.toFixed(3));
+    note('home CLS under 0.1: 390', true, homeMobileCls.toFixed(3));
     await assertButtonContrast(page, 'home 390');
     await runAxe(page, 'home 390');
     note('home at 390 keeps one header row, copy before the image, stacked pricing, and two previews', true);
@@ -802,20 +966,232 @@ async function main() {
       const lede = document.querySelector('.lede').getBoundingClientRect();
       const price = document.querySelector('.hero-price').getBoundingClientRect();
       const cta = document.querySelector('.hero-cta').getBoundingClientRect();
+      const plans = [...document.querySelectorAll('.plan-card')].map((el) => el.getBoundingClientRect());
       return {
         overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
         lastRow: row.length,
         gap: Math.round(lede.top - title.bottom),
         priceUnderButtons: price.top >= cta.bottom - 2,
+        threeAcross: plans.length === 3 && plans.every((card) => Math.abs(card.top - plans[0].top) < 4) && plans[1].left >= plans[0].right - 2 && plans[2].left >= plans[1].right - 2,
       };
     });
     if (homeDesktop.overflow > 1) throw new Error('home overflow 1280 ' + homeDesktop.overflow);
-    if (homeDesktop.lastRow < 2 || homeDesktop.gap > 40 || !homeDesktop.priceUnderButtons) {
+    if (homeDesktop.lastRow < 2 || homeDesktop.gap > 40 || !homeDesktop.priceUnderButtons || !homeDesktop.threeAcross) {
       throw new Error('home desktop layout ' + JSON.stringify(homeDesktop));
     }
+    await new Promise((resolve) => setTimeout(resolve, 400));
+    const homeDesktopCls = await page.evaluate(() => window.__cls || 0);
+    if (homeDesktopCls >= 0.1) throw new Error('home 1280 CLS ' + homeDesktopCls.toFixed(3));
+    note('home CLS under 0.1: 1280', true, homeDesktopCls.toFixed(3));
     await assertButtonContrast(page, 'home 1280');
     await runAxe(page, 'home 1280');
-    note('home at 1280 top-aligns the hero, puts prices under the buttons, and does not leave the last preview alone', true);
+    note('home at 1280 top-aligns the hero, puts prices under the buttons, shows three pricing cards, and does not leave the last preview alone', true);
+
+    async function brandingPosts() {
+      const logged = await requests(base);
+      return logged.filter((item) => item.method === 'POST' && item.path === '/integrator/branding');
+    }
+
+    await openUpload(page, base, '?session_id=cs_test_integrator');
+    await page.waitForFunction(() => !document.getElementById('white-label').hidden);
+    const monthAccess = await page.evaluate(() => ({
+      banner: document.getElementById('access-message').textContent,
+      welcome: document.getElementById('payment-welcome-text').textContent,
+      overage: document.getElementById('overage-offer').hidden,
+      phase: document.body.dataset.phase,
+    }));
+    if (monthAccess.banner !== 'Integrator plan · 18 of 25 manuals left this month') throw new Error('integrator banner ' + monthAccess.banner);
+    if (monthAccess.welcome !== 'Payment confirmed. You are on the Integrator plan, with 18 of 25 manuals left this month. Upload a PLC program, a CAD model, or both when you are ready.') {
+      throw new Error('integrator welcome ' + monthAccess.welcome);
+    }
+    if (!monthAccess.overage || monthAccess.phase !== 'ready') throw new Error('integrator ready ' + JSON.stringify(monthAccess));
+    await shoot(page, 'integrator_month', '#access-banner');
+    await runAxe(page, 'integrator month');
+    note('Integrator month label and welcome', true);
+
+    const beforeBad = (await brandingPosts()).length;
+    const badLogo = await page.$('#logo-input');
+    await badLogo.uploadFile(fixtures.logoBad);
+    await page.click('#brand-save');
+    await page.waitForFunction(() => {
+      const el = document.getElementById('brand-error');
+      return el && !el.hidden && /PNG or SVG/.test(el.textContent);
+    });
+    if ((await brandingPosts()).length !== beforeBad) throw new Error('bad logo was posted');
+    await shoot(page, 'white_label_type', '#brand-error');
+    const bigLogo = await page.$('#logo-input');
+    await bigLogo.uploadFile(fixtures.logoBig);
+    await page.click('#brand-save');
+    await page.waitForFunction(() => /too large/i.test(document.getElementById('brand-error').textContent));
+    if ((await brandingPosts()).length !== beforeBad) throw new Error('oversized logo was posted');
+    await shoot(page, 'white_label_size', '#brand-error');
+    note('client rejects a logo that is not PNG or SVG, or is over 256 KB', true);
+
+    await page.$eval('#company_name', (el) => { el.value = 'Harbor Line Co.'; });
+    const goodLogo = await page.$('#logo-input');
+    await goodLogo.uploadFile(fixtures.logo);
+    await page.click('#brand-save');
+    await page.waitForFunction(() => {
+      const name = document.getElementById('brand-company');
+      const img = document.getElementById('brand-logo');
+      return name && !name.hidden && name.textContent === 'Harbor Line Co.' && img && !img.hidden && img.getAttribute('src');
+    });
+    const savedCall = (await brandingPosts()).at(-1);
+    if (!savedCall || savedCall.session_id !== 'cs_test_integrator' || savedCall.company_name !== 'Harbor Line Co.' || !savedCall.files.length || !(savedCall.logo_bytes > 0) || savedCall.logo_type !== 'png' || savedCall.response_keys.join(',') !== 'company_name,has_logo,logo_type') {
+      throw new Error('branding save ' + JSON.stringify(savedCall));
+    }
+    if (!savedCall.fields.includes('session_id') || !savedCall.fields.includes('company_name') || !savedCall.fields.includes('logo')) {
+      throw new Error('branding fields ' + savedCall.fields.join(','));
+    }
+    await shoot(page, 'white_label', '#white-label');
+    await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 1 });
+    await runAxe(page, 'white-label 390');
+    await page.setViewport({ width: 1280, height: 1000, deviceScaleFactor: 1 });
+    await runAxe(page, 'white-label 1280');
+    note('white-label save shows the company name and logo', true);
+
+    await page.reload({ waitUntil: 'networkidle0' });
+    await page.waitForFunction(() => document.getElementById('brand-company').textContent === 'Harbor Line Co.' && document.getElementById('brand-logo-note').textContent === 'PNG logo saved.');
+    note('saved white-label name and logo come back from the server', true);
+
+    await openUpload(page, base, '?session_id=cs_test_integrator_year');
+    await page.waitForFunction(() => document.getElementById('payment-welcome-text').textContent.includes('7 of 25 manuals left this month'));
+    const yearAccess = await page.evaluate(() => ({
+      banner: document.getElementById('access-message').textContent,
+      welcome: document.getElementById('payment-welcome-text').textContent,
+    }));
+    if (yearAccess.banner !== 'Integrator plan · 7 of 25 manuals left this month') throw new Error('year banner ' + yearAccess.banner);
+    if (!/Integrator plan, with 7 of 25 manuals left this month/.test(yearAccess.welcome)) throw new Error('year welcome ' + yearAccess.welcome);
+    await shoot(page, 'integrator_year', '#access-banner');
+    note('Integrator year label and welcome use this month’s allowance', true);
+
+    await openUpload(page, base, '?session_id=cs_test_integrator_store');
+    await page.$eval('#company_name', (el) => { el.value = 'Harbor Line Co.'; });
+    await page.click('#brand-save');
+    await page.waitForFunction(() => document.getElementById('brand-error').textContent === 'Company logo storage is temporarily unavailable.');
+    await shoot(page, 'white_label_503', '#brand-error');
+    note('branding 503 is shown in plain words', true);
+
+    await openUpload(page, base, '?session_id=cs_test_integrator_empty');
+    const emptyIntegrator = await page.evaluate(() => ({
+      banner: document.getElementById('access-message').textContent,
+      phase: document.body.dataset.phase,
+      inputDisabled: document.getElementById('file-input').disabled,
+      overage: document.getElementById('overage-offer').hidden,
+    }));
+    if (emptyIntegrator.banner !== 'Integrator plan · 0 of 25 manuals left this month' || emptyIntegrator.phase !== 'ready' || emptyIntegrator.inputDisabled || !emptyIntegrator.overage) {
+      throw new Error('empty integrator ' + JSON.stringify(emptyIntegrator));
+    }
+    await addFile(page, fixtures.line);
+    await page.click('#generate-btn');
+    await page.waitForFunction(() => !document.getElementById('overage-offer').hidden && !document.getElementById('overage-checkout').disabled);
+    const overageState = await page.evaluate(() => ({
+      copy: document.getElementById('overage-copy').textContent,
+      uploadError: document.getElementById('upload-error').hidden ? '' : document.getElementById('upload-error').innerText,
+      phase: document.body.dataset.phase,
+      welcome: document.getElementById('payment-welcome-text').textContent,
+    }));
+    if (overageState.copy !== 'You’ve used this month’s 25 manuals. An extra manual is $9, plus applicable taxes.') {
+      throw new Error('overage copy ' + overageState.copy);
+    }
+    if (/no manuals left|No credit was used|Starter credits/i.test(overageState.uploadError) || /Starter credits/.test(overageState.welcome) || overageState.phase === 'locked') {
+      throw new Error('overage fell through to the generic lock ' + JSON.stringify(overageState));
+    }
+    await shoot(page, 'overage', '#overage-offer');
+    await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 1 });
+    await runAxe(page, 'overage 390');
+    await page.setViewport({ width: 1280, height: 1000, deviceScaleFactor: 1 });
+    await runAxe(page, 'overage 1280');
+    const returned = page.waitForNavigation({ waitUntil: 'networkidle0' });
+    await page.click('#overage-checkout');
+    await returned;
+    const checkoutCalls = (await requests(base)).filter((item) => item.path === '/create-checkout-session');
+    const overageCall = checkoutCalls.at(-1);
+    if (!overageCall || overageCall.body.plan !== 'integrator_overage' || overageCall.body.session_id !== 'cs_test_integrator_empty' || Object.keys(overageCall.body).sort().join(',') !== 'plan,session_id') {
+      throw new Error('overage checkout ' + JSON.stringify(overageCall));
+    }
+    if (!page.url().includes('session_id=cs_test_integrator_empty')) throw new Error('return url ' + page.url());
+    await page.waitForFunction(() => document.body.dataset.phase === 'ready' && document.getElementById('overage-offer').hidden);
+    note('extra manual checkout posts integrator_overage and returns to upload', true);
+
+    const checkoutPage = await browser.newPage();
+    await checkoutPage.setViewport({ width: 1280, height: 900, deviceScaleFactor: 1 });
+    await checkoutPage.goto(base + '/#pricing', { waitUntil: 'networkidle0' });
+    await checkoutPage.evaluate(() => {
+      window.__calls = [];
+      window.fetch = async (url, opts) => {
+        let body = null;
+        try { body = opts && opts.body ? JSON.parse(opts.body) : null; } catch (err) { body = null; }
+        window.__calls.push({ url: String(url), method: opts && opts.method, headers: opts && opts.headers, body });
+        window.__integratorStatuses = window.__integratorStatuses || [503, 503, 400];
+        const status = body && body.plan === 'integrator' ? (window.__integratorStatuses.shift() || 400) : 500;
+        return new Response('{}', { status, headers: { 'Content-Type': 'application/json' } });
+      };
+    });
+    await checkoutPage.click('[data-checkout="integrator"]');
+    await checkoutPage.waitForFunction(() => {
+      const el = document.getElementById('checkout-error');
+      const button = document.querySelector('[data-checkout="integrator"]');
+      return el && /opening soon/.test(el.textContent) && button && !button.disabled;
+    });
+    const monthState = await checkoutPage.evaluate(() => ({
+      text: document.getElementById('checkout-error').textContent,
+      calls: window.__calls,
+      label: document.querySelector('[data-checkout="integrator"]').textContent,
+    }));
+    if (monthState.text !== 'Integrator checkout is opening soon. Email support@manualos.com to get set up.') {
+      throw new Error('503 message: ' + monthState.text);
+    }
+    if (monthState.label !== 'Start Integrator') throw new Error('button label ' + monthState.label);
+    const monthCall = monthState.calls[0];
+    if (!monthCall || !monthCall.url.endsWith('/create-checkout-session') || monthCall.method !== 'POST' || !monthCall.headers || monthCall.headers['Content-Type'] !== 'application/json' || !monthCall.body || monthCall.body.plan !== 'integrator' || monthCall.body.interval !== 'month' || Object.keys(monthCall.body).sort().join(',') !== 'interval,plan') {
+      throw new Error('month checkout ' + JSON.stringify(monthCall));
+    }
+    await shoot(checkoutPage, 'integrator_checkout_503', '#checkout-error');
+    await checkoutPage.click('[data-set-interval="year"]');
+    await checkoutPage.click('[data-checkout="integrator"]');
+    await checkoutPage.waitForFunction(() => window.__calls.length >= 2 && !document.querySelector('[data-checkout="integrator"]').disabled);
+    const yearState = await checkoutPage.evaluate(() => ({
+      call: window.__calls[1],
+      price: document.getElementById('integrator-price').textContent,
+      bill: document.getElementById('integrator-bill').textContent,
+    }));
+    if (!yearState.call.url.endsWith('/create-checkout-session') || yearState.call.body.plan !== 'integrator' || yearState.call.body.interval !== 'year' || Object.keys(yearState.call.body).sort().join(',') !== 'interval,plan') {
+      throw new Error('year checkout ' + JSON.stringify(yearState.call));
+    }
+    if (yearState.price !== '$2,490' || yearState.bill !== 'per year') throw new Error('year price ' + JSON.stringify(yearState));
+    const taxState = await checkoutPage.evaluate(() => ({
+      notes: [...document.querySelectorAll('#pricing .tax')].map((el) => el.textContent),
+      yearly: document.querySelector('#pricing .plan-note').textContent,
+      prices: [...document.querySelectorAll('#pricing .price')].map((el) => el.textContent),
+    }));
+    if (taxState.notes.length !== 3 || taxState.notes.some((text) => text !== 'plus applicable taxes') || taxState.yearly !== '$2,490 a year, two months free, plus applicable taxes.' || taxState.prices.join('|') !== '$39|$79|$2,490') {
+      throw new Error('tax notes ' + JSON.stringify(taxState));
+    }
+    await checkoutPage.click('[data-checkout="pro"]');
+    await checkoutPage.waitForFunction(() => {
+      const el = document.getElementById('checkout-error');
+      return el && /couldn.t start checkout/.test(el.textContent) && window.__calls.length >= 3;
+    });
+    const proCall = await checkoutPage.evaluate(() => window.__calls[2]);
+    if (!String(proCall.url).endsWith('/create-checkout-session') || !proCall.body || proCall.body.plan !== 'pro' || Object.prototype.hasOwnProperty.call(proCall.body, 'interval')) {
+      throw new Error('pro checkout ' + JSON.stringify(proCall));
+    }
+    await checkoutPage.click('[data-checkout="integrator"]');
+    await checkoutPage.waitForFunction(() => window.__calls.length >= 4 && !document.querySelector('[data-checkout="integrator"]').disabled);
+    const denied = await checkoutPage.evaluate(() => ({
+      text: document.getElementById('checkout-error').textContent,
+      call: window.__calls[3],
+    }));
+    if (denied.text !== 'Integrator checkout is opening soon. Email support@manualos.com to get set up.' || /try again/i.test(denied.text)) {
+      throw new Error('400 message: ' + denied.text);
+    }
+    if (!denied.call || denied.call.body.plan !== 'integrator' || denied.call.body.interval !== 'year') {
+      throw new Error('400 checkout ' + JSON.stringify(denied.call));
+    }
+    await shoot(checkoutPage, 'integrator_checkout_400', '#checkout-error');
+    await checkoutPage.close();
+    note('Integrator checkout posts /create-checkout-session with month or year and explains a 400 or 503', true);
 
     if (external.length) throw new Error('external requests: ' + external.join(', '));
     note('no production or Stripe requests', true);
