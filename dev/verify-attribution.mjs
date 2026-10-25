@@ -69,6 +69,37 @@ async function readAttr(page) {
   });
 }
 
+function checkoutCors(req) {
+  return {
+    'access-control-allow-origin': req.headers().origin || '*',
+    'access-control-allow-methods': 'POST, OPTIONS',
+    'access-control-allow-headers': 'content-type',
+  };
+}
+
+function handleRequest(req, hits) {
+  const url = req.url();
+  if (url.includes('/create-checkout-session')) {
+    if (req.method() === 'OPTIONS') {
+      req.respond({ status: 204, headers: checkoutCors(req) });
+      return;
+    }
+    if (req.method() === 'POST') {
+      let body = null;
+      try { body = JSON.parse(req.postData() || ''); } catch { body = null; }
+      hits.push({ url, body });
+      req.respond({
+        status: 500,
+        contentType: 'application/json',
+        headers: checkoutCors(req),
+        body: '{"error":"intercepted"}',
+      });
+      return;
+    }
+  }
+  req.continue();
+}
+
 async function arm(page) {
   const hits = [];
   const external = [];
@@ -81,16 +112,7 @@ async function arm(page) {
     } catch (err) { /* ignore unparseable urls */ }
   });
   await page.setRequestInterception(true);
-  page.on('request', (req) => {
-    if (req.method() === 'POST' && req.url().includes('/create-checkout-session')) {
-      let body = null;
-      try { body = JSON.parse(req.postData() || ''); } catch { body = null; }
-      hits.push({ url: req.url(), body });
-      req.respond({ status: 500, contentType: 'application/json', body: '{"error":"intercepted"}' });
-      return;
-    }
-    req.continue();
-  });
+  page.on('request', (req) => handleRequest(req, hits));
   return { hits, external, pageErrors };
 }
 
@@ -161,7 +183,7 @@ async function main() {
 
     await page.goto(base + '/?utm_source=test&utm_campaign=x', {
       waitUntil: 'domcontentloaded',
-      referer: 'https://news.example/story?id=9',
+      referer: 'http://news.example/story?id=9',
     });
     const ready = await page.evaluate(() => typeof window.mosReadAttribution === 'function');
     assert(ready, 'mosReadAttribution is not installed');
@@ -199,7 +221,7 @@ async function main() {
 
     await page.goto(base + '/upload.html?utm_source=second&utm_medium=email&utm_campaign=later', {
       waitUntil: 'domcontentloaded',
-      referer: 'https://mail.example/inbox',
+      referer: 'http://mail.example/inbox',
     });
     const both = await readAttr(page);
     assert(both.utm_source === 'test' && both.utm_campaign === 'x', 'first touch params changed');
@@ -294,16 +316,7 @@ async function main() {
     });
     const blockedHits = [];
     await blocked.setRequestInterception(true);
-    blocked.on('request', (req) => {
-      if (req.method() === 'POST' && req.url().includes('/create-checkout-session')) {
-        let body = null;
-        try { body = JSON.parse(req.postData() || ''); } catch { body = null; }
-        blockedHits.push({ url: req.url(), body });
-        req.respond({ status: 500, contentType: 'application/json', body: '{"error":"intercepted"}' });
-        return;
-      }
-      req.continue();
-    });
+    blocked.on('request', (req) => handleRequest(req, blockedHits));
     await blocked.setViewport({ width: 390, height: 844, deviceScaleFactor: 1 });
     await blocked.goto(base + '/?utm_source=test&utm_campaign=x', { waitUntil: 'domcontentloaded' });
     const blockedHit = await clickPlan(blocked, blockedHits, 'starter');
