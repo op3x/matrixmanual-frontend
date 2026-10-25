@@ -122,18 +122,28 @@ async function main() {
     }
     if (legalCount !== 0) throw new Error(name + ' still has the legal-name placeholder');
     if (!html[name].includes('Op3x LLC')) throw new Error(name + ' missing Op3x LLC');
-    if (!html[name].includes('<span data-mailing-address>Email support@manualos.com for our mailing address.</span>')) {
-      throw new Error(name + ' missing the mailing-address fallback');
-    }
     if (/\[MAILING ADDRESS\]|\[EFFECTIVE DATE\]/.test(html[name])) throw new Error(name + ' still uses an old placeholder');
+    if (/data-mailing-address|mailing address/i.test(html[name])) throw new Error(name + ' still shows a mailing address');
   }
   const retiredStreet = '250 ' + String.fromCharCode(84, 114, 101, 110, 116);
   const retiredZip = String.fromCharCode(54, 49, 49, 49, 49);
   for (const name of pages) {
-    if (html[name].includes('[OP3X MAILING ADDRESS]') || html[name].includes(retiredStreet) || html[name].includes(retiredZip)) {
+    if (html[name].includes('[OP3X MAILING ADDRESS]') || html[name].includes(retiredStreet) || html[name].includes(retiredZip) || /mailing address/i.test(html[name])) {
       throw new Error(name + ' still contains a mailing-address placeholder or a retired street address');
     }
+    if (/\bby mail\b/i.test(html[name])) throw new Error(name + ' still gives a postal instruction');
+    const structured = html[name].match(/<script type="application\/ld\+json">[\s\S]*?<\/script>/g) || [];
+    for (const block of structured) {
+      if (/PostalAddress|"address"\s*:/.test(block)) throw new Error(name + ' JSON-LD has an address field');
+    }
   }
+  const notices = "Notices to us: email <a href=\"mailto:support@manualos.com\">support@manualos.com</a> with 'Legal notice' in the subject line. Notices to you: we'll email the address on your account or post them on the site. Notices are effective when sent.";
+  if (!html['terms.html'].includes(notices)) throw new Error('terms notices text missing');
+  if (!html['terms.html'].includes('Email: <a href="mailto:support@manualos.com">support@manualos.com</a>. <a href="/support.html">Support form</a>.')) throw new Error('terms contact line changed');
+  const privacyContact = 'Questions, privacy requests or complaints: email <a href="mailto:support@manualos.com">support@manualos.com</a> or use our <a href="/support.html">support form</a>.';
+  if (!html['privacy.html'].includes(privacyContact)) throw new Error('privacy contact line missing');
+  if (!html['privacy.html'].includes('Our privacy contact is the Privacy Officer, Op3x LLC.')) throw new Error('privacy officer line missing');
+  if (!html['refunds.html'].includes('Email: <a href="mailto:support@manualos.com">support@manualos.com</a>.')) throw new Error('refunds contact line changed');
   if (/\[\[REFUND_WINDOW\]\]/.test(Object.values(html).join('\n'))) throw new Error('refund window placeholder is still present');
   const sitemap = await read('sitemap.xml');
   if (!sitemap.includes('https://manualos.com/refunds.html')) throw new Error('sitemap missing refunds.html');
@@ -202,13 +212,15 @@ async function main() {
   const deployDateNote = 'The effective date is filled with the production deploy date when this page is merged.';
   const effectiveDateJs = await read('effective-date.js');
   const effectiveTokenCount = (effectiveDateJs.match(/\[\[EFFECTIVE_DATE\]\]/g) || []).length;
-  if (effectiveTokenCount !== 1) throw new Error('effective date is not a single edit (' + effectiveTokenCount + ')');
+  if (effectiveTokenCount !== 0) throw new Error('effective date token remains (' + effectiveTokenCount + ')');
+  if (!effectiveDateJs.includes("var EFFECTIVE_DATE = 'October 25, 2026';")) throw new Error('effective date is not October 25, 2026');
   if (!effectiveDateJs.includes(deployDateNote)) throw new Error('effective-date.js is not marked as the merge edit');
   const mailingConst = "var OP3X_MAILING_ADDRESS = '[OP3X MAILING ADDRESS]';";
   if (effectiveDateJs.split(mailingConst).length - 1 !== 1) throw new Error('mailing address is not one constant in effective-date.js');
-  if (!effectiveDateJs.includes("querySelectorAll('[data-mailing-address]')")) throw new Error('mailing address is not rendered into the legal pages');
-  if (!await read('dev/check-effective-date.mjs').then((text) => text.includes('[[EFFECTIVE_DATE]]') && text.includes('process.exit(1)'))) {
-    throw new Error('effective-date check does not fail while the token remains');
+  if (!effectiveDateJs.includes("OP3X_MAILING_ADDRESS.charAt(0) !== '['")) throw new Error('placeholder address is still written onto the page');
+  const dateCheck = await read('dev/check-effective-date.mjs');
+  if (!dateCheck.includes('[[EFFECTIVE_DATE]]') || !dateCheck.includes('mailing address') || !dateCheck.includes('process.exit(1)')) {
+    throw new Error('effective-date check does not fail while the token or a mailing address remains');
   }
   for (const name of ['terms.html', 'refunds.html']) {
     if (!html[name].includes(turnaround)) throw new Error(name + ' missing refund turnaround');
@@ -816,12 +828,19 @@ async function main() {
         if (!mpOn && !state.text.includes('Op3x LLC is the seller of ManualOS')) throw new Error(where + ' missing direct seller');
       }
       if (where === 'privacy.html' || where === 'terms.html' || where === 'refunds.html') {
-        const mailingFallback = 'Email support@manualos.com for our mailing address.';
         const retiredStreet = '250 ' + String.fromCharCode(84, 114, 101, 110, 116);
         const retiredZip = String.fromCharCode(54, 49, 49, 49, 49);
-        if (!state.text.includes(mailingFallback) || state.text.includes('[OP3X MAILING ADDRESS]') || state.text.includes(retiredStreet) || state.text.includes(retiredZip)) {
-          throw new Error(where + ' mailing address is not the fallback');
+        if (/mailing address/i.test(state.text) || state.text.includes('[OP3X MAILING ADDRESS]') || state.text.includes(retiredStreet) || state.text.includes(retiredZip)) {
+          throw new Error(where + ' still shows a mailing address');
         }
+        if (where === 'terms.html' && !state.text.includes("Notices to us: email support@manualos.com with 'Legal notice' in the subject line. Notices to you: we'll email the address on your account or post them on the site. Notices are effective when sent.")) {
+          throw new Error(where + ' notices text missing');
+        }
+        if (where === 'terms.html' && !state.text.includes('Email: support@manualos.com. Support form.')) throw new Error(where + ' contact line changed');
+        if (where === 'privacy.html' && (!state.text.includes('Questions, privacy requests or complaints: email support@manualos.com or use our support form.') || !state.text.includes('Our privacy contact is the Privacy Officer, Op3x LLC.'))) {
+          throw new Error(where + ' privacy contact changed');
+        }
+        if (where === 'refunds.html' && !state.text.includes('Email: support@manualos.com.')) throw new Error(where + ' contact line changed');
       }
     }
 
