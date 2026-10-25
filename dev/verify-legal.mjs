@@ -241,23 +241,15 @@ async function main() {
   }
   const cancelSentence = "Cancel anytime online: use the one-click cancel email at manualos.com/cancel. Cancelling stops future charges, and you keep Pro until the end of the period you've paid for.";
   const cancelCopy = 'Cancel anytime online: use the one-click cancel email at <a href="/cancel">manualos.com/cancel</a>. Cancelling stops future charges, and you keep Pro until the end of the period you\'ve paid for.';
-  const mpCancel = 'You can manage or cancel your subscription online at the reseller\'s order-management site, <a href="https://app.link.com">app.link.com</a>. That is a full online alternative.';
   const cancelEffect = "Your cancellation takes effect when we receive your email. We'll email you a confirmation within one business day, and you won't be charged again. If a renewal charge goes through after you've sent it, we'll refund it.";
   if (!html['terms.html'].includes(cancelCopy) || !html['refunds.html'].includes(cancelCopy)) throw new Error('email cancel sentence missing');
   if (!html['index.html'].includes(cancelSentence)) throw new Error('JSON-LD cancel sentence missing');
-  if (!html['terms.html'].includes('<p data-mp-section hidden>' + mpCancel) || !html['refunds.html'].includes('<p data-mp-section hidden>' + mpCancel)) {
-    throw new Error('managed-payments cancel alternative is missing');
-  }
   for (const name of pages) {
     if (!html[name].includes(cancelCopy)) throw new Error(name + ' footer missing the cancel sentence');
     if (/Manage plan|self-serve/i.test(html[name])) throw new Error(name + ' still says Manage plan or self-serve');
+    if (/data-mp-section|app\.link\.com|merchant of record/i.test(html[name])) throw new Error(name + ' still has managed-payments copy');
   }
   for (const name of ['terms.html', 'refunds.html']) {
-    const emailAt = html[name].indexOf(cancelCopy);
-    const mpAt = html[name].indexOf('<p data-mp-section hidden>' + mpCancel);
-    if (emailAt < 0 || mpAt < 0 || !(emailAt < mpAt)) {
-      throw new Error(name + ' cancel order is not the one-click sentence, then the hidden reseller alternative');
-    }
     if (/Email backup|online option/.test(html[name])) throw new Error(name + ' still frames email as a backup');
   }
   const cancelPage = html['cancel/index.html'];
@@ -274,7 +266,7 @@ async function main() {
   if (!cancelPage.includes('aria-label="Copy address, support@manualos.com"') || !cancelPage.includes('aria-label="Copy subject, Cancel my ManualOS Pro subscription"')) {
     throw new Error('copy buttons missing accessible labels');
   }
-  if (!cancelPage.includes(mpCancel)) throw new Error('cancel page dropped the hidden reseller alternative');
+  if (/data-mp-section|app\.link\.com|merchant of record|mp-cancel-lead/i.test(cancelPage)) throw new Error('cancel page still has managed-payments copy');
   const retention = "We delete support threads, recordings and transcripts as soon as practicable once they're no longer needed.";
   if (!html['privacy.html'].includes(retention)) throw new Error('privacy missing practicable deletion sentence');
   if (!html['privacy.html'].includes('<!-- restore 90-day wording when backend retention PR ships -->')) throw new Error('privacy missing retention restore comment');
@@ -345,11 +337,7 @@ async function main() {
   if (!html['terms.html'].includes('ManualOS is operated by Op3x LLC ("ManualOS," "we," "us")')) throw new Error('terms operator sentence missing');
   const indexMarkup = html['index.html'].slice(0, html['index.html'].lastIndexOf('<script>'));
   const configJs = await read('checkout-config.js');
-  const resellerNote = 'Your purchase is processed by our authorized reseller, which is the merchant of record. ManualOS is operated by Op3x LLC.';
-  const statementLine = 'Appears on your card statement as LINK.COM* MANUALOS';
-  const mpSeller = 'Link is the reseller and the merchant of record. Link processes payments and refunds, and Link handles payment disputes. Link may still refund a purchase within its own refund window.';
   const autoRenew = 'Renews automatically at $79 plus applicable taxes each month until you cancel. Cancel anytime online: use the one-click cancel email at <a href="/cancel">manualos.com/cancel</a>. Cancelling stops future charges, and you keep Pro until the end of the period you\'ve paid for.';
-  const privacyMp = 'Link collects payment and billing details as the merchant of record under its own privacy policy.';
   const directSeller = 'Op3x LLC is the seller of ManualOS. Op3x LLC processes payments and refunds for these purchases and handles payment disputes.';
   if (/CHECKOUT_SELLER_MODE|MANAGED_PAYMENTS_ON/.test(html['index.html'] + configJs)) throw new Error('a frontend seller constant is still present');
   if (!configJs.includes("'/api/checkout-config'") || !html['index.html'].includes('src="/checkout-config.js"')) throw new Error('checkout config is not loaded from the backend');
@@ -366,7 +354,7 @@ async function main() {
   }
   if (/until you opt out or ask us to delete it/.test(html['privacy.html'])) throw new Error('old SMS retention sentence remains');
   if (/<strong>\s*Open items\./.test(html['privacy.html'] + html['terms.html'] + html['refunds.html'])) throw new Error('Open items box is still visible');
-  if (!html['privacy.html'].includes('<p data-mp-section hidden>' + privacyMp + '</p>')) throw new Error('privacy missing Link merchant-of-record sentence');
+  if (/data-mp-section|merchant of record|app\.link\.com/i.test(configJs)) throw new Error('checkout config still toggles managed-payments sections');
   const aiRetention = 'Our AI model provider deletes the text we send it, and what it returns, within 30 days, unless it must keep it longer to enforce its usage policy or to comply with the law.';
   const emailShare = 'an email provider, to receive and answer support emails';
   const toolShare = 'automated tools, including AI assistants, that help us run and support the service; they access your information only to do that work.';
@@ -379,7 +367,7 @@ async function main() {
   if (!indexMarkup.includes('data-seller-direct>Op3x LLC to charge my card $79')) throw new Error('variant (a) checkbox is missing');
   if (!indexMarkup.includes('data-seller-mp hidden>ManualOS\'s authorized reseller to charge my card $79 plus applicable taxes')) throw new Error('reseller checkbox is not hidden by default');
   if (!indexMarkup.includes('id="pro-auto-renew">' + autoRenew)) throw new Error('pro auto-renewal disclosure is not beside Pay');
-  if (!indexMarkup.includes('data-seller-note hidden>' + resellerNote)) throw new Error('reseller disclosure is not hidden by default');
+  if (/data-seller-note|merchant of record/i.test(indexMarkup)) throw new Error('reseller merchant-of-record note is still on the pricing cards');
   if ((indexMarkup.match(/data-statement hidden>Appears on your card statement as LINK\.COM\* MANUALOS/g) || []).length !== 2) throw new Error('statement line is missing beside a buy button');
   if (/will appear on your card statement/.test(html['index.html'])) throw new Error('old card-statement clause is still in the disclosure');
   if (/plus applicable tax(?!es)/.test(html['index.html'])) throw new Error('checkout still says applicable tax');
@@ -393,7 +381,6 @@ async function main() {
   if (/\$249|\$2,490|Start Integrator|integrator-consent/.test(html['index.html'])) throw new Error('homepage still sells Integrator');
   for (const name of ['terms.html', 'refunds.html']) {
     if (!html[name].includes('<p data-direct-section>' + directSeller + '</p>')) throw new Error(name + ' missing direct seller section');
-    if (!html[name].includes('<p data-mp-section hidden>' + mpSeller)) throw new Error(name + ' missing hidden merchant-of-record section');
   }
   if (/billing-portal|access-link/.test(html['cancel/index.html'])) {
     throw new Error('cancel page still names a billing backend route');
@@ -520,7 +507,6 @@ async function main() {
         buttonDisabled: document.querySelector('[data-checkout="pro"]').disabled,
         outlineStyle: style.outlineStyle,
         outlineWidth: parseFloat(style.outlineWidth),
-        sellerHidden: document.getElementById('pro-seller-note').hidden,
         statementHidden: document.getElementById('pro-statement').hidden,
         statement: document.getElementById('pro-statement').textContent,
         directHidden: label.querySelector('[data-seller-direct]').hidden,
@@ -531,7 +517,7 @@ async function main() {
         renewalNextToConsent: document.getElementById('pro-auto-renew').previousElementSibling === document.getElementById('pro-consent').closest('.consent-row'),
       };
     });
-    if (!proGate.tied || proGate.checked || !proGate.buttonDisabled || proGate.sellerHidden || proGate.statementHidden || !proGate.directHidden || proGate.mpHidden) {
+    if (!proGate.tied || proGate.checked || !proGate.buttonDisabled || proGate.statementHidden || !proGate.directHidden || proGate.mpHidden) {
       throw new Error('pro consent gate ' + JSON.stringify(proGate));
     }
     if (proGate.statement !== 'Appears on your card statement as LINK.COM* MANUALOS') throw new Error('statement ' + proGate.statement);
@@ -589,7 +575,7 @@ async function main() {
         href: button.getAttribute('href'),
         buttons: [...document.querySelectorAll('button')].map((el) => el.id),
         forms: document.querySelectorAll('form').length,
-        leadHidden: lead.hidden,
+        lead: lead !== null,
         effect,
         fallback,
         addressLabel: document.getElementById('copy-address').getAttribute('aria-label'),
@@ -598,7 +584,7 @@ async function main() {
       };
     });
     const expectedEffect = "Your cancellation takes effect when we receive your email. We'll email you a confirmation within one business day, and you won't be charged again. If a renewal charge goes through after you've sent it, we'll refund it.";
-    if (cancelState.label !== 'Send cancellation email' || cancelState.forms || !cancelState.leadHidden || cancelState.managePlan) {
+    if (cancelState.label !== 'Send cancellation email' || cancelState.forms || cancelState.lead || cancelState.managePlan) {
       throw new Error('cancel page controls ' + JSON.stringify(cancelState));
     }
     if (cancelState.buttons.join(',') !== 'copy-address,copy-subject') throw new Error('cancel buttons ' + cancelState.buttons.join(','));
@@ -671,16 +657,16 @@ async function main() {
     }
 
     function expectSeller(state, mode, where) {
-      const reseller = "Your purchase is processed by our authorized reseller, which is the merchant of record. ManualOS is operated by Op3x LLC.";
       const statement = 'Appears on your card statement as LINK.COM* MANUALOS';
       const mpOn = mode === 'mp';
       if (where === 'index') {
-        if (state.note !== mpOn || state.statement !== mpOn || state.mpCharge !== mpOn || state.directCharge !== !mpOn) {
+        if (state.note !== null || state.mpSection !== null || state.statement !== mpOn || state.mpCharge !== mpOn || state.directCharge !== !mpOn) {
           throw new Error(where + ' ' + mode + ' visibility ' + JSON.stringify(state));
         }
         const renewalLine = "Renews automatically at $79 plus applicable taxes each month until you cancel. Cancel anytime online: use the one-click cancel email at manualos.com/cancel. Cancelling stops future charges, and you keep Pro until the end of the period you've paid for.";
         if (!state.text.includes(renewalLine)) throw new Error(where + ' missing auto-renewal disclosure');
-        if (mpOn && (!state.text.includes(reseller) || !state.text.includes(statement) || !state.text.includes("ManualOS's authorized reseller to charge my card $79 plus applicable taxes each month") || !state.text.includes('That is a full online alternative.'))) {
+        if (/merchant of record|app\.link\.com|full online alternative/i.test(state.text)) throw new Error(where + ' still shows managed-payments copy');
+        if (mpOn && (!state.text.includes(statement) || !state.text.includes("ManualOS's authorized reseller to charge my card $79 plus applicable taxes each month"))) {
           throw new Error(where + ' mp copy missing ' + state.text.slice(0, 400));
         }
         if (!mpOn && (state.text.includes('link.com') || state.text.includes('authorized reseller') || state.text.includes('LINK.COM') || /\bLink\b/.test(state.text))) {
@@ -688,21 +674,16 @@ async function main() {
         }
         if (!mpOn && !state.text.includes('Op3x LLC to charge my card $79')) throw new Error(where + ' missing direct charge');
       } else if (where === 'privacy.html') {
-        const sentence = 'Link collects payment and billing details as the merchant of record under its own privacy policy.';
-        if (state.mpSection !== mpOn) throw new Error(where + ' ' + mode + ' sections ' + JSON.stringify(state));
+        if (state.mpSection !== null) throw new Error(where + ' still has a managed-payments section');
         if (!state.text.includes('Our payment processor handles checkout, cards, receipts, and subscriptions under its own privacy policy.')) {
           throw new Error(where + ' dropped the direct processor wording');
         }
-        if (mpOn && !state.text.includes(sentence)) throw new Error(where + ' mp section missing');
-        if (!mpOn && (state.text.includes(sentence) || /\bLink\b/.test(state.text))) throw new Error(where + ' leaked Link');
+        if (/merchant of record|app\.link\.com|\bLink\b/.test(state.text)) throw new Error(where + ' still names Link');
       } else {
-        if (state.mpSection !== mpOn || state.directSection !== !mpOn) throw new Error(where + ' ' + mode + ' sections ' + JSON.stringify(state));
-        if (mpOn && (!state.text.includes('Link is the reseller and the merchant of record') || !state.text.includes('Link may still refund a purchase within its own refund window') || !state.text.includes('That is a full online alternative.'))) {
-          throw new Error(where + ' mp section missing');
-        }
-        if (!mpOn && (state.text.includes('link.com') || state.text.includes('Link is the seller') || /\bLink\b/.test(state.text))) throw new Error(where + ' leaked Link');
-        if (mpOn && state.text.includes('Op3x LLC is the seller')) throw new Error(where + ' still shows the direct seller');
-        if (!mpOn && !state.text.includes('Op3x LLC is the seller of ManualOS')) throw new Error(where + ' missing direct seller');
+        if (state.mpSection !== null || state.directSection !== true) throw new Error(where + ' ' + mode + ' sections ' + JSON.stringify(state));
+        if (/merchant of record|app\.link\.com|Link is the reseller|full online alternative/i.test(state.text)) throw new Error(where + ' still shows managed-payments copy');
+        if (/\bLink\b/.test(state.text)) throw new Error(where + ' leaked Link');
+        if (!state.text.includes('Op3x LLC is the seller of ManualOS')) throw new Error(where + ' missing direct seller');
       }
       if (where === 'privacy.html' || where === 'terms.html' || where === 'refunds.html') {
         const retiredStreet = '250 ' + String.fromCharCode(84, 114, 101, 110, 116);
@@ -762,7 +743,7 @@ async function main() {
     const afterTimeout = await page.$eval('[data-checkout="pro"]', (el) => !el.disabled && document.getElementById('pro-consent').checked);
     if (!afterTimeout) throw new Error('Pay stayed disabled after the 3 second direct fallback');
     await setConfig({ managedPayments: true, fail: false, hold: false, release: true });
-    await page.waitForFunction(() => document.getElementById('pro-seller-note') && !document.getElementById('pro-seller-note').hidden);
+    await page.waitForFunction(() => document.getElementById('pro-statement') && !document.getElementById('pro-statement').hidden);
     const resetConsent = await page.evaluate(() => !document.getElementById('pro-consent').checked && document.querySelector('[data-checkout="pro"]').disabled);
     if (!resetConsent) throw new Error('managed-payments config did not clear consent after the direct fallback');
     expectSeller(await renderedSeller(page), 'mp', 'index');
