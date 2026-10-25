@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Support — ManualOS</title>
-<meta name="description" content="Contact ManualOS support. Optional text messages cover support replies and order/manual-status texts. Message frequency varies.">
+<meta name="description" content="Contact ManualOS support by email at support@manualos.com.">
 <meta name="robots" content="index, follow">
 <link rel="canonical" href="https://manualos.com/support.html">
 <link rel="icon" href="/favicon.ico" sizes="32x32">
@@ -76,6 +76,7 @@ a{color:var(--ink)}
 .footer-nav{display:flex;flex-wrap:wrap;gap:.15rem .9rem}
 .footer-nav a{display:inline-flex;align-items:center;min-height:2.75rem;font-weight:600;text-underline-offset:.15em}
 .legal{margin:0;color:#d9d2c3;font-size:.95rem}
+.legal a{text-decoration:underline;text-underline-offset:.15em}
 @media(max-width:480px){
   .btn-primary{width:100%}
   .titleblock{font-size:.62rem}
@@ -122,20 +123,13 @@ a{color:var(--ink)}
         <div class="field">
           <label for="support-phone">Phone <span class="optional">Optional</span></label>
           <input id="support-phone" name="phone" type="tel" autocomplete="tel" maxlength="40" inputmode="tel" aria-describedby="phone-hint">
-          <p class="hint" id="phone-hint">Optional, unless you opt in to text messages below.</p>
+          <p class="hint" id="phone-hint">Optional.</p>
           <p class="field-error" id="support-phone-error" hidden></p>
         </div>
         <div class="field">
           <label for="support-message">Message</label>
           <textarea id="support-message" name="message" required maxlength="2000"></textarea>
           <p class="field-error" id="support-message-error" hidden></p>
-        </div>
-      </div>
-      <h2 id="sms-title"><span class="idx">02</span>Text messages <span class="optional">Optional</span></h2>
-      <div class="consent">
-        <input id="sms-consent" name="sms-consent" type="checkbox" value="yes">
-        <div>
-          <label for="sms-consent">Yes, text me at this number. I agree to receive support replies and order/manual-status texts from ManualOS (Op3x LLC). Msg frequency varies. Msg &amp; data rates may apply. Reply HELP for help, STOP to cancel. Consent is not a condition of purchase. See <a href="/terms.html#sms">Terms (/terms.html#sms)</a> and <a href="/privacy.html#sms">Privacy (/privacy.html#sms)</a>.</label>
         </div>
       </div>
       <p id="form-error" class="form-error" role="alert" tabindex="-1"></p>
@@ -145,7 +139,7 @@ a{color:var(--ink)}
       </div>
       <button class="btn-primary" id="support-submit" type="submit">Email support</button>
       <noscript>
-        <p class="form-error">JavaScript is off, so a text-message opt-in cannot be saved. You can still email support@manualos.com. Submitting the form tries to open your email app.</p>
+        <p class="form-error">JavaScript is off. You can still email support@manualos.com. Submitting the form tries to open your email app.</p>
       </noscript>
     </form>
   </article>
@@ -162,6 +156,7 @@ a{color:var(--ink)}
       <a href="/refunds.html">Refunds</a>
       <a href="mailto:support@manualos.com">support@manualos.com</a>
     </nav>
+    <p class="legal">Cancel anytime online: use the one-click cancel email at <a href="/cancel">manualos.com/cancel</a>. Cancelling stops future charges, and you keep Pro until the end of the period you've paid for.</p>
     <p class="legal">© 2026 Op3x LLC. ManualOS is operated by Op3x LLC.</p>
   </div>
 </footer>
@@ -169,19 +164,10 @@ a{color:var(--ink)}
 (function () {
   // Published support number. Leave '' until the line is assigned. The line stays hidden while this is empty.
   var SUPPORT_PHONE_DISPLAY = '';
-  // Exact support-sms-v3 checkbox label. Must match the backend string, including the page paths.
-  // The opt-in POST needs backend PR #8 deployed before a checked box can be saved in production.
-  var CONSENT_TEXT_VERSION = 'support-sms-v3';
-  var CONSENT_TEXT = 'Yes, text me at this number. I agree to receive support replies and order/manual-status texts from ManualOS (Op3x LLC). Msg frequency varies. Msg & data rates may apply. Reply HELP for help, STOP to cancel. Consent is not a condition of purchase. See Terms (/terms.html#sms) and Privacy (/privacy.html#sms).';
-  // Same production host as index.html. On localhost the API is this origin, matching upload.html.
-  var API_BASE = 'https://manualforge-backend-production.up.railway.app';
-  var host = location.hostname;
-  if (host === 'localhost' || host === '127.0.0.1' || host === '[::1]') API_BASE = location.origin;
 
   var phoneLine = document.getElementById('support-phone-line');
   var phoneLink = document.getElementById('support-phone-link');
   var form = document.getElementById('support-form');
-  var consent = document.getElementById('sms-consent');
   var formError = document.getElementById('form-error');
   var formStatus = document.getElementById('form-status');
   var formStatusText = document.getElementById('form-status-text');
@@ -241,8 +227,7 @@ a{color:var(--ink)}
       name: document.getElementById('support-name').value.trim(),
       email: document.getElementById('support-email').value.trim(),
       phone: document.getElementById('support-phone').value.trim(),
-      message: document.getElementById('support-message').value.trim(),
-      consent: consent.checked
+      message: document.getElementById('support-message').value.trim()
     };
   }
 
@@ -251,11 +236,6 @@ a{color:var(--ink)}
     if (!data.name) errors.push(['support-name', 'Enter your name.']);
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) errors.push(['support-email', 'Enter a valid email address.']);
     if (!data.message) errors.push(['support-message', 'Enter a message.']);
-    if (data.consent) {
-      var digits = (data.phone.match(/\d/g) || []).length;
-      if (!data.phone) errors.push(['support-phone', 'Enter the mobile number that should receive texts.']);
-      else if (digits < 10) errors.push(['support-phone', 'Enter a phone number with at least 10 digits.']);
-    }
     return errors;
   }
 
@@ -267,35 +247,15 @@ a{color:var(--ink)}
       '',
       data.message
     ];
-    if (data.consent) lines.push('', 'Text opt-in: yes (' + CONSENT_TEXT_VERSION + ')');
     return 'mailto:support@manualos.com?subject=' + encodeURIComponent('ManualOS support request') + '&body=' + encodeURIComponent(lines.join('\n'));
   }
 
   function showMailto(data) {
-    var saved = data.consent ? ' Your text-message opt-in was saved.' : '';
-    formStatusText.textContent = 'Your message is ready to email to support@manualos.com.' + saved + ' If your email app did not open, use the link below.';
+    formStatusText.textContent = 'Your message is ready to email to support@manualos.com. If your email app did not open, use the link below.';
     emailOpener.setAttribute('href', buildMailto(data));
     formStatus.hidden = false;
     emailOpener.click();
     formStatus.focus();
-  }
-
-  function postConsent(phone) {
-    var payload = {
-      phone: phone,
-      consentTextVersion: CONSENT_TEXT_VERSION,
-      consentText: CONSENT_TEXT,
-      source: 'website-support-form'
-    };
-    var opts = {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    };
-    if (typeof AbortSignal !== 'undefined' && AbortSignal.timeout) opts.signal = AbortSignal.timeout(15000);
-    return fetch(API_BASE + '/api/support/sms-consent', opts).then(function (res) {
-      if (!res.ok) throw new Error('consent failed');
-    });
   }
 
   form.addEventListener('submit', function (event) {
@@ -320,18 +280,11 @@ a{color:var(--ink)}
     submitBtn.setAttribute('aria-busy', 'true');
     var original = submitBtn.textContent;
     submitBtn.textContent = 'Sending\u2026';
-    var pending = data.consent ? postConsent(data.phone) : Promise.resolve();
-    pending.then(function () {
-      showMailto(data);
-    }).catch(function () {
-      formError.textContent = 'We couldn\u2019t save your text-message opt-in, so the email was not opened. Try again, or uncheck the box to email us without opting in to texts.';
-      formError.focus();
-    }).then(function () {
-      sending = false;
-      submitBtn.disabled = false;
-      submitBtn.removeAttribute('aria-busy');
-      submitBtn.textContent = original;
-    });
+    showMailto(data);
+    sending = false;
+    submitBtn.disabled = false;
+    submitBtn.removeAttribute('aria-busy');
+    submitBtn.textContent = original;
   });
 })();
 </script>

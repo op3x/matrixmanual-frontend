@@ -5,7 +5,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Privacy policy — ManualOS</title>
-<meta name="description" content="How ManualOS handles uploaded program and CAD files, payments, logs, and optional support text messages.">
+<meta name="description" content="How ManualOS handles uploaded program and CAD files, payments, and logs.">
 <meta name="robots" content="index, follow">
 <link rel="canonical" href="https://manualos.com/privacy.html">
 <link rel="icon" href="/favicon.ico" sizes="32x32">
@@ -58,6 +58,7 @@ code{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:.88em}
 .footer-nav{display:flex;flex-wrap:wrap;gap:.15rem .9rem}
 .footer-nav a{display:inline-flex;align-items:center;min-height:2.75rem;font-weight:600;text-underline-offset:.15em}
 .legal{margin:0;color:#d9d2c3;font-size:.95rem}
+.legal a{text-decoration:underline;text-underline-offset:.15em}
 @media(min-width:768px){
   main{padding:1.25rem 1.25rem 3rem}
   .sheet{padding:1.2rem 1.3rem 1.6rem}
@@ -91,7 +92,6 @@ code{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:.88em}
         <li>The generated PDF: It is stored on our server for 24 hours so you can download it, then deleted; backup copies are deleted within 28 days. Anyone who has the job link can download it during those 24 hours, so don't share it.</li>
         <li>Extracted program logic and device descriptions go to a third-party AI model provider to write the text.</li>
         <li>We don't sell your data, and this site doesn't use analytics. Video you choose to play may set cookies from the video host.</li>
-        <li>If you opt in, ManualOS (Op3x LLC) may text support replies and order/manual-status texts. Mobile numbers and SMS opt-in consent are not shared with or sold to third parties or affiliates for marketing.</li>
       </ul>
     </div>
 
@@ -102,7 +102,6 @@ code{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:.88em}
       <li><strong>A checkout reference:</strong> the ID of your checkout session. We use it to check that you have paid and how many manuals you have left.</li>
       <li><strong>Payment details:</strong> your card, email, and billing details are entered on our payment processor's secure checkout page, not on this site. We don't receive or store your card number.</li>
       <li><strong>Support requests:</strong> the <a href="/support.html">support form</a> opens your email app addressed to <a href="mailto:support@manualos.com">support@manualos.com</a>. Your name, email, phone, and message are in that email. This site does not store the form, and it does not send the form through another form service.</li>
-      <li><strong>Text-message opt-in:</strong> if you check the optional box on the support form, we send your mobile number, the consent-text version, and the source (the website support form) to our service so we can record that you agreed.</li>
     </ul>
     <p>ManualOS has no customer accounts for the manual service. The support form does not create an account. We don't keep a customer database of names or emails.</p>
 
@@ -155,12 +154,10 @@ code{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:.88em}
     <ul>
       <li>the AI model provider and the payment processor, as described above</li>
       <li>our hosting providers, to run the service</li>
-      <li>a messaging provider, only to deliver text messages you opted in to</li>
       <li>an email provider, to receive and answer support emails</li>
       <li>automated tools, including AI assistants, that help us run and support the service; they access your information only to do that work.</li>
       <li>others when the law requires it</li>
     </ul>
-    <p>Mobile numbers and SMS opt-in consent are not shared with or sold to third parties or affiliates for marketing. See <a href="#sms">Text messages</a>.</p>
 
     <h2><span class="idx">08</span>Retention</h2>
     <ul>
@@ -171,7 +168,6 @@ code{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:.88em}
       <li><strong>Data sent to the AI provider:</strong> Our AI model provider deletes the text we send it, and what it returns, within 30 days, unless it must keep it longer to enforce its usage policy or to comply with the law.</li>
       <li><strong>Purchase records:</strong> held by the payment processor for as long as it, and the law, require.</li>
       <li><strong>Your checkout reference:</strong> kept in your browser until you clear it.</li>
-      <li><strong>Text-message consent:</strong> Opt-outs are kept indefinitely, and consent records are kept for 5 years after the last message or the opt-out, whichever is later.</li>
       <!-- restore 90-day wording when backend retention PR ships -->
       <li><strong>Support threads, recordings, and transcripts:</strong> We delete support threads, recordings and transcripts as soon as practicable once they're no longer needed.</li>
       <li><strong>Hosting logs:</strong> 30 days.</li>
@@ -191,34 +187,12 @@ code{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:.88em}
     <p>ManualOS is a business tool. It is not directed to children under 13, and we don't knowingly collect information from them.</p>
 
     <h2><span class="idx">11</span>Your choices</h2>
-    <p>Email <a href="mailto:support@manualos.com">support@manualos.com</a> with a question about your data, or to ask us to delete a text-message opt-in or purchase-related information we control. You can also use the <a href="/support.html">support form</a>. Because we keep no accounts, and uploaded files are deleted when the job finishes and are not kept, there is usually nothing else stored to delete. Reply STOP to opt out of text messages.</p>
+    <p>Email <a href="mailto:support@manualos.com">support@manualos.com</a> with a question about your data, or to ask us to delete purchase-related information we control. You can also use the <a href="/support.html">support form</a>. Because we keep no accounts, and uploaded files are deleted when the job finishes and are not kept, there is usually nothing else stored to delete.</p>
 
     <h2><span class="idx">12</span>Changes</h2>
     <p>If we change this policy, we will post the new version here and update the effective date above. The effective date is the production deploy date.</p>
 
-    <section id="sms" aria-labelledby="sms-title">
-      <h2 id="sms-title"><span class="idx">13</span>Text messages</h2>
-      <p>If you opt in on the <a href="/support.html">support form</a>, ManualOS (Op3x LLC) can text the mobile number you enter. The checkbox is optional, it starts unchecked, and consent is not a condition of purchase.</p>
-      <p>We text:</p>
-      <ul>
-        <li>support replies</li>
-        <li>order/manual-status texts</li>
-      </ul>
-      <div class="callout">
-        <ul>
-          <li>Message frequency varies.</li>
-          <li>Msg &amp; data rates may apply.</li>
-          <li>Reply STOP to opt out.</li>
-          <li>Reply HELP for help.</li>
-          <li>Email <a href="mailto:support@manualos.com">support@manualos.com</a> or use the <a href="/support.html">support form</a>.</li>
-        </ul>
-      </div>
-      <p>Mobile numbers and SMS opt-in consent are not shared with or sold to third parties or affiliates for marketing.</p>
-      <p>A messaging provider delivers those texts. It may use the number only to deliver them, not for its own marketing or for an affiliate's marketing.</p>
-      <p>The opt-in record is the mobile number, the version of the consent text, and the source, which is the website support form.</p>
-    </section>
-
-    <h2><span class="idx">14</span>Contact</h2>
+    <h2><span class="idx">13</span>Contact</h2>
     <p>Questions, privacy requests or complaints: email <a href="mailto:support@manualos.com">support@manualos.com</a> or use our <a href="/support.html">support form</a>.</p>
     <p>Our privacy contact is the Privacy Officer, Op3x LLC.</p>
   </article>
@@ -235,6 +209,7 @@ code{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:.88em}
       <a href="/refunds.html">Refunds</a>
       <a href="mailto:support@manualos.com">support@manualos.com</a>
     </nav>
+    <p class="legal">Cancel anytime online: use the one-click cancel email at <a href="/cancel">manualos.com/cancel</a>. Cancelling stops future charges, and you keep Pro until the end of the period you've paid for.</p>
     <p class="legal">© 2026 Op3x LLC. ManualOS is operated by Op3x LLC.</p>
   </div>
 </footer>

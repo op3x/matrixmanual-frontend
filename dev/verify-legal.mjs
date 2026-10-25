@@ -1,4 +1,4 @@
-// Checks privacy, terms, and support: axe, layout, footer links, and SMS opt-in.
+// Checks privacy, terms, support, and cancel: axe, layout, footer links, and email cancel.
 // Uses the local mock. Does not call production.
 import { spawn } from 'node:child_process';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
@@ -22,7 +22,7 @@ const shotDir = process.env.SCREENSHOT_DIR || '/opt/cursor/artifacts/screenshots
 const chromePath = process.env.CHROME_PATH || '/usr/bin/google-chrome';
 const axePath = '/tmp/manualos-test/node_modules/axe-core/axe.min.js';
 const pages = ['index.html', 'upload.html', '404.html', 'privacy.html', 'terms.html', 'refunds.html', 'support.html', 'cancel/index.html'];
-const CONSENT = 'Yes, text me at this number. I agree to receive support replies and order/manual-status texts from ManualOS (Op3x LLC). Msg frequency varies. Msg & data rates may apply. Reply HELP for help, STOP to cancel. Consent is not a condition of purchase. See Terms (/terms.html#sms) and Privacy (/privacy.html#sms).';
+const CREDIT_LINE = "If a run fails with an error, we give the credit back; if anything goes wrong on our side, email support and we'll restore it.";
 
 function read(name) {
   return readFile(path.join(root, name), 'utf8');
@@ -202,7 +202,7 @@ async function main() {
   if (!html['privacy.html'].includes(temp) || !html['privacy.html'].includes(kept)) throw new Error('privacy missing temporary-storage retention wording');
   const pdfRetention = 'It is stored on our server for 24 hours so you can download it, then deleted; backup copies are deleted within 28 days.';
   if ((html['privacy.html'].split(pdfRetention).length - 1) !== 3) throw new Error('privacy missing 24-hour PDF line');
-  if (!html['support.html'].includes('backend PR #8')) throw new Error('support script missing backend PR #8 note');
+  if (/sms-consent|text me|backend PR #8/i.test(html['support.html'])) throw new Error('support still offers a text opt-in');
   if (/team seats/i.test(html['terms.html'] + html['privacy.html'])) throw new Error('team seats were invented');
   if (/at any hour/.test(Object.values(html).join('\n'))) throw new Error('an at-any-hour line is still present');
   const turnaround = 'Approved refunds are processed within 5 business days. Your bank may take 5–10 business days to show the credit.';
@@ -236,41 +236,45 @@ async function main() {
     throw new Error('support, terms, or refunds promise a response time');
   }
   if (!/State of Illinois/.test(html['terms.html'])) throw new Error('terms missing Illinois law');
-  if (!html['terms.html'].includes('ManualOS (Op3x LLC)') || !html['privacy.html'].includes('ManualOS (Op3x LLC)')) {
-    throw new Error('SMS copy is missing ManualOS (Op3x LLC)');
-  }
-  const smsNeed = ['support replies', 'order/manual-status texts', 'Message frequency varies', 'Msg &amp; data rates may apply', 'Reply STOP to opt out', 'Reply HELP for help', 'support@manualos.com', 'Mobile numbers and SMS opt-in consent are not shared with or sold to third parties or affiliates for marketing'];
   if (/account alerts/.test(html['support.html'] + html['privacy.html'] + html['terms.html'])) {
     throw new Error('account alerts is still promised');
   }
-  const cancelCopy = 'You can cancel online, self-serve, from our <a href="/cancel">Manage plan</a> link.';
+  const cancelSentence = "Cancel anytime online: use the one-click cancel email at manualos.com/cancel. Cancelling stops future charges, and you keep Pro until the end of the period you've paid for.";
+  const cancelCopy = 'Cancel anytime online: use the one-click cancel email at <a href="/cancel">manualos.com/cancel</a>. Cancelling stops future charges, and you keep Pro until the end of the period you\'ve paid for.';
   const mpCancel = 'You can manage or cancel your subscription online at the reseller\'s order-management site, <a href="https://app.link.com">app.link.com</a>. That is a full online alternative.';
-  if (!html['terms.html'].includes(cancelCopy) || !html['refunds.html'].includes(cancelCopy)) throw new Error('online cancel link missing');
+  const cancelEffect = "Your cancellation takes effect when we receive your email. We'll email you a confirmation within one business day, and you won't be charged again. If a renewal charge goes through after you've sent it, we'll refund it.";
+  if (!html['terms.html'].includes(cancelCopy) || !html['refunds.html'].includes(cancelCopy)) throw new Error('email cancel sentence missing');
+  if (!html['index.html'].includes(cancelSentence)) throw new Error('JSON-LD cancel sentence missing');
   if (!html['terms.html'].includes('<p data-mp-section hidden>' + mpCancel) || !html['refunds.html'].includes('<p data-mp-section hidden>' + mpCancel)) {
     throw new Error('managed-payments cancel alternative is missing');
   }
-  const emailBackup = '<p><strong>Email backup.</strong> If you cannot use an online option, email <a href="mailto:support@manualos.com?subject=Cancel%20my%20ManualOS%20Pro%20subscription">support@manualos.com</a> and we will cancel it for you.</p>';
+  for (const name of pages) {
+    if (!html[name].includes(cancelCopy)) throw new Error(name + ' footer missing the cancel sentence');
+    if (/Manage plan|self-serve/i.test(html[name])) throw new Error(name + ' still says Manage plan or self-serve');
+  }
   for (const name of ['terms.html', 'refunds.html']) {
-    const portalAt = html[name].indexOf(cancelCopy);
+    const emailAt = html[name].indexOf(cancelCopy);
     const mpAt = html[name].indexOf('<p data-mp-section hidden>' + mpCancel);
-    const emailAt = html[name].indexOf(emailBackup);
-    if (portalAt < 0 || mpAt < 0 || emailAt < 0 || !(portalAt < mpAt && mpAt < emailAt)) {
-      throw new Error(name + ' cancel order is not portal, then link.com, then email backup');
+    if (emailAt < 0 || mpAt < 0 || !(emailAt < mpAt)) {
+      throw new Error(name + ' cancel order is not the one-click sentence, then the hidden reseller alternative');
     }
+    if (/Email backup|online option/.test(html[name])) throw new Error(name + ' still frames email as a backup');
   }
   const cancelPage = html['cancel/index.html'];
-  const cancelFormAt = cancelPage.indexOf('id="cancel-form"');
-  const cancelLeadAt = cancelPage.indexOf('id="mp-cancel-lead"');
-  if (cancelFormAt < 0 || cancelLeadAt < 0 || cancelFormAt > cancelLeadAt || !cancelPage.includes(mpCancel)) {
-    throw new Error('cancel page does not put the portal form before app.link.com');
+  const mailto = 'mailto:support@manualos.com?subject=Cancel%20my%20ManualOS%20Pro%20subscription&body=Please%20cancel%20my%20ManualOS%20Pro%20subscription.%20My%20account%20email%20is%20the%20address%20this%20message%20is%20sent%20from.';
+  if (cancelPage.includes('id="cancel-form"') || cancelPage.includes('id="cancel-submit"') || /Manage plan/.test(cancelPage)) {
+    throw new Error('cancel page still has a Manage plan control');
   }
-  if (cancelPage.includes('Request received')) throw new Error('cancel page still says Request received');
-  if (!cancelPage.includes("var ACCESS_LINK_PATH = '/access-link'")) throw new Error('access-link path missing');
-  if (!cancelPage.includes('Check your email for a secure link to manage or cancel your plan.')) throw new Error('access-link confirmation missing');
-  if (!cancelPage.includes('Online cancellation is temporarily unavailable. Please try again shortly.')) throw new Error('access-link failure copy missing');
-  if (!cancelPage.includes('Enter a valid email address.')) throw new Error('invalid-email copy missing');
-  if (!cancelPage.includes('Too many requests. Try again later.')) throw new Error('rate-limit copy missing');
-  if (!cancelPage.includes('<strong>Email backup.</strong>')) throw new Error('email backup is not labeled');
+  if (/\/billing-portal|\/access-link|checkout-config\.js/.test(cancelPage)) throw new Error('cancel page still calls the backend');
+  if (!cancelPage.includes('id="send-cancel-email"') || !cancelPage.includes(mailto.replace('&body', '&amp;body'))) throw new Error('cancel mailto missing');
+  if (!cancelPage.includes('>Send cancellation email</a>')) throw new Error('cancel button label missing');
+  if (!cancelPage.includes(cancelEffect)) throw new Error('cancel effect sentence missing');
+  if (!cancelPage.includes('Or email <span id="cancel-address">support@manualos.com</span>')) throw new Error('cancel fallback address missing');
+  if (!cancelPage.includes('>Cancel my ManualOS Pro subscription</span>')) throw new Error('cancel fallback subject missing');
+  if (!cancelPage.includes('aria-label="Copy address, support@manualos.com"') || !cancelPage.includes('aria-label="Copy subject, Cancel my ManualOS Pro subscription"')) {
+    throw new Error('copy buttons missing accessible labels');
+  }
+  if (!cancelPage.includes(mpCancel)) throw new Error('cancel page dropped the hidden reseller alternative');
   const retention = "We delete support threads, recordings and transcripts as soon as practicable once they're no longer needed.";
   if (!html['privacy.html'].includes(retention)) throw new Error('privacy missing practicable deletion sentence');
   if (!html['privacy.html'].includes('<!-- restore 90-day wording when backend retention PR ships -->')) throw new Error('privacy missing retention restore comment');
@@ -341,10 +345,10 @@ async function main() {
   if (!html['terms.html'].includes('ManualOS is operated by Op3x LLC ("ManualOS," "we," "us")')) throw new Error('terms operator sentence missing');
   const indexMarkup = html['index.html'].slice(0, html['index.html'].lastIndexOf('<script>'));
   const configJs = await read('checkout-config.js');
-  const resellerNote = 'Your purchase is processed by our authorized reseller, which is the merchant of record. ManualOS is provided by Op3x LLC.';
+  const resellerNote = 'Your purchase is processed by our authorized reseller, which is the merchant of record. ManualOS is operated by Op3x LLC.';
   const statementLine = 'Appears on your card statement as LINK.COM* MANUALOS';
   const mpSeller = 'Link is the reseller and the merchant of record. Link processes payments and refunds, and Link handles payment disputes. Link may still refund a purchase within its own refund window.';
-  const autoRenew = 'Renews automatically at $79 plus applicable taxes each month until you cancel at <a href="/cancel">manualos.com/cancel</a>.';
+  const autoRenew = 'Renews automatically at $79 plus applicable taxes each month until you cancel. Cancel anytime online: use the one-click cancel email at <a href="/cancel">manualos.com/cancel</a>. Cancelling stops future charges, and you keep Pro until the end of the period you\'ve paid for.';
   const privacyMp = 'Link collects payment and billing details as the merchant of record under its own privacy policy.';
   const directSeller = 'Op3x LLC is the seller of ManualOS. Op3x LLC processes payments and refunds for these purchases and handles payment disputes.';
   if (/CHECKOUT_SELLER_MODE|MANAGED_PAYMENTS_ON/.test(html['index.html'] + configJs)) throw new Error('a frontend seller constant is still present');
@@ -357,7 +361,9 @@ async function main() {
   if (!html['terms.html'].includes('Changes apply to purchases made after the effective date.')) throw new Error('terms missing purchases-after-effective-date sentence');
   if (!html['terms.html'].includes('Changes apply from your first renewal at least 14 days after we email you about them.')) throw new Error('terms changes clause missing');
   const smsRecords = 'Opt-outs are kept indefinitely, and consent records are kept for 5 years after the last message or the opt-out, whichever is later.';
-  if (!html['privacy.html'].includes(smsRecords)) throw new Error('privacy missing SMS records sentence');
+  if (html['privacy.html'].includes(smsRecords) || /#sms|text messages|Text messages/i.test(html['privacy.html'] + html['terms.html'])) {
+    throw new Error('privacy or terms still has a text-message section');
+  }
   if (/until you opt out or ask us to delete it/.test(html['privacy.html'])) throw new Error('old SMS retention sentence remains');
   if (/<strong>\s*Open items\./.test(html['privacy.html'] + html['terms.html'] + html['refunds.html'])) throw new Error('Open items box is still visible');
   if (!html['privacy.html'].includes('<p data-mp-section hidden>' + privacyMp + '</p>')) throw new Error('privacy missing Link merchant-of-record sentence');
@@ -389,8 +395,8 @@ async function main() {
     if (!html[name].includes('<p data-direct-section>' + directSeller + '</p>')) throw new Error(name + ' missing direct seller section');
     if (!html[name].includes('<p data-mp-section hidden>' + mpSeller)) throw new Error(name + ' missing hidden merchant-of-record section');
   }
-  if (!html['cancel/index.html'].includes("var BILLING_PORTAL_PATH = '/billing-portal'")) {
-    throw new Error('billing portal path constant missing');
+  if (/billing-portal|access-link/.test(html['cancel/index.html'])) {
+    throw new Error('cancel page still names a billing backend route');
   }
   if (/\bStripe\b|bought through Link|Link account/.test(html['index.html'] + html['cancel/index.html'] + html['terms.html'] + html['refunds.html'])) {
     throw new Error('a provider name is in the new copy');
@@ -402,19 +408,15 @@ async function main() {
     if (!/\srequired\b/.test(tag)) throw new Error(id + ' is not required');
     if (!html['index.html'].includes('for="' + id + '"')) throw new Error(id + ' has no label');
   }
-  for (const name of ['privacy.html', 'terms.html']) {
-    for (const phrase of smsNeed) {
-      if (!html[name].includes(phrase)) throw new Error(name + ' missing SMS phrase: ' + phrase);
-    }
-  }
-  if (!html['support.html'].includes(CONSENT)) throw new Error('consentText constant is not the backend v3 label');
-  if (!html['support.html'].includes('consentText: CONSENT_TEXT')) throw new Error('consent POST does not send consentText');
-  if (/id="sms-consent"[^>]*\schecked\b/.test(html['support.html'])) throw new Error('checkbox is checked in HTML');
   if (!html['support.html'].includes("var SUPPORT_PHONE_DISPLAY = '';")) throw new Error('phone constant missing or not empty');
-  if (!html['support.html'].includes("var API_BASE = 'https://manualforge-backend-production.up.railway.app';")) throw new Error('API_BASE missing');
-  if (!html['support.html'].includes("source: 'website-support-form'")) throw new Error('consent source missing');
-  if (!html['support.html'].includes("API_BASE + '/api/support/sms-consent'")) throw new Error('consent URL missing');
+  if (/sms-consent|CONSENT_TEXT|text me|API_BASE/i.test(html['support.html'])) throw new Error('support script still posts a text opt-in');
   if (/formspree|getform|basin\.|typeform|google.com\/forms/i.test(html['support.html'])) throw new Error('third-party form service');
+  const shipped = Object.values(html).join('\n');
+  for (const phrase of ['self-serve', 'Manage plan', 'text me', 'sms-consent', 'did not use a credit', 'does not use a credit']) {
+    if (shipped.toLowerCase().includes(phrase.toLowerCase())) throw new Error('shipped page still contains ' + phrase);
+  }
+  if (/provided by Op3x/i.test(shipped)) throw new Error('hidden checkout copy still says provided by');
+  if (!html['upload.html'].includes(CREDIT_LINE) || !html['index.html'].includes(CREDIT_LINE)) throw new Error('approved credit line missing');
   await assertNoBrandNames(root);
   console.log('PASS static checks and brand names');
 
@@ -469,10 +471,8 @@ async function main() {
     if (!phoneState.hidden || phoneState.display !== 'none' || phoneState.link || phoneState.href) {
       throw new Error('support phone should be hidden until set ' + JSON.stringify(phoneState));
     }
-    const checked = await page.$eval('#sms-consent', (el) => el.checked);
-    if (checked) throw new Error('checkbox starts checked');
-    const label = await page.$eval('label[for="sms-consent"]', (el) => el.textContent.trim());
-    if (label !== CONSENT) throw new Error('checkbox label mismatch: ' + label);
+    const smsBox = await page.$('#sms-consent');
+    if (smsBox) throw new Error('support still has a text opt-in');
 
     for (const name of ['support.html', 'privacy.html', 'terms.html', 'refunds.html']) {
       await page.goto(base + '/' + name, { waitUntil: 'networkidle0' });
@@ -482,16 +482,7 @@ async function main() {
       await page.setViewport({ width: 1280, height: 1000, deviceScaleFactor: 1 });
       await page.screenshot({ path: path.join(shotDir, stem + '_1280.png'), fullPage: true });
     }
-    for (const width of [390, 1280]) {
-      await page.setViewport({ width, height: width === 390 ? 844 : 1100, deviceScaleFactor: 1 });
-      await page.goto(base + '/privacy.html#sms', { waitUntil: 'networkidle0' });
-      const sms = await page.$('#sms');
-      await sms.screenshot({ path: path.join(shotDir, 'privacy_sms_' + width + '.png') });
-      const extra = await overflow(page);
-      if (extra > 1) throw new Error('privacy sms overflows at ' + width);
-    }
-
-    async function consentCount() {
+    async function smsPosts() {
       const list = await fetch(base + '/__mock/requests').then((res) => res.json());
       return list.filter((item) => item.path === '/api/support/sms-consent');
     }
@@ -500,63 +491,22 @@ async function main() {
     await page.goto(base + '/support.html', { waitUntil: 'networkidle0' });
     await page.type('#support-name', 'Ada Lovelace');
     await page.type('#support-email', 'ada@example.com');
-    await page.type('#support-message', 'The manual link stopped working.');
-    await page.click('#sms-consent');
     await page.click('#support-submit');
     await page.waitForFunction(() => document.getElementById('form-error').textContent.includes('highlighted'));
-    const early = await consentCount();
-    if (early.length) throw new Error('consent posted before a phone number was entered');
+    if ((await smsPosts()).length) throw new Error('support posted a text opt-in');
     await runAxe(page, 'support validation errors');
 
-    await page.type('#support-phone', '(217) 555-0199');
-    const before = (await consentCount()).length;
+    await page.type('#support-message', 'The manual link stopped working.');
     await page.click('#support-submit');
     await page.waitForFunction(() => !document.getElementById('form-status').hidden);
-    const posted = (await consentCount()).slice(before);
-    if (posted.length !== 1 || posted[0].status !== 200) throw new Error('consent response ' + JSON.stringify(posted));
-    if (posted[0].phone !== '(217) 555-0199' || posted[0].consentTextVersion !== 'support-sms-v3' || posted[0].consentText !== CONSENT || posted[0].source !== 'website-support-form') {
-      throw new Error('consent body ' + JSON.stringify(posted[0]));
-    }
-    if (posted[0].fields.join(',') !== 'phone,consentTextVersion,consentText,source') throw new Error('consent keys ' + posted[0].fields.join(','));
+    if ((await smsPosts()).length) throw new Error('support posted a text opt-in after send');
     const mailto = await page.$eval('#email-opener', (el) => el.getAttribute('href'));
     if (!mailto.startsWith('mailto:support@manualos.com?')) throw new Error('mailto target ' + mailto);
     const body = decodeURIComponent(mailto.split('body=')[1]);
-    if (!body.includes('The manual link stopped working.') || !body.includes('Ada Lovelace') || !body.includes('Text opt-in: yes')) {
+    if (!body.includes('The manual link stopped working.') || !body.includes('Ada Lovelace') || /text opt-in/i.test(body)) {
       throw new Error('mailto body ' + body);
     }
-    await runAxe(page, 'support after opt-in');
-
-    await page.goto(base + '/support.html', { waitUntil: 'networkidle0' });
-    await page.type('#support-name', 'Grace Hopper');
-    await page.type('#support-email', 'grace@example.com');
-    await page.type('#support-message', 'Please cancel Pro.');
-    const beforePlain = (await consentCount()).length;
-    await page.click('#support-submit');
-    await page.waitForFunction(() => !document.getElementById('form-status').hidden);
-    const plain = (await consentCount()).slice(beforePlain);
-    if (plain.length) throw new Error('unchecked form posted consent ' + JSON.stringify(plain));
-    const plainMail = await page.$eval('#email-opener', (el) => decodeURIComponent(el.getAttribute('href')));
-    if (!plainMail.includes('Please cancel Pro.') || plainMail.includes('Text opt-in: yes')) throw new Error('plain mailto ' + plainMail);
-
-    await page.setRequestInterception(true);
-    page.on('request', (req) => {
-      if (req.url().includes('/api/support/sms-consent')) {
-        req.respond({ status: 500, contentType: 'application/json', body: '{"error":"no"}' });
-        return;
-      }
-      req.continue();
-    });
-    await page.goto(base + '/support.html', { waitUntil: 'networkidle0' });
-    await page.type('#support-name', 'Grace Hopper');
-    await page.type('#support-email', 'grace@example.com');
-    await page.type('#support-phone', '2175550199');
-    await page.type('#support-message', 'Need the PDF again.');
-    await page.click('#sms-consent');
-    await page.click('#support-submit');
-    await page.waitForFunction(() => document.getElementById('form-error').textContent.includes('opt-in'));
-    const failedHidden = await page.$eval('#form-status', (el) => el.hidden);
-    if (!failedHidden) throw new Error('email opened after a failed opt-in');
-    await runAxe(page, 'support opt-in failure');
+    await runAxe(page, 'support after send');
 
     await page.goto(base + '/index.html#pricing', { waitUntil: 'networkidle0' });
     const proGate = await page.evaluate(() => {
@@ -589,7 +539,7 @@ async function main() {
     if (!proGate.label.includes("ManualOS's authorized reseller to charge my card $79 plus applicable taxes each month")) {
       throw new Error('pro label ' + proGate.label);
     }
-    if (proGate.renewal !== 'Renews automatically at $79 plus applicable taxes each month until you cancel at manualos.com/cancel.' || !proGate.renewalNextToPay || !proGate.renewalNextToConsent) {
+    if (proGate.renewal !== "Renews automatically at $79 plus applicable taxes each month until you cancel. Cancel anytime online: use the one-click cancel email at manualos.com/cancel. Cancelling stops future charges, and you keep Pro until the end of the period you've paid for." || !proGate.renewalNextToPay || !proGate.renewalNextToConsent) {
       throw new Error('pro auto-renewal disclosure ' + JSON.stringify(proGate));
     }
     await page.focus('#pro-consent');
@@ -616,146 +566,73 @@ async function main() {
       throw new Error('starter body ' + JSON.stringify(starter));
     }
 
-    await page.goto(base + '/cancel/', { waitUntil: 'networkidle0' });
-    await page.evaluate(() => localStorage.clear());
-    const portalOrder = await page.evaluate(() => {
-      const form = document.getElementById('cancel-form');
+    for (const width of [390, 1280]) {
+      await page.setViewport({ width, height: width === 390 ? 844 : 1000, deviceScaleFactor: 1 });
+      const beforeNav = await fetch(base + '/__mock/requests').then((res) => res.json());
+      await page.goto(base + '/cancel/?session_id=cs_test_pro', { waitUntil: 'networkidle0' });
+      const extra = await overflow(page);
+      if (extra > 1) throw new Error('cancel overflows by ' + extra + 'px at ' + width);
+      await runAxe(page, 'cancel email ' + width);
+      await page.screenshot({ path: path.join(shotDir, 'cancel_' + width + '.png'), fullPage: true });
+      const afterNav = await fetch(base + '/__mock/requests').then((res) => res.json());
+      const posts = afterNav.slice(beforeNav.length).filter((item) => item.method === 'POST' && (item.path === '/billing-portal' || item.path === '/access-link' || item.path === '/api/support/sms-consent'));
+      if (posts.length) throw new Error('cancel page called the backend ' + JSON.stringify(posts));
+    }
+    await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 1 });
+    const cancelState = await page.evaluate(() => {
+      const button = document.getElementById('send-cancel-email');
       const lead = document.getElementById('mp-cancel-lead');
-      const mail = document.getElementById('email-backup');
+      const effect = document.getElementById('cancel-effect').textContent.replace(/\s+/g, ' ').trim();
+      const fallback = document.getElementById('cancel-fallback').textContent.replace(/\s+/g, ' ').trim();
       return {
+        label: button.textContent.trim(),
+        href: button.getAttribute('href'),
+        buttons: [...document.querySelectorAll('button')].map((el) => el.id),
+        forms: document.querySelectorAll('form').length,
         leadHidden: lead.hidden,
-        leadText: lead.textContent.replace(/\s+/g, ' ').trim(),
-        formBeforeLead: Boolean(form.compareDocumentPosition(lead) & Node.DOCUMENT_POSITION_FOLLOWING),
-        leadBeforeEmail: Boolean(lead.compareDocumentPosition(mail) & Node.DOCUMENT_POSITION_FOLLOWING),
-        backup: mail.textContent.replace(/\s+/g, ' ').trim(),
+        effect,
+        fallback,
+        addressLabel: document.getElementById('copy-address').getAttribute('aria-label'),
+        subjectLabel: document.getElementById('copy-subject').getAttribute('aria-label'),
+        managePlan: /Manage plan/i.test(document.body.textContent),
       };
     });
-    if (portalOrder.leadHidden || !portalOrder.formBeforeLead || !portalOrder.leadBeforeEmail || !portalOrder.backup.startsWith('Email backup.') || !portalOrder.leadText.startsWith('You can manage or cancel your subscription online at the reseller\'s order-management site, app.link.com.')) {
-      throw new Error('cancel page does not put the portal form first ' + JSON.stringify(portalOrder));
+    const expectedEffect = "Your cancellation takes effect when we receive your email. We'll email you a confirmation within one business day, and you won't be charged again. If a renewal charge goes through after you've sent it, we'll refund it.";
+    if (cancelState.label !== 'Send cancellation email' || cancelState.forms || !cancelState.leadHidden || cancelState.managePlan) {
+      throw new Error('cancel page controls ' + JSON.stringify(cancelState));
     }
-    const beforeCancelPosts = await fetch(base + '/__mock/requests').then((res) => res.json());
-    const beforePortal = beforeCancelPosts.filter((item) => item.path === '/billing-portal').length;
-    const beforeAccess = beforeCancelPosts.filter((item) => item.path === '/access-link').length;
-    await page.click('#cancel-submit');
-    await page.waitForFunction(() => document.getElementById('cancel-error').textContent === 'Enter the email you used at checkout.');
-    const earlyPosts = await fetch(base + '/__mock/requests').then((res) => res.json());
-    const earlyPortal = earlyPosts.filter((item) => item.path === '/billing-portal').slice(beforePortal);
-    const earlyAccess = earlyPosts.filter((item) => item.path === '/access-link').slice(beforeAccess);
-    if (earlyPortal.length || earlyAccess.length) throw new Error('cancel posted without an email or checkout reference');
-    await page.type('#cancel-email', 'buyer@example.com');
-    await page.click('#cancel-submit');
-    await page.waitForFunction(() => document.getElementById('cancel-status-text').textContent === 'Check your email for a secure link to manage or cancel your plan.');
-    const accessLink = (await fetch(base + '/__mock/requests').then((res) => res.json())).filter((item) => item.path === '/access-link').pop();
-    if (!accessLink || accessLink.status !== 202 || accessLink.email !== 'buyer@example.com' || accessLink.fields.join(',') !== 'email') {
-      throw new Error('access-link body ' + JSON.stringify(accessLink));
+    if (cancelState.buttons.join(',') !== 'copy-address,copy-subject') throw new Error('cancel buttons ' + cancelState.buttons.join(','));
+    if (cancelState.effect !== expectedEffect) throw new Error('cancel effect ' + cancelState.effect);
+    if (!cancelState.fallback.startsWith('Or email support@manualos.com') || !cancelState.fallback.includes('with the subject Cancel my ManualOS Pro subscription')) {
+      throw new Error('cancel fallback ' + cancelState.fallback);
     }
-    await fetch(base + '/__mock/checkout-config', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ managedPayments: true, fail: false, hold: false, accessFail: true }),
-    });
-    await page.goto(base + '/cancel/', { waitUntil: 'networkidle0' });
-    await page.evaluate(() => localStorage.clear());
-    await page.type('#cancel-email', 'buyer@example.com');
-    await page.click('#cancel-submit');
-    await page.waitForFunction(() => document.getElementById('cancel-error').textContent === 'Online cancellation is temporarily unavailable. Please try again shortly.');
-    const accessFailed = (await fetch(base + '/__mock/requests').then((res) => res.json())).filter((item) => item.path === '/access-link').pop();
-    if (!accessFailed || accessFailed.status !== 500) throw new Error('access-link failure ' + JSON.stringify(accessFailed));
-    const accessBackup = await page.$eval('#email-backup', (el) => el.textContent.includes('Email backup.'));
-    if (!accessBackup) throw new Error('email backup missing after access-link failure');
-    await fetch(base + '/__mock/checkout-config', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ managedPayments: true, fail: false, hold: false, accessFail: false, accessStatus: 400, portalStatus: 0 }),
-    });
-    await page.goto(base + '/cancel/', { waitUntil: 'networkidle0' });
-    await page.evaluate(() => localStorage.clear());
-    await page.type('#cancel-email', 'buyer@example.com');
-    await page.click('#cancel-submit');
-    await page.waitForFunction(() => document.getElementById('cancel-error').textContent === 'Enter a valid email address.');
-    const accessInvalid = (await fetch(base + '/__mock/requests').then((res) => res.json())).filter((item) => item.path === '/access-link').pop();
-    if (!accessInvalid || accessInvalid.status !== 400 || accessInvalid.email !== 'buyer@example.com') throw new Error('access-link 400 ' + JSON.stringify(accessInvalid));
-    await fetch(base + '/__mock/checkout-config', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ managedPayments: true, fail: false, hold: false, accessFail: false, accessStatus: 429, portalStatus: 0 }),
-    });
-    await page.goto(base + '/cancel/', { waitUntil: 'networkidle0' });
-    await page.evaluate(() => localStorage.clear());
-    await page.type('#cancel-email', 'buyer@example.com');
-    await page.click('#cancel-submit');
-    await page.waitForFunction(() => document.getElementById('cancel-error').textContent === 'Too many requests. Try again later.');
-    const accessLimited = (await fetch(base + '/__mock/requests').then((res) => res.json())).filter((item) => item.path === '/access-link').pop();
-    if (!accessLimited || accessLimited.status !== 429) throw new Error('access-link 429 ' + JSON.stringify(accessLimited));
-    await fetch(base + '/__mock/checkout-config', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ managedPayments: true, fail: false, hold: false, accessFail: false, accessStatus: 0, portalStatus: 0 }),
-    });
-    await page.goto(base + '/cancel/?session_id=cs_test_pro', { waitUntil: 'networkidle0' });
-    await page.click('#cancel-submit');
-    await page.waitForFunction(() => location.pathname.endsWith('/refunds.html'));
-    const linked = (await fetch(base + '/__mock/requests').then((res) => res.json())).filter((item) => item.path === '/billing-portal').pop();
-    if (!linked || linked.session_id !== 'cs_test_pro' || linked.fields.join(',') !== 'session_id') throw new Error('portal body ' + JSON.stringify(linked));
-    await fetch(base + '/__mock/checkout-config', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ managedPayments: true, fail: false, hold: false, portalFail: true, portalStatus: 0, accessStatus: 0 }),
-    });
-    await page.goto(base + '/cancel/?session_id=cs_test_pro', { waitUntil: 'networkidle0' });
-    await page.click('#cancel-submit');
-    await page.waitForFunction(() => document.getElementById('cancel-error').textContent === 'Online cancellation is temporarily unavailable. Please try again shortly.');
-    const failedPortal = await page.evaluate(() => {
-      const form = document.getElementById('cancel-form');
-      const lead = document.getElementById('mp-cancel-lead');
-      const mail = document.getElementById('email-backup');
-      const error = document.getElementById('cancel-error').textContent;
-      return {
-        leadHidden: lead.hidden,
-        formBeforeLead: Boolean(form.compareDocumentPosition(lead) & Node.DOCUMENT_POSITION_FOLLOWING),
-        backup: mail.textContent.includes('Email backup.'),
-        requestReceived: document.body.textContent.includes('Request received'),
-        error,
+    if (cancelState.addressLabel !== 'Copy address, support@manualos.com' || cancelState.subjectLabel !== 'Copy subject, Cancel my ManualOS Pro subscription') {
+      throw new Error('copy labels ' + JSON.stringify(cancelState));
+    }
+    const href = cancelState.href.replace(/&amp;/g, '&');
+    const query = href.split('?')[1] || '';
+    const params = new URLSearchParams(query);
+    if (!href.startsWith('mailto:support@manualos.com?') || params.get('subject') !== 'Cancel my ManualOS Pro subscription' || params.get('body') !== 'Please cancel my ManualOS Pro subscription. My account email is the address this message is sent from.') {
+      throw new Error('mailto ' + href);
+    }
+    await page.evaluate(() => {
+      window.__copied = [];
+      if (!navigator.clipboard) navigator.clipboard = {};
+      navigator.clipboard.writeText = (value) => {
+        window.__copied.push(value);
+        return Promise.resolve();
       };
     });
-    if (failedPortal.leadHidden || !failedPortal.formBeforeLead || !failedPortal.backup || failedPortal.requestReceived || failedPortal.error !== 'Online cancellation is temporarily unavailable. Please try again shortly.') {
-      throw new Error('portal failure fell back to email only ' + JSON.stringify(failedPortal));
-    }
-    await fetch(base + '/__mock/checkout-config', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ managedPayments: true, fail: false, hold: false, portalFail: false, portalStatus: 400, accessStatus: 0 }),
-    });
-    await page.goto(base + '/cancel/?session_id=cs_test_expired', { waitUntil: 'networkidle0' });
-    const beforeExpired = await fetch(base + '/__mock/requests').then((res) => res.json());
-    const beforeExpiredAccess = beforeExpired.filter((item) => item.path === '/access-link').length;
-    await page.click('#cancel-submit');
-    await page.waitForFunction(() => document.getElementById('cancel-error').textContent === 'Enter the email you used at checkout.');
-    const expiredPortal = (await fetch(base + '/__mock/requests').then((res) => res.json())).filter((item) => item.path === '/billing-portal').pop();
-    const expiredAccess = (await fetch(base + '/__mock/requests').then((res) => res.json())).filter((item) => item.path === '/access-link').slice(beforeExpiredAccess);
-    if (!expiredPortal || expiredPortal.status !== 400 || expiredPortal.session_id !== 'cs_test_expired' || expiredAccess.length) {
-      throw new Error('expired portal did not ask for the checkout email ' + JSON.stringify({ expiredPortal, expiredAccess }));
-    }
-    await fetch(base + '/__mock/checkout-config', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ managedPayments: true, fail: false, hold: false, portalFail: false, portalStatus: 429, accessStatus: 0 }),
-    });
-    await page.goto(base + '/cancel/?session_id=cs_test_limited', { waitUntil: 'networkidle0' });
-    const beforeLimited = await fetch(base + '/__mock/requests').then((res) => res.json());
-    const beforeLimitedAccess = beforeLimited.filter((item) => item.path === '/access-link').length;
-    await page.click('#cancel-submit');
-    await page.waitForFunction(() => document.getElementById('cancel-error').textContent === 'Too many requests. Try again later.');
-    const limitedPortal = (await fetch(base + '/__mock/requests').then((res) => res.json())).filter((item) => item.path === '/billing-portal').pop();
-    const limitedAccess = (await fetch(base + '/__mock/requests').then((res) => res.json())).filter((item) => item.path === '/access-link').slice(beforeLimitedAccess);
-    if (!limitedPortal || limitedPortal.status !== 429 || limitedAccess.length) {
-      throw new Error('portal 429 chained another request ' + JSON.stringify({ limitedPortal, limitedAccess }));
-    }
-    await fetch(base + '/__mock/checkout-config', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ managedPayments: true, fail: false, hold: false, portalFail: false, portalStatus: 0, accessStatus: 0 }),
-    });
+    await page.click('#copy-address');
+    await page.waitForFunction(() => document.getElementById('copy-status').textContent === 'Copied the support email address.');
+    await page.click('#copy-subject');
+    await page.waitForFunction(() => document.getElementById('copy-status').textContent === 'Copied the cancellation subject.');
+    const copied = await page.evaluate(() => window.__copied);
+    if (copied.join('|') !== 'support@manualos.com|Cancel my ManualOS Pro subscription') throw new Error('copied ' + JSON.stringify(copied));
+    await runAxe(page, 'cancel after copy 390');
+    const afterCopy = await fetch(base + '/__mock/requests').then((res) => res.json());
+    const copyPosts = afterCopy.filter((item) => item.method === 'POST' && (item.path === '/billing-portal' || item.path === '/access-link'));
+    if (copyPosts.length) throw new Error('copy buttons called the backend');
 
     async function setConfig(body) {
       const res = await fetch(base + '/__mock/checkout-config', {
@@ -794,14 +671,14 @@ async function main() {
     }
 
     function expectSeller(state, mode, where) {
-      const reseller = "Your purchase is processed by our authorized reseller, which is the merchant of record. ManualOS is provided by Op3x LLC.";
+      const reseller = "Your purchase is processed by our authorized reseller, which is the merchant of record. ManualOS is operated by Op3x LLC.";
       const statement = 'Appears on your card statement as LINK.COM* MANUALOS';
       const mpOn = mode === 'mp';
       if (where === 'index') {
         if (state.note !== mpOn || state.statement !== mpOn || state.mpCharge !== mpOn || state.directCharge !== !mpOn) {
           throw new Error(where + ' ' + mode + ' visibility ' + JSON.stringify(state));
         }
-        const renewalLine = 'Renews automatically at $79 plus applicable taxes each month until you cancel at manualos.com/cancel.';
+        const renewalLine = "Renews automatically at $79 plus applicable taxes each month until you cancel. Cancel anytime online: use the one-click cancel email at manualos.com/cancel. Cancelling stops future charges, and you keep Pro until the end of the period you've paid for.";
         if (!state.text.includes(renewalLine)) throw new Error(where + ' missing auto-renewal disclosure');
         if (mpOn && (!state.text.includes(reseller) || !state.text.includes(statement) || !state.text.includes("ManualOS's authorized reseller to charge my card $79 plus applicable taxes each month") || !state.text.includes('That is a full online alternative.'))) {
           throw new Error(where + ' mp copy missing ' + state.text.slice(0, 400));

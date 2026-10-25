@@ -8,7 +8,7 @@ GitHub Pages builds this folder with Jekyll. `_config.yml` excludes `dev/`, so t
 
 `upload.html` checks a paid Checkout session with `GET /verify-session?session_id=`, then accepts PLC programs, CAD models, or both.
 
-The page prefers `POST /jobs` (several files, real progress, then `GET /jobs/:id/pdf`). That route is specified in the backend README and is not on production yet. If `POST /jobs` returns **404**, the page falls back to `POST /generate-manual` and sends one file, and it says so on the page. A credit is not used for a file rejected as the wrong format or as having no equipment data.
+The page prefers `POST /jobs` (several files, real progress, then `GET /jobs/:id/pdf`). That route is specified in the backend README and is not on production yet. If `POST /jobs` returns **404**, the page falls back to `POST /generate-manual` and sends one file, and it says so on the page. If a run fails with an error, we give the credit back; if anything goes wrong on our side, email support and we'll restore it.
 
 - `?jobs=0` always uses the current single-file generator.
 - `?jobs=1` calls `/jobs` and does not fall back.

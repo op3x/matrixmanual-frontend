@@ -155,6 +155,7 @@ figcaption{padding:.6rem .7rem .75rem;font-size:.92rem;border-top:1px solid var(
 .footer-nav{display:flex;flex-wrap:wrap;gap:.15rem .9rem}
 .footer-nav a{display:inline-flex;align-items:center;min-height:2.75rem;font-weight:600;text-underline-offset:.15em}
 .legal{color:#d9d2c3;font-size:.95rem}
+.legal a{text-decoration:underline;text-underline-offset:.15em}
 @media(min-width:768px){
   html{scroll-padding-top:4.5rem}
   .hero-sheet{margin:1rem auto;max-width:76rem;padding:1rem 1.1rem 1.15rem}
@@ -285,7 +286,7 @@ figcaption{padding:.6rem .7rem .75rem;font-size:.92rem;border-top:1px solid var(
           "name": "Can I cancel Pro, and what about refunds?",
           "acceptedAnswer": {
             "@type": "Answer",
-            "text": "Pro renews automatically every month until you cancel. You can cancel online, self-serve, from the Manage plan link at https://manualos.com/cancel. You can also email support@manualos.com. Cancellation takes effect at the end of the current billing period. You keep Pro until then and will not be charged again. Starter is not a subscription. It is a one-time $39 purchase, plus applicable taxes, for 3 manuals. If a payment or a generated manual is wrong, email support@manualos.com and we will help."
+            "text": "Pro renews automatically every month until you cancel. Cancel anytime online: use the one-click cancel email at manualos.com/cancel. Cancelling stops future charges, and you keep Pro until the end of the period you've paid for. Starter is not a subscription. It is a one-time $39 purchase, plus applicable taxes, for 3 manuals. If a payment or a generated manual is wrong, email support@manualos.com and we will help."
           }
         }
       ]
@@ -612,7 +613,7 @@ figcaption{padding:.6rem .7rem .75rem;font-size:.92rem;border-top:1px solid var(
         </dl>
         <div class="plan-buy">
           <p class="renew-terms" id="starter-renew-terms">$39 one time for 3 manuals, plus applicable taxes. Refundable within 30 days if no manual has been delivered. By continuing you agree to the <a href="/terms.html">Terms</a> and <a href="/refunds.html">Refund policy</a>.</p>
-          <p class="seller-note" id="starter-seller-note" data-seller-note hidden>Your purchase is processed by our authorized reseller, which is the merchant of record. ManualOS is provided by Op3x LLC.</p>
+          <p class="seller-note" id="starter-seller-note" data-seller-note hidden>Your purchase is processed by our authorized reseller, which is the merchant of record. ManualOS is operated by Op3x LLC.</p>
           <div class="consent-row">
             <input id="starter-consent" name="starter-consent" type="checkbox" required aria-describedby="starter-renew-terms starter-seller-note starter-statement">
             <label for="starter-consent">I agree to the <a href="/terms.html">Terms</a> and <a href="/refunds.html">Refund policy</a>.</label>
@@ -640,13 +641,13 @@ figcaption{padding:.6rem .7rem .75rem;font-size:.92rem;border-top:1px solid var(
           </div>
         </dl>
         <div class="plan-buy">
-          <p class="renew-terms" id="pro-renew-terms">$79/month plus applicable taxes, charged today and every month until you cancel. Cancel online, self-serve, from <a href="/cancel">Manage plan</a>. Each month is refundable until it ends, if no manual was delivered that month.</p>
-          <p class="seller-note" id="pro-seller-note" data-seller-note hidden>Your purchase is processed by our authorized reseller, which is the merchant of record. ManualOS is provided by Op3x LLC.</p>
+          <p class="renew-terms" id="pro-renew-terms">$79/month plus applicable taxes, charged today and every month until you cancel. Cancel anytime online: use the one-click cancel email at <a href="/cancel">manualos.com/cancel</a>. Cancelling stops future charges, and you keep Pro until the end of the period you've paid for. Each month is refundable until it ends, if no manual was delivered that month.</p>
+          <p class="seller-note" id="pro-seller-note" data-seller-note hidden>Your purchase is processed by our authorized reseller, which is the merchant of record. ManualOS is operated by Op3x LLC.</p>
           <div class="consent-row">
             <input id="pro-consent" name="pro-consent" type="checkbox" required aria-describedby="pro-renew-terms pro-auto-renew pro-seller-note pro-statement">
             <label for="pro-consent">I agree to the <a href="/terms.html">Terms</a> and authorize <span data-seller-direct>Op3x LLC to charge my card $79 plus applicable taxes</span><span data-seller-mp hidden>ManualOS's authorized reseller to charge my card $79 plus applicable taxes</span> each month until I cancel.</label>
           </div>
-          <p class="renew-terms" id="pro-auto-renew">Renews automatically at $79 plus applicable taxes each month until you cancel at <a href="/cancel">manualos.com/cancel</a>.</p>
+          <p class="renew-terms" id="pro-auto-renew">Renews automatically at $79 plus applicable taxes each month until you cancel. Cancel anytime online: use the one-click cancel email at <a href="/cancel">manualos.com/cancel</a>. Cancelling stops future charges, and you keep Pro until the end of the period you've paid for.</p>
           <button type="button" class="btn btn-primary btn-price" data-checkout="pro" data-consent="pro-consent" data-subscription="true" data-disclosure="pro-renew-b2" disabled>Start Pro</button>
           <p class="statement" id="pro-statement" data-statement hidden>Appears on your card statement as LINK.COM* MANUALOS</p>
           <p data-mp-section hidden>You can manage or cancel your subscription online at the reseller's order-management site, <a href="https://app.link.com">app.link.com</a>. That is a full online alternative.</p>
@@ -681,7 +682,7 @@ figcaption{padding:.6rem .7rem .75rem;font-size:.92rem;border-top:1px solid var(
     </div>
     <div class="faq-item">
       <h3>Can I cancel Pro, and what about refunds?</h3>
-      <p>Pro renews automatically every month until you cancel. You can cancel online, self-serve, from our <a href="/cancel">Manage plan</a> link. You can also email <a href="mailto:support@manualos.com?subject=Cancel%20my%20ManualOS%20Pro%20subscription&amp;body=Please%20cancel%20my%20ManualOS%20Pro%20subscription%20at%20the%20end%20of%20the%20current%20billing%20period.">support@manualos.com</a>. Cancellation takes effect at the end of the current billing period: you keep Pro until then and will not be charged again. Starter is not a subscription. It is a one-time $39 purchase, plus applicable taxes, for 3 manuals. If a payment or a generated manual is wrong, email support@manualos.com and we will help.</p>
+      <p>Pro renews automatically every month until you cancel. Cancel anytime online: use the one-click cancel email at <a href="/cancel">manualos.com/cancel</a>. Cancelling stops future charges, and you keep Pro until the end of the period you've paid for. Starter is not a subscription. It is a one-time $39 purchase, plus applicable taxes, for 3 manuals. If a payment or a generated manual is wrong, email support@manualos.com and we will help.</p>
     </div>
   </section>
 </main>
@@ -702,6 +703,7 @@ figcaption{padding:.6rem .7rem .75rem;font-size:.92rem;border-top:1px solid var(
       <a href="/sitemap.xml">Sitemap</a>
       <a href="mailto:support@manualos.com">support@manualos.com</a>
     </nav>
+    <p class="legal">Cancel anytime online: use the one-click cancel email at <a href="/cancel">manualos.com/cancel</a>. Cancelling stops future charges, and you keep Pro until the end of the period you've paid for.</p>
     <p class="legal">© 2026 Op3x LLC. ManualOS is operated by Op3x LLC.</p>
   </div>
 </footer>
