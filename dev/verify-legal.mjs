@@ -147,7 +147,7 @@ async function main() {
     'from the email address you used at checkout.',
     "A run that fails, or a file ManualOS can't read, doesn't use a credit.",
     "and we'll help.",
-    'Your finished PDF is stored for up to 24 hours so you can download it, then deleted. Save your copy.',
+    'Your finished PDF is stored for up to 24 hours so you can download it, then deleted; backup copies are deleted within 28 days. Save your copy.',
   ];
   for (const phrase of refundRule) {
     if (!html['terms.html'].includes(phrase)) throw new Error('terms refund rule diverges: ' + phrase);
@@ -172,7 +172,8 @@ async function main() {
   const temp = 'Some file types are briefly written to temporary storage during conversion and deleted right after.';
   const kept = 'Uploaded files are processed in memory and deleted when the job finishes, including a job that fails.';
   if (!html['privacy.html'].includes(temp) || !html['privacy.html'].includes(kept)) throw new Error('privacy missing temporary-storage retention wording');
-  if (!html['privacy.html'].includes('It is stored on our server for 24 hours so you can download it, then deleted.')) throw new Error('privacy missing 24-hour PDF line');
+  const pdfRetention = 'It is stored on our server for 24 hours so you can download it, then deleted; backup copies are deleted within 28 days.';
+  if ((html['privacy.html'].split(pdfRetention).length - 1) !== 3) throw new Error('privacy missing 24-hour PDF line');
   if (!html['support.html'].includes('backend PR #8')) throw new Error('support script missing backend PR #8 note');
   if (/team seats/i.test(html['terms.html'] + html['privacy.html'])) throw new Error('team seats were invented');
   if (/at any hour/.test(Object.values(html).join('\n'))) throw new Error('an at-any-hour line is still present');
@@ -255,7 +256,7 @@ async function main() {
   for (const name of ['index.html', 'upload.html', '404.html', 'privacy.html', 'terms.html', 'refunds.html', 'support.html', 'cancel/index.html']) {
     if (!html[name].includes('<p class="legal">' + footerLine + '</p>')) throw new Error(name + ' footer is not the Op3x product line');
   }
-  if (/never stored|after you leave the page|isn['\u2019]t kept/i.test(Object.values(html).join('\n'))) throw new Error('a page still says files are never stored, aren\'t kept, or disappear after you leave');
+  if (/never stored|after you leave the page|isn['\u2019]t kept|send your files/i.test(Object.values(html).join('\n'))) throw new Error('a page still says files are never stored, aren\'t kept, disappear after you leave, or that we send your files');
   const allowedRetention = new Set(['24 hour', '24 hours', '30 day', '30 days', '28 day', '28 days']);
   for (const name of pages) {
     const visible = html[name].replace(/<!--[\s\S]*?-->/g, '');
@@ -272,14 +273,14 @@ async function main() {
   }
   const homepageLine = "To write your manual, we send content extracted from your files, such as program logic, comments, and part details, to a third-party service provider that helps write the manual. We delete your uploaded files when the job finishes. Download your PDF right away, because we delete it 24 hours after it's made. Our provider deletes what we send it within 30 days, unless it must keep it longer to enforce its usage policy or comply with the law. Full details are in our Privacy Policy.";
   const faqDownloadLine = "You get the PDF when the job is done. Download it right away, because it's deleted 24 hours after it's made.";
-  const faqAnswer = homepageLine + ' ' + faqDownloadLine;
-  if (!html['index.html'].includes('"text": "' + faqAnswer + '"')) throw new Error('JSON-LD FAQ answer missing');
+  if (!html['index.html'].includes('"text": "' + homepageLine + '"')) throw new Error('JSON-LD FAQ answer missing');
   if (!html['index.html'].includes(homepageLine.replace('Privacy Policy.', '<a href="/privacy.html">Privacy Policy</a>.'))) throw new Error('homepage visible retention line missing');
   const faqHeading = 'Who can see my PLC program?</h3>';
   const faqStart = html['index.html'].indexOf(faqHeading);
   const faqItem = html['index.html'].slice(faqStart + faqHeading.length, html['index.html'].indexOf('</div>', faqStart));
-  const faqText = faqItem.replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
-  if (faqText !== faqAnswer) throw new Error('visible FAQ text does not match JSON-LD');
+  const faqParagraphs = [...faqItem.matchAll(/<p>([\s\S]*?)<\/p>/g)].map((part) => part[1].replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim());
+  if (faqParagraphs[0] !== homepageLine) throw new Error('visible FAQ text does not match the retention statement');
+  if (faqParagraphs[1] !== faqDownloadLine) throw new Error('FAQ download line missing');
   const readyCard = "Your PDF is ready. Download it right away, because it's deleted 24 hours after it's made.";
   const expiredManual = "This manual isn't available. Manuals are deleted 24 hours after they're made. Generate it again from your files.";
   if (!html['upload.html'].includes(readyCard)) throw new Error('upload ready card missing');
@@ -289,7 +290,7 @@ async function main() {
   if (!html['privacy.html'].includes('TODO backend #19')) throw new Error('privacy missing the backend #19 download TODO');
   if (!privacyVisible.includes("Anyone who has the job link can download it during those 24 hours, so don't share it.")) throw new Error('privacy missing the pre-#19 download line');
   if (!html['privacy.html'].includes('Backup copies, which can include generated PDFs and job status from the last 24 hours, are deleted within 28 days.')) throw new Error('privacy missing the backups line');
-  if (!html['terms.html'].includes('Each generated PDF is stored for 24 hours so you can download it, then deleted. Download your copy right away.')) throw new Error('terms download line missing');
+  if (!html['terms.html'].includes('Each generated PDF is stored for 24 hours so you can download it, then deleted; backup copies are deleted within 28 days. Download your copy right away.')) throw new Error('terms download line missing');
   const trainNearModel = /\btrain\w{0,3}\b[\s\S]{0,40}\bmodels?\b|\bmodels?\b[\s\S]{0,40}\btrain\w{0,3}\b/i;
   for (const name of pages) {
     if (trainNearModel.test(html[name])) throw new Error(name + ' still says files are used to train models');
@@ -304,7 +305,7 @@ async function main() {
   if (!html['terms.html'].includes('partly by an AI model')) throw new Error('terms dropped the outside AI model line');
   if (!html['index.html'].includes('Full details are in our <a href="/privacy.html">Privacy Policy</a>.')) throw new Error('homepage privacy link missing');
   if (html['index.html'].includes('at https://manualos.com/privacy.html')) throw new Error('JSON-LD still appends the privacy URL');
-  if (!html['index.html'].includes('Full details are in our Privacy Policy. You get the PDF when the job is done.')) throw new Error('JSON-LD FAQ answer does not match the visible FAQ');
+  if (html['index.html'].includes('Full details are in our Privacy Policy. You get the PDF when the job is done.')) throw new Error('JSON-LD FAQ answer appends the extra download sentence');
   if (!html['terms.html'].includes('ManualOS is a product of Op3x LLC ("ManualOS," "we," "us")')) throw new Error('terms product sentence missing');
   const indexMarkup = html['index.html'].slice(0, html['index.html'].lastIndexOf('<script>'));
   const configJs = await read('checkout-config.js');
