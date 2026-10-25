@@ -122,8 +122,17 @@ async function main() {
     }
     if (legalCount !== 0) throw new Error(name + ' still has the legal-name placeholder');
     if (!html[name].includes('Op3x LLC')) throw new Error(name + ' missing Op3x LLC');
-    if (!html[name].includes('250 Trent Lane, Loves Park, IL 61111')) throw new Error(name + ' missing mailing address');
+    if (!html[name].includes('<span data-mailing-address>Email support@manualos.com for our mailing address.</span>')) {
+      throw new Error(name + ' missing the mailing-address fallback');
+    }
     if (/\[MAILING ADDRESS\]|\[EFFECTIVE DATE\]/.test(html[name])) throw new Error(name + ' still uses an old placeholder');
+  }
+  const retiredStreet = '250 ' + String.fromCharCode(84, 114, 101, 110, 116);
+  const retiredZip = String.fromCharCode(54, 49, 49, 49, 49);
+  for (const name of pages) {
+    if (html[name].includes('[OP3X MAILING ADDRESS]') || html[name].includes(retiredStreet) || html[name].includes(retiredZip)) {
+      throw new Error(name + ' still contains a mailing-address placeholder or a retired street address');
+    }
   }
   if (/\[\[REFUND_WINDOW\]\]/.test(Object.values(html).join('\n'))) throw new Error('refund window placeholder is still present');
   const sitemap = await read('sitemap.xml');
@@ -176,6 +185,9 @@ async function main() {
   const effectiveTokenCount = (effectiveDateJs.match(/\[\[EFFECTIVE_DATE\]\]/g) || []).length;
   if (effectiveTokenCount !== 1) throw new Error('effective date is not a single edit (' + effectiveTokenCount + ')');
   if (!effectiveDateJs.includes(deployDateNote)) throw new Error('effective-date.js is not marked as the merge edit');
+  const mailingConst = "var OP3X_MAILING_ADDRESS = '[OP3X MAILING ADDRESS]';";
+  if (effectiveDateJs.split(mailingConst).length - 1 !== 1) throw new Error('mailing address is not one constant in effective-date.js');
+  if (!effectiveDateJs.includes("querySelectorAll('[data-mailing-address]')")) throw new Error('mailing address is not rendered into the legal pages');
   if (!await read('dev/check-effective-date.mjs').then((text) => text.includes('[[EFFECTIVE_DATE]]') && text.includes('process.exit(1)'))) {
     throw new Error('effective-date check does not fail while the token remains');
   }
@@ -729,6 +741,14 @@ async function main() {
         if (!mpOn && (state.text.includes('link.com') || state.text.includes('Link is the seller') || /\bLink\b/.test(state.text))) throw new Error(where + ' leaked Link');
         if (mpOn && state.text.includes('Op3x LLC is the seller')) throw new Error(where + ' still shows the direct seller');
         if (!mpOn && !state.text.includes('Op3x LLC is the seller of ManualOS')) throw new Error(where + ' missing direct seller');
+      }
+      if (where === 'privacy.html' || where === 'terms.html' || where === 'refunds.html') {
+        const mailingFallback = 'Email support@manualos.com for our mailing address.';
+        const retiredStreet = '250 ' + String.fromCharCode(84, 114, 101, 110, 116);
+        const retiredZip = String.fromCharCode(54, 49, 49, 49, 49);
+        if (!state.text.includes(mailingFallback) || state.text.includes('[OP3X MAILING ADDRESS]') || state.text.includes(retiredStreet) || state.text.includes(retiredZip)) {
+          throw new Error(where + ' mailing address is not the fallback');
+        }
       }
     }
 
