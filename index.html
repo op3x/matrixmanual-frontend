@@ -676,6 +676,7 @@ figcaption{padding:.6rem .7rem .75rem;font-size:.92rem;border-top:1px solid var(
     <p class="legal">© 2026 ManualOS. manualos.com</p>
   </div>
 </footer>
+<script src="/assets/attribution.js"></script>
 <script>
 (function () {
   var API_BASE = 'https://manualforge-backend-production.up.railway.app';
@@ -700,10 +701,17 @@ figcaption{padding:.6rem .7rem .75rem;font-size:.92rem;border-top:1px solid var(
     });
     button.textContent = 'Starting checkout\u2026';
     try {
+      var payload = { plan: plan };
+      try {
+        if (typeof window.mosReadAttribution === 'function') {
+          var attribution = window.mosReadAttribution();
+          if (attribution && typeof attribution === 'object' && !Array.isArray(attribution)) payload.attribution = attribution;
+        }
+      } catch (err) {}
       var res = await fetch(API_BASE + '/create-checkout-session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ plan: plan })
+        body: JSON.stringify(payload)
       });
       var data = await res.json().catch(function () { return {}; });
       if (!res.ok || !data || !data.url) throw new Error('checkout failed');
