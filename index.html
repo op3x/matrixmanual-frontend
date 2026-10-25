@@ -82,7 +82,7 @@ a{color:var(--ink)}
 .hero-cta{display:flex;flex-wrap:wrap;gap:.6rem;margin:.15rem 0 0}
 .hero-price{margin:0;font-weight:600;max-width:40rem}
 .hero-note{margin:0;color:var(--muted);font-size:.95rem;max-width:40rem}
-.hero-note a,.pay-note a,.need-more a,.faq-item a,.privacy a,.renew-terms a,.consent-row a{text-decoration:underline;text-underline-offset:.15em}
+.hero-note a,.pay-note a,.need-more a,.faq-item a,.privacy a,.renew-terms a{text-decoration:underline;text-underline-offset:.15em}
 .fan{margin:0}
 .fan-stage{position:relative;height:300px;margin:.15rem 0 .75rem;overflow:hidden;border:1px solid var(--ink);background-color:#e5dfd1;background-image:linear-gradient(to right,rgba(23,24,26,.07) 1px,transparent 1px),linear-gradient(to bottom,rgba(23,24,26,.07) 1px,transparent 1px);background-size:18px 18px}
 .sheet-page{position:absolute;top:18px;width:min(58%,230px);background:#fff;border:1px solid var(--ink);line-height:0}
@@ -136,10 +136,6 @@ figcaption{padding:.6rem .7rem .75rem;font-size:.92rem;border-top:1px solid var(
 .renew-terms,.seller-note,.statement{margin:0;font-size:.92rem;overflow-wrap:anywhere}
 .statement{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:.78rem;letter-spacing:.03em}
 .seller-note[hidden],.statement[hidden]{display:none}
-.consent-row{display:grid;grid-template-columns:1.5rem minmax(0,1fr);gap:.35rem .65rem;align-items:start;border:1px solid var(--ink);border-left:4px solid var(--yellow);background:var(--paper);padding:.7rem .75rem}
-.consent-row input{width:1.5rem;height:1.5rem;margin:0;accent-color:var(--ink)}
-.consent-row input:focus-visible{outline:2px solid var(--ink);outline-offset:3px;box-shadow:0 0 0 4px var(--yellow)}
-.consent-row label{font-weight:600;cursor:pointer;overflow-wrap:anywhere}
 .btn-price{width:100%;margin-top:0;padding:.55rem .9rem;font-size:1rem;line-height:1.2}
 .checkout-error:empty{margin:0}
 .checkout-error:not(:empty){margin-top:1rem;padding:.75rem .85rem;border:1px solid var(--ink);border-left:4px solid #6b2a14;background:var(--sheet);color:var(--ink);font-weight:600}
@@ -612,12 +608,8 @@ figcaption{padding:.6rem .7rem .75rem;font-size:.92rem;border-top:1px solid var(
           </div>
         </dl>
         <div class="plan-buy">
-          <div class="consent-row">
-            <input id="starter-consent" name="starter-consent" type="checkbox" required aria-describedby="starter-renew-terms">
-            <label for="starter-consent">I agree to the <a href="https://manualos.com/terms.html">ManualOS Terms</a> and authorize Op3x LLC to make this one-time charge. This isn't a subscription.</label>
-          </div>
-          <p class="renew-terms" id="starter-renew-terms">$39 one time for 3 manuals, plus applicable taxes. Full refund within 30 days of purchase, as long as no manual from that purchase has been delivered, except where the law requires otherwise.</p>
-          <button type="button" class="btn btn-outline btn-price" data-checkout="starter" data-consent="starter-consent" data-disclosure="starter-disclosure-b2" disabled>Buy Starter</button>
+          <p class="renew-terms" id="starter-renew-terms">$39 one time for 3 manuals, plus applicable taxes. Full refund within 30 days of purchase, as long as no manual from that purchase has been delivered, except where the law requires otherwise. You'll accept the <a href="/terms.html">Terms</a> at checkout.</p>
+          <button type="button" class="btn btn-outline btn-price" data-checkout="starter" data-disclosure="starter-disclosure-b2" aria-describedby="starter-renew-terms" disabled>Buy Starter</button>
         </div>
       </article>
       <article class="plan-card is-pro">
@@ -639,12 +631,8 @@ figcaption{padding:.6rem .7rem .75rem;font-size:.92rem;border-top:1px solid var(
           </div>
         </dl>
         <div class="plan-buy">
-          <div class="consent-row">
-            <input id="pro-consent" name="pro-consent" type="checkbox" required aria-describedby="pro-auto-renew">
-            <label for="pro-consent">I agree to the <a href="https://manualos.com/terms.html">ManualOS Terms</a> and authorize Op3x LLC to charge my card $79/month (USD, plus applicable taxes), renewing automatically each month until I cancel.</label>
-          </div>
-          <p class="renew-terms" id="pro-auto-renew">Renews automatically at $79 plus applicable taxes each month until you cancel. Cancel anytime online: use the one-click cancel email at <a href="/cancel">manualos.com/cancel</a>. Cancelling stops future charges, and you keep Pro until the end of the period you've paid for. Each monthly charge is refundable until that billing period ends, as long as no manual has been delivered in that period, except where the law requires otherwise.</p>
-          <button type="button" class="btn btn-primary btn-price" data-checkout="pro" data-consent="pro-consent" data-subscription="true" data-disclosure="pro-renew-b2" disabled>Start Pro</button>
+          <p class="renew-terms" id="pro-auto-renew">Renews automatically at $79 plus applicable taxes each month until you cancel. Cancel anytime online: use the one-click cancel email at <a href="/cancel">manualos.com/cancel</a>. Cancelling stops future charges, and you keep Pro until the end of the period you've paid for. Each monthly charge is refundable until that billing period ends, as long as no manual has been delivered in that period, except where the law requires otherwise. You'll accept the <a href="/terms.html">Terms</a> at checkout.</p>
+          <button type="button" class="btn btn-primary btn-price" data-checkout="pro" data-disclosure="pro-renew-b2" aria-describedby="pro-auto-renew" disabled>Start Pro</button>
         </div>
       </article>
     </div>
@@ -712,22 +700,14 @@ figcaption{padding:.6rem .7rem .75rem;font-size:.92rem;border-top:1px solid var(
   var buttons = document.querySelectorAll('[data-checkout]');
   var busy = false;
 
-  function boxFor(button) {
-    var id = button.getAttribute('data-consent');
-    return id ? document.getElementById(id) : null;
-  }
-
   function syncButtons() {
     if (busy) return;
     buttons.forEach(function (button) {
-      var box = boxFor(button);
-      button.disabled = !(box && box.checked);
+      button.disabled = false;
     });
   }
 
   buttons.forEach(function (button) {
-    var box = boxFor(button);
-    if (box) box.addEventListener('change', syncButtons);
     button.addEventListener('click', function () {
       startCheckout(button.getAttribute('data-checkout'), button);
     });
@@ -740,18 +720,10 @@ figcaption{padding:.6rem .7rem .75rem;font-size:.92rem;border-top:1px solid var(
 
   async function startCheckout(plan, button) {
     if (busy) return;
-    var box = boxFor(button);
-    if (!box || !box.checked) {
-      if (box) box.focus();
-      return;
-    }
     busy = true;
     var originalLabel = button.textContent;
-    var subscription = button.getAttribute('data-subscription') === 'true';
     var payload = {
       plan: plan,
-      renewalConsent: subscription,
-      termsAccepted: true,
       termsVersion: TERMS_VERSION,
       disclosureVersion: 'checkout-tos-v2'
     };

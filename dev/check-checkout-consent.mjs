@@ -1,5 +1,4 @@
-// Headless Playwright check: each plan checkbox uses the approved sentence,
-// and Buy stays disabled until that box is ticked.
+// Headless Playwright check: each pricing card discloses the charge and leaves Terms to checkout.
 // Does not call production. Screenshots go to SCREENSHOT_DIR.
 import { spawn } from 'node:child_process';
 import { mkdir } from 'node:fs/promises';
@@ -20,6 +19,8 @@ const { chromium } = loadPlaywright();
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const shotDir = process.env.SCREENSHOT_DIR || '/opt/cursor/artifacts/screenshots';
 const chromePath = process.env.CHROME_PATH || '/usr/bin/google-chrome';
+const proDisclosure = "Renews automatically at $79 plus applicable taxes each month until you cancel. Cancel anytime online: use the one-click cancel email at manualos.com/cancel. Cancelling stops future charges, and you keep Pro until the end of the period you've paid for. Each monthly charge is refundable until that billing period ends, as long as no manual has been delivered in that period, except where the law requires otherwise. You'll accept the Terms at checkout.";
+const starterDisclosure = "$39 one time for 3 manuals, plus applicable taxes. Full refund within 30 days of purchase, as long as no manual from that purchase has been delivered, except where the law requires otherwise. You'll accept the Terms at checkout.";
 
 function startMock() {
   return new Promise((resolve, reject) => {
@@ -43,53 +44,34 @@ function startMock() {
   });
 }
 
-const PRO_LABEL = 'I agree to the ManualOS Terms and authorize Op3x LLC to charge my card $79/month (USD, plus applicable taxes), renewing automatically each month until I cancel.';
-const STARTER_LABEL = "I agree to the ManualOS Terms and authorize Op3x LLC to make this one-time charge. This isn't a subscription.";
-const PRO_BESIDE = "Renews automatically at $79 plus applicable taxes each month until you cancel. Cancel anytime online: use the one-click cancel email at manualos.com/cancel. Cancelling stops future charges, and you keep Pro until the end of the period you've paid for. Each monthly charge is refundable until that billing period ends, as long as no manual has been delivered in that period, except where the law requires otherwise.";
-const STARTER_BESIDE = 'Full refund within 30 days of purchase, as long as no manual from that purchase has been delivered, except where the law requires otherwise.';
-
-async function readConsent(page) {
+async function readCards(page) {
   return page.evaluate(() => {
-    const label = document.querySelector('label[for="pro-consent"]');
-    const starter = document.querySelector('label[for="starter-consent"]');
-    const button = document.querySelector('[data-checkout="pro"]');
-    const box = document.getElementById('pro-consent');
-    const renewal = document.getElementById('pro-auto-renew');
-    const starterRefund = document.getElementById('starter-renew-terms');
-    const starterButton = document.querySelector('[data-checkout="starter"]');
+    function text(id) {
+      return document.getElementById(id).innerText.replace(/\s+/g, ' ').trim();
+    }
+    const pro = document.querySelector('[data-checkout="pro"]');
+    const starter = document.querySelector('[data-checkout="starter"]');
     return {
-      text: label.innerText.replace(/\s+/g, ' ').trim(),
-      starter: starter.innerText.replace(/\s+/g, ' ').trim(),
-      href: label.querySelector('a').href,
-      starterHref: starter.querySelector('a').href,
-      renewal: renewal.innerText.replace(/\s+/g, ' ').trim(),
-      starterRefund: starterRefund.innerText.replace(/\s+/g, ' ').trim(),
-      nextToBuy: renewal.nextElementSibling === button,
-      nextToConsent: renewal.previousElementSibling === box.closest('.consent-row'),
-      starterNextToBuy: starterRefund.nextElementSibling === starterButton,
+      checkbox: document.querySelector('#pricing input[type="checkbox"]') !== null,
+      proDisabled: pro.disabled,
+      starterDisabled: starter.disabled,
+      note: document.getElementById('pro-seller-note') !== null,
+      statement: document.getElementById('pro-statement') !== null,
       variants: document.querySelectorAll('[data-seller-direct],[data-seller-mp],[data-statement]').length,
-      disabled: button.disabled,
-      checked: box.checked,
-      starterDisabled: starterButton.disabled,
+      pro: text('pro-auto-renew'),
+      starter: text('starter-renew-terms'),
     };
   });
 }
 
-function expectLabel(state) {
-  if (state.variants || state.checked || !state.disabled || !state.starterDisabled) {
-    throw new Error('consent gate ' + JSON.stringify(state));
+function expectCards(state) {
+  if (state.checkbox || state.proDisabled || state.starterDisabled || state.note || state.statement || state.variants) {
+    throw new Error('buy state ' + JSON.stringify(state));
   }
-  if (state.text !== PRO_LABEL || state.href !== 'https://manualos.com/terms.html') {
-    throw new Error('pro label ' + JSON.stringify(state));
-  }
-  if (state.starter !== STARTER_LABEL || state.starterHref !== 'https://manualos.com/terms.html') {
-    throw new Error('starter label ' + JSON.stringify(state));
-  }
-  if (state.renewal !== PRO_BESIDE || !state.nextToBuy || !state.nextToConsent || !state.starterRefund.includes(STARTER_BESIDE) || !state.starterNextToBuy) {
-    throw new Error('disclosure is not beside the checkbox and Buy ' + JSON.stringify(state));
-  }
-  if (/authorized reseller|LINK\.COM|merchant of record|app\.link\.com/i.test(state.text + state.starter + state.renewal + state.starterRefund)) {
-    throw new Error('retired copy ' + state.text);
+  if (state.pro !== proDisclosure) throw new Error('pro disclosure ' + state.pro);
+  if (state.starter !== starterDisclosure) throw new Error('starter disclosure ' + state.starter);
+  if (/merchant of record|app\.link\.com|authorized reseller|LINK\.COM|link\.com/i.test(state.pro + state.starter)) {
+    throw new Error('still has retired copy ' + JSON.stringify(state));
   }
 }
 
@@ -103,17 +85,12 @@ try {
   await mkdir(shotDir, { recursive: true });
   const page = await browser.newPage({ viewport: { width: 1100, height: 900 } });
   await page.goto(base + '/index.html#pricing', { waitUntil: 'domcontentloaded' });
-  const state = await readConsent(page);
-  expectLabel(state);
-  const card = page.locator('article.is-pro .plan-buy');
-  await card.screenshot({ path: path.join(shotDir, 'checkout-consent.png') });
-  await page.click('#pro-consent');
-  const enabled = await page.$eval('[data-checkout="pro"]', (el) => !el.disabled && document.getElementById('pro-consent').checked);
-  if (!enabled) throw new Error('ticking the box did not enable Buy');
-  await page.click('#pro-consent');
-  const disabledAgain = await page.$eval('[data-checkout="pro"]', (el) => el.disabled && !document.getElementById('pro-consent').checked);
-  if (!disabledAgain) throw new Error('clearing the box left Buy enabled');
-  console.log('PASS consent label, and Buy stays disabled until ticked');
+  expectCards(await readCards(page));
+  await page.locator('#pricing').screenshot({ path: path.join(shotDir, 'pricing-cards.png') });
+  await page.setViewportSize({ width: 390, height: 844 });
+  expectCards(await readCards(page));
+  await page.locator('#pricing').screenshot({ path: path.join(shotDir, 'pricing-cards-390.png') });
+  console.log('PASS pricing cards disclose the charge without a consent checkbox');
 } finally {
   await browser.close();
   child.kill('SIGTERM');
