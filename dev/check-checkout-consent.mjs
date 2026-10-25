@@ -74,7 +74,7 @@ function expectOne(state, mode) {
     if (state.text.includes('Op3x LLC to charge my card')) throw new Error('direct variant leaked into mp consent');
   } else {
     if (!state.direct || state.mp) throw new Error('direct variant hidden ' + JSON.stringify(state));
-    if (!state.text.includes('Op3x LLC to charge my card $79 each month')) throw new Error('direct consent text ' + state.text);
+    if (!state.text.includes('Op3x LLC to charge my card $79 plus applicable taxes each month')) throw new Error('direct consent text ' + state.text);
     if (state.text.includes('authorized reseller') || /\bLink\b/.test(state.text)) throw new Error('reseller variant leaked into direct consent');
   }
 }

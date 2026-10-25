@@ -169,6 +169,7 @@ async function main() {
   if (/at any hour/.test(Object.values(html).join('\n'))) throw new Error('an at-any-hour line is still present');
   const turnaround = 'Approved refunds are processed within 5 business days. Your bank may take 5–10 business days to show the credit.';
   const renewalNotice = 'If you bought before these refund limits applied, the new terms apply from your next renewal, and we will email you at least 14 days before that renewal.';
+  const firstRenewal = 'Changes apply from your first renewal at least 14 days after we email you about them.';
   const venue = 'Disputes are brought in the state or federal courts serving Winnebago County, Illinois, and you and we consent to their jurisdiction. Either party may bring an individual claim in small-claims court.';
   const deployDateNote = 'The effective date is filled with the production deploy date when this page is merged.';
   const effectiveDateJs = await read('effective-date.js');
@@ -180,7 +181,8 @@ async function main() {
   }
   for (const name of ['terms.html', 'refunds.html']) {
     if (!html[name].includes(turnaround)) throw new Error(name + ' missing refund turnaround');
-    if (!html[name].includes(renewalNotice)) throw new Error(name + ' missing renewal notice');
+    if (html[name].includes(renewalNotice)) throw new Error(name + ' still has the next-renewal notice');
+    if (!html[name].includes(firstRenewal)) throw new Error(name + ' missing first-renewal clause');
     if (!html[name].includes(venue)) throw new Error(name + ' missing Winnebago venue');
   }
   if (/arbitration|class-action waiver|class action waiver|jury waiver/i.test(html['terms.html'] + html['refunds.html'] + html['privacy.html'])) {
@@ -221,8 +223,10 @@ async function main() {
   }
   if (cancelPage.includes('Request received')) throw new Error('cancel page still says Request received');
   if (!cancelPage.includes("var ACCESS_LINK_PATH = '/access-link'")) throw new Error('access-link path missing');
-  if (!cancelPage.includes('Check your email for a secure Manage plan link')) throw new Error('access-link confirmation missing');
-  if (!cancelPage.includes('Online cancellation is temporarily unavailable, please try again shortly')) throw new Error('access-link failure copy missing');
+  if (!cancelPage.includes('Check your email for a secure link to manage or cancel your plan.')) throw new Error('access-link confirmation missing');
+  if (!cancelPage.includes('Online cancellation is temporarily unavailable. Please try again shortly.')) throw new Error('access-link failure copy missing');
+  if (!cancelPage.includes('Enter a valid email address.')) throw new Error('invalid-email copy missing');
+  if (!cancelPage.includes('Too many requests. Try again later.')) throw new Error('rate-limit copy missing');
   if (!cancelPage.includes('<strong>Email backup.</strong>')) throw new Error('email backup is not labeled');
   const retention = "We delete support threads, recordings and transcripts as soon as practicable once they're no longer needed.";
   if (!html['privacy.html'].includes(retention)) throw new Error('privacy missing practicable deletion sentence');
@@ -241,6 +245,8 @@ async function main() {
   }
   if (/\btrain\b|24 hours|\bAI\b/i.test(html['index.html'])) throw new Error('homepage still mentions training, AI, or a 24-hour PDF');
   if (!html['index.html'].includes('Full details are in our <a href="/privacy.html">Privacy Policy</a>.')) throw new Error('homepage privacy link missing');
+  if (html['index.html'].includes('at https://manualos.com/privacy.html')) throw new Error('JSON-LD still appends the privacy URL');
+  if (!html['index.html'].includes('Full details are in our Privacy Policy."')) throw new Error('JSON-LD privacy sentence does not end on Privacy Policy');
   if (!html['terms.html'].includes('ManualOS is a product of Op3x LLC ("ManualOS," "we," "us")')) throw new Error('terms product sentence missing');
   const indexMarkup = html['index.html'].slice(0, html['index.html'].lastIndexOf('<script>'));
   const configJs = await read('checkout-config.js');
@@ -257,7 +263,7 @@ async function main() {
   if (!html['index.html'].includes('termsAccepted: true') || /termsConsent/.test(html['index.html'])) throw new Error('checkout payload must send termsAccepted and not termsConsent');
   if (!html['index.html'].includes("getAttribute('data-checkout-config')")) throw new Error('Pay stays enabled before checkout config settles');
   if (/while managed payments are on/.test(html['terms.html'] + html['refunds.html'])) throw new Error('managed-payments jargon remains');
-  if (html['terms.html'].includes('Changes apply to purchases made after the effective date.')) throw new Error('terms still has the contradicting effective-date sentence');
+  if (!html['terms.html'].includes('Changes apply to purchases made after the effective date.')) throw new Error('terms missing purchases-after-effective-date sentence');
   if (!html['terms.html'].includes('Changes apply from your first renewal at least 14 days after we email you about them.')) throw new Error('terms changes clause missing');
   const smsRecords = 'Opt-outs are kept indefinitely, and consent records are kept for 5 years after the last message or the opt-out, whichever is later.';
   if (!html['privacy.html'].includes(smsRecords)) throw new Error('privacy missing SMS records sentence');
@@ -541,7 +547,7 @@ async function main() {
     if (earlyPortal.length || earlyAccess.length) throw new Error('cancel posted without an email or checkout reference');
     await page.type('#cancel-email', 'buyer@example.com');
     await page.click('#cancel-submit');
-    await page.waitForFunction(() => document.getElementById('cancel-status-text').textContent === 'Check your email for a secure Manage plan link');
+    await page.waitForFunction(() => document.getElementById('cancel-status-text').textContent === 'Check your email for a secure link to manage or cancel your plan.');
     const accessLink = (await fetch(base + '/__mock/requests').then((res) => res.json())).filter((item) => item.path === '/access-link').pop();
     if (!accessLink || accessLink.status !== 202 || accessLink.email !== 'buyer@example.com' || accessLink.fields.join(',') !== 'email') {
       throw new Error('access-link body ' + JSON.stringify(accessLink));
@@ -555,7 +561,7 @@ async function main() {
     await page.evaluate(() => localStorage.clear());
     await page.type('#cancel-email', 'buyer@example.com');
     await page.click('#cancel-submit');
-    await page.waitForFunction(() => document.getElementById('cancel-error').textContent === 'Online cancellation is temporarily unavailable, please try again shortly');
+    await page.waitForFunction(() => document.getElementById('cancel-error').textContent === 'Online cancellation is temporarily unavailable. Please try again shortly.');
     const accessFailed = (await fetch(base + '/__mock/requests').then((res) => res.json())).filter((item) => item.path === '/access-link').pop();
     if (!accessFailed || accessFailed.status !== 500) throw new Error('access-link failure ' + JSON.stringify(accessFailed));
     const accessBackup = await page.$eval('#email-backup', (el) => el.textContent.includes('Email backup.'));
@@ -563,7 +569,31 @@ async function main() {
     await fetch(base + '/__mock/checkout-config', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ managedPayments: true, fail: false, hold: false, accessFail: false }),
+      body: JSON.stringify({ managedPayments: true, fail: false, hold: false, accessFail: false, accessStatus: 400, portalStatus: 0 }),
+    });
+    await page.goto(base + '/cancel/', { waitUntil: 'networkidle0' });
+    await page.evaluate(() => localStorage.clear());
+    await page.type('#cancel-email', 'buyer@example.com');
+    await page.click('#cancel-submit');
+    await page.waitForFunction(() => document.getElementById('cancel-error').textContent === 'Enter a valid email address.');
+    const accessInvalid = (await fetch(base + '/__mock/requests').then((res) => res.json())).filter((item) => item.path === '/access-link').pop();
+    if (!accessInvalid || accessInvalid.status !== 400 || accessInvalid.email !== 'buyer@example.com') throw new Error('access-link 400 ' + JSON.stringify(accessInvalid));
+    await fetch(base + '/__mock/checkout-config', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ managedPayments: true, fail: false, hold: false, accessFail: false, accessStatus: 429, portalStatus: 0 }),
+    });
+    await page.goto(base + '/cancel/', { waitUntil: 'networkidle0' });
+    await page.evaluate(() => localStorage.clear());
+    await page.type('#cancel-email', 'buyer@example.com');
+    await page.click('#cancel-submit');
+    await page.waitForFunction(() => document.getElementById('cancel-error').textContent === 'Too many requests. Try again later.');
+    const accessLimited = (await fetch(base + '/__mock/requests').then((res) => res.json())).filter((item) => item.path === '/access-link').pop();
+    if (!accessLimited || accessLimited.status !== 429) throw new Error('access-link 429 ' + JSON.stringify(accessLimited));
+    await fetch(base + '/__mock/checkout-config', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ managedPayments: true, fail: false, hold: false, accessFail: false, accessStatus: 0, portalStatus: 0 }),
     });
     await page.goto(base + '/cancel/?session_id=cs_test_pro', { waitUntil: 'networkidle0' });
     await page.click('#cancel-submit');
@@ -573,11 +603,11 @@ async function main() {
     await fetch(base + '/__mock/checkout-config', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ managedPayments: true, fail: false, hold: false, portalFail: true }),
+      body: JSON.stringify({ managedPayments: true, fail: false, hold: false, portalFail: true, portalStatus: 0, accessStatus: 0 }),
     });
     await page.goto(base + '/cancel/?session_id=cs_test_pro', { waitUntil: 'networkidle0' });
     await page.click('#cancel-submit');
-    await page.waitForFunction(() => document.getElementById('cancel-error').textContent === 'Online cancellation is temporarily unavailable, please try again shortly');
+    await page.waitForFunction(() => document.getElementById('cancel-error').textContent === 'Online cancellation is temporarily unavailable. Please try again shortly.');
     const failedPortal = await page.evaluate(() => {
       const form = document.getElementById('cancel-form');
       const lead = document.getElementById('mp-cancel-lead');
@@ -591,13 +621,43 @@ async function main() {
         error,
       };
     });
-    if (failedPortal.leadHidden || !failedPortal.formBeforeLead || !failedPortal.backup || failedPortal.requestReceived || failedPortal.error !== 'Online cancellation is temporarily unavailable, please try again shortly') {
+    if (failedPortal.leadHidden || !failedPortal.formBeforeLead || !failedPortal.backup || failedPortal.requestReceived || failedPortal.error !== 'Online cancellation is temporarily unavailable. Please try again shortly.') {
       throw new Error('portal failure fell back to email only ' + JSON.stringify(failedPortal));
     }
     await fetch(base + '/__mock/checkout-config', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ managedPayments: true, fail: false, hold: false, portalFail: false }),
+      body: JSON.stringify({ managedPayments: true, fail: false, hold: false, portalFail: false, portalStatus: 400, accessStatus: 0 }),
+    });
+    await page.goto(base + '/cancel/?session_id=cs_test_expired', { waitUntil: 'networkidle0' });
+    const beforeExpired = await fetch(base + '/__mock/requests').then((res) => res.json());
+    const beforeExpiredAccess = beforeExpired.filter((item) => item.path === '/access-link').length;
+    await page.click('#cancel-submit');
+    await page.waitForFunction(() => document.getElementById('cancel-error').textContent === 'Enter the email you used at checkout.');
+    const expiredPortal = (await fetch(base + '/__mock/requests').then((res) => res.json())).filter((item) => item.path === '/billing-portal').pop();
+    const expiredAccess = (await fetch(base + '/__mock/requests').then((res) => res.json())).filter((item) => item.path === '/access-link').slice(beforeExpiredAccess);
+    if (!expiredPortal || expiredPortal.status !== 400 || expiredPortal.session_id !== 'cs_test_expired' || expiredAccess.length) {
+      throw new Error('expired portal did not ask for the checkout email ' + JSON.stringify({ expiredPortal, expiredAccess }));
+    }
+    await fetch(base + '/__mock/checkout-config', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ managedPayments: true, fail: false, hold: false, portalFail: false, portalStatus: 429, accessStatus: 0 }),
+    });
+    await page.goto(base + '/cancel/?session_id=cs_test_limited', { waitUntil: 'networkidle0' });
+    const beforeLimited = await fetch(base + '/__mock/requests').then((res) => res.json());
+    const beforeLimitedAccess = beforeLimited.filter((item) => item.path === '/access-link').length;
+    await page.click('#cancel-submit');
+    await page.waitForFunction(() => document.getElementById('cancel-error').textContent === 'Too many requests. Try again later.');
+    const limitedPortal = (await fetch(base + '/__mock/requests').then((res) => res.json())).filter((item) => item.path === '/billing-portal').pop();
+    const limitedAccess = (await fetch(base + '/__mock/requests').then((res) => res.json())).filter((item) => item.path === '/access-link').slice(beforeLimitedAccess);
+    if (!limitedPortal || limitedPortal.status !== 429 || limitedAccess.length) {
+      throw new Error('portal 429 chained another request ' + JSON.stringify({ limitedPortal, limitedAccess }));
+    }
+    await fetch(base + '/__mock/checkout-config', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ managedPayments: true, fail: false, hold: false, portalFail: false, portalStatus: 0, accessStatus: 0 }),
     });
 
     async function setConfig(body) {

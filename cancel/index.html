@@ -138,8 +138,11 @@ a{color:var(--ink)}
   // Customer portal from backend PR #15. One string to change if that route moves.
   var BILLING_PORTAL_PATH = '/billing-portal';
   var ACCESS_LINK_PATH = '/access-link';
-  var ACCESS_LINK_OK = 'Check your email for a secure Manage plan link';
-  var ACCESS_LINK_DOWN = 'Online cancellation is temporarily unavailable, please try again shortly';
+  var ACCESS_LINK_OK = 'Check your email for a secure link to manage or cancel your plan.';
+  var ACCESS_LINK_DOWN = 'Online cancellation is temporarily unavailable. Please try again shortly.';
+  var ACCESS_LINK_EMAIL = 'Enter a valid email address.';
+  var ACCESS_LINK_LIMIT = 'Too many requests. Try again later.';
+  var ACCESS_LINK_ASK = 'Enter the email you used at checkout.';
   var BILLING_SESSION_FIELD = 'session_id';
   var BILLING_URL_FIELD = 'url';
   var SESSION_STORAGE_KEY = 'manualos_session_id';
@@ -223,13 +226,19 @@ a{color:var(--ink)}
     });
   }
 
+  function failureMessage(status) {
+    if (status === 400) return ACCESS_LINK_EMAIL;
+    if (status === 429) return ACCESS_LINK_LIMIT;
+    return ACCESS_LINK_DOWN;
+  }
+
   function sendAccessLink(email) {
     return postJson(ACCESS_LINK_PATH, { email: email }).then(function (result) {
       if (result.status === 202) {
         showMessage(ACCESS_LINK_OK, false);
         return;
       }
-      showMessage(ACCESS_LINK_DOWN, true);
+      showMessage(failureMessage(result.status), true);
     }).catch(function () {
       showMessage(ACCESS_LINK_DOWN, true);
     });
@@ -270,6 +279,14 @@ a{color:var(--ink)}
     submitBtn.textContent = 'Opening\u2026';
     postJson(BILLING_PORTAL_PATH, payload).then(function (result) {
       if (result.ok && safeRedirect(result.data[BILLING_URL_FIELD])) return;
+      if (result.status === 429) {
+        showMessage(ACCESS_LINK_LIMIT, true);
+        return;
+      }
+      if (result.status === 400 && !email) {
+        showMessage(ACCESS_LINK_ASK, true);
+        return;
+      }
       if (result.status >= 500) {
         showMessage(ACCESS_LINK_DOWN, true);
         return;

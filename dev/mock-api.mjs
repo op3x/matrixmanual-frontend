@@ -15,7 +15,7 @@ const pdfs = new Map();
 const holds = new Map();
 const requests = [];
 const configWaiters = [];
-const checkoutConfig = { managedPayments: true, fail: false, hold: false, portalFail: false, accessFail: false };
+const checkoutConfig = { managedPayments: true, fail: false, hold: false, portalFail: false, accessFail: false, portalStatus: 0, accessStatus: 0 };
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -341,6 +341,8 @@ const server = http.createServer(async (req, res) => {
       if (typeof body.hold === 'boolean') checkoutConfig.hold = body.hold;
       if (typeof body.portalFail === 'boolean') checkoutConfig.portalFail = body.portalFail;
       if (typeof body.accessFail === 'boolean') checkoutConfig.accessFail = body.accessFail;
+      if (typeof body.portalStatus === 'number') checkoutConfig.portalStatus = body.portalStatus;
+      if (typeof body.accessStatus === 'number') checkoutConfig.accessStatus = body.accessStatus;
       if (body.release === true) {
         checkoutConfig.hold = false;
         const pending = configWaiters.splice(0, configWaiters.length);
@@ -405,7 +407,7 @@ const server = http.createServer(async (req, res) => {
       const sessionId = body && typeof body.session_id === 'string' ? body.session_id.trim() : '';
       const token = body && typeof body.token === 'string' ? body.token.trim() : '';
       const ok = Boolean(token) !== Boolean(sessionId);
-      const status = checkoutConfig.portalFail ? 500 : (ok ? 200 : 400);
+      const status = checkoutConfig.portalStatus || (checkoutConfig.portalFail ? 500 : (ok ? 200 : 400));
       requests.push({
         method: 'POST',
         path: '/billing-portal',
@@ -416,8 +418,9 @@ const server = http.createServer(async (req, res) => {
         session_id: sessionId,
         token,
       });
-      if (checkoutConfig.portalFail) return sendJson(res, 500, { error: 'Portal unavailable.' });
-      if (!ok) return sendJson(res, 400, { error: 'A cancel link is required.' });
+      if (status === 429) return sendJson(res, 429, { error: 'Too many requests.' });
+      if (status >= 500) return sendJson(res, status, { error: 'Portal unavailable.' });
+      if (status === 400 || !ok) return sendJson(res, 400, { error: 'This cancel link is invalid or expired.' });
       return sendJson(res, 200, { url: '/refunds.html?portal=1' });
     }
     if (req.method === 'POST' && url.pathname === '/access-link') {
@@ -426,7 +429,7 @@ const server = http.createServer(async (req, res) => {
       try { body = JSON.parse(raw.toString('utf8') || '{}'); } catch { body = {}; }
       const email = body && typeof body.email === 'string' ? body.email.trim() : '';
       const validEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-      const status = checkoutConfig.accessFail ? 500 : (validEmail ? 202 : 400);
+      const status = checkoutConfig.accessStatus || (checkoutConfig.accessFail ? 500 : (validEmail ? 202 : 400));
       requests.push({
         method: 'POST',
         path: '/access-link',
@@ -435,8 +438,9 @@ const server = http.createServer(async (req, res) => {
         fields: body && typeof body === 'object' ? Object.keys(body) : [],
         email,
       });
-      if (checkoutConfig.accessFail) return sendJson(res, 500, { error: 'Access link unavailable.' });
-      if (!validEmail) return sendJson(res, 400, { error: 'Email required.' });
+      if (status === 429) return sendJson(res, 429, { error: 'Too many requests.' });
+      if (status >= 500) return sendJson(res, status, { error: 'Access link unavailable.' });
+      if (status === 400 || !validEmail) return sendJson(res, 400, { error: 'Email required.' });
       return sendJson(res, 202, { ok: true });
     }
     if (req.method === 'POST' && url.pathname === '/jobs') return await handleJobsPost(req, res);
