@@ -150,6 +150,15 @@
       *{scroll-behavior:auto !important;transition:none !important}
     }
     #source-picker,#file-list,#progress-wrap,#upload-error,#success-section,#export-help,#mode-note,#access-banner,#generate-btn{scroll-margin-top:5rem}
+    .site-footer{background:var(--ink);color:#f3f0e6;margin-top:auto;border-top:4px solid var(--yellow);padding:1.5rem .85rem 1.75rem;font-size:.95rem}
+    .site-footer a{color:#f3f0e6;text-decoration:none}
+    .site-footer a:hover{color:var(--yellow)}
+    .site-footer a:focus-visible{outline-color:#f3f0e6}
+    .footer-inner{max-width:76rem;margin:0 auto;display:grid;gap:.8rem}
+    .footer-brand{margin:0;font-size:1.15rem;font-weight:600;letter-spacing:-.02em;color:#f3f0e6}
+    .footer-nav{display:flex;flex-wrap:wrap;gap:.15rem .9rem}
+    .footer-nav a{display:inline-flex;align-items:center;min-height:2.75rem;font-weight:600;font-size:1em;text-underline-offset:.15em}
+    .legal{margin:0;color:#f3f0e6;font-size:1em;font-weight:400;line-height:1.5;opacity:1}
   </style>
   <script>
     document.documentElement.classList.add('has-session');
@@ -277,6 +286,20 @@
     </ul>
   </section>
 </main>
+<footer class="site-footer">
+  <div class="footer-inner">
+    <p class="footer-brand">ManualOS</p>
+    <nav class="footer-nav" aria-label="Footer">
+      <a href="/">Home</a>
+      <a href="/support.html">Support</a>
+      <a href="/privacy.html">Privacy</a>
+      <a href="/terms.html">Terms</a>
+      <a href="/refunds.html">Refunds</a>
+      <a href="mailto:support@manualos.com">support@manualos.com</a>
+    </nav>
+    <p class="legal">© 2026 Op3x LLC. ManualOS is a product of Op3x LLC.</p>
+  </div>
+</footer>
 <script>
 (function () {
   // POST /jobs is the preferred upload (async progress, up to 25 files). It is not
@@ -867,7 +890,7 @@
       if (res.status === 404) {
         resetProgress();
         setBusy(false);
-        showUploadError('This job is no longer available. It may have expired after 24 hours.');
+        showUploadError('This manual isn’t available. Manuals are deleted 24 hours after they’re made. Generate it again from your files.');
         return null;
       }
       var job = await readJson(res);
@@ -898,7 +921,7 @@
     var updated = await verifySession({ keepAccessOnError: true });
     var successText = opts.legacy
       ? 'Your PDF is ready. Download it here.'
-      : 'Your PDF is ready. Download it here. This copy stays available for 24 hours.';
+      : 'Your PDF is ready. Download it right away, because it’s deleted 24 hours after it’s made.';
     if (updated && updated.remaining === null) successText += ' Unlimited manuals remaining.';
     else if (updated) successText += ' ' + remainingLabel(updated.remaining) + '.';
     successSub.textContent = successText;
@@ -932,7 +955,7 @@
       if (!res.ok) {
         var errBody = await readJson(res);
         showUploadError(res.status === 404
-          ? 'This manual isn’t available. It may have expired after 24 hours.'
+          ? 'This manual isn’t available. Manuals are deleted 24 hours after they’re made. Generate it again from your files.'
           : (friendlyHttpError(res.status, errBody).message));
         return false;
       }

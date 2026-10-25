@@ -1,5 +1,7 @@
 // Fails when shipped HTML or JS names a real vendor or product,
 // or the retired sample names CP-200, CP200, and Acme.
+// A third-party video site is a vendor name anywhere in shipped HTML or JS,
+// including text, alt, aria-label, title, src, and href. No embed URL is exempt.
 // Grok is a vendor name. The only allowed occurrence is the exact footer
 // line "Hero video created with Grok." in <p class="hero-video-credit">
 // inside <footer>. Any other Grok text, including alt, title, aria-label,
@@ -48,6 +50,15 @@ function brandPattern(name) {
 
 const PATTERNS = BRAND_NAMES.map((name) => ({ name, re: brandPattern(name) }));
 
+const THIRD_PARTY_VIDEO = ['you', 'tube'].join('');
+
+function findThirdPartyVideoHits(text) {
+  const hits = [];
+  const re = new RegExp(THIRD_PARTY_VIDEO, 'gi');
+  for (const match of text.matchAll(re)) hits.push(match.index);
+  return hits;
+}
+
 export const HERO_CREDIT_TEXT = 'Hero video created with Grok.';
 
 const HERO_CREDIT_RE = /<p\b[^>]*\bclass\s*=\s*["'][^"']*\bhero-video-credit\b[^"']*["'][^>]*>\s*Hero video created with Grok\.\s*<\/p>/gi;
@@ -89,6 +100,13 @@ export function findBrandHitsInText(file, text) {
         excerpt: excerpt(masked, match.index),
       });
     }
+  }
+  for (const index of findThirdPartyVideoHits(masked)) {
+    hits.push({
+      file,
+      name: 'third-party video',
+      excerpt: excerpt(masked, index),
+    });
   }
   return hits;
 }

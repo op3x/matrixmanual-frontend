@@ -12,7 +12,7 @@
 <meta property="og:type" content="website">
 <meta property="og:locale" content="en_US">
 <meta property="og:url" content="https://manualos.com/">
-<meta property="og:title" content="ManualOS — Upload your PLC or CAD files">
+<meta property="og:title" content="ManualOS — Operator and maintenance manuals from your PLC or CAD files">
 <meta property="og:description" content="ManualOS turns your PLC program and CAD files into a plain-English operating and maintenance manual: safety, theory of operation, alarms, troubleshooting and maintenance, in one PDF you can hand over. From $39, plus applicable taxes.">
 <meta property="og:image" content="https://manualos.com/assets/og-image.jpg">
 <meta property="og:image:secure_url" content="https://manualos.com/assets/og-image.jpg">
@@ -21,7 +21,7 @@
 <meta property="og:image:height" content="630">
 <meta property="og:image:alt" content="ManualOS. Upload your PLC or CAD files. PLC program files (.L5X, .L5K, .scl, .st and more) and CAD files (STEP, IGES, DXF). Starter is $39 once, plus applicable taxes. Pro is $79 per month, plus applicable taxes. The cover of a 60-page sample for the SAMPLE-A Case Packer, Example Machinery Co. (fictional), document OM-SAMPLE-A-EN, sits beside the title.">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="ManualOS — Upload your PLC or CAD files">
+<meta name="twitter:title" content="ManualOS — Operator and maintenance manuals from your PLC or CAD files">
 <meta name="twitter:description" content="ManualOS turns your PLC program and CAD files into a plain-English operating and maintenance manual: safety, theory of operation, alarms, troubleshooting and maintenance, in one PDF you can hand over. From $39, plus applicable taxes.">
 <meta name="twitter:image" content="https://manualos.com/assets/og-image.jpg">
 <meta name="twitter:image:alt" content="ManualOS. Upload your PLC or CAD files. PLC program files (.L5X, .L5K, .scl, .st and more) and CAD files (STEP, IGES, DXF). Starter is $39 once, plus applicable taxes. Pro is $79 per month, plus applicable taxes. The cover of a 60-page sample for the SAMPLE-A Case Packer, Example Machinery Co. (fictional), document OM-SAMPLE-A-EN, sits beside the title.">
@@ -197,15 +197,14 @@ figcaption{padding:.75rem;border-top:1px solid var(--line);color:var(--paper)}
 .pay-note{margin-top:1rem;color:var(--mist)}
 .faq-item{padding:1rem 0;border-top:1px solid var(--line)}
 .faq-item p{margin-top:.35rem}
-.site-footer{background:var(--night);color:var(--paper);margin-top:var(--section-space);border-top:4px solid var(--run-green);padding:2.5rem 1rem 2.75rem}
+.site-footer{background:var(--night);color:var(--paper);margin-top:var(--section-space);border-top:4px solid var(--run-green);padding:2.5rem 1rem 2.75rem;font-size:var(--step-small)}
 .site-footer a{color:var(--paper)}
 .site-footer a:hover{color:var(--run-green)}
 .footer-inner{max-width:var(--content-max);margin:0 auto;display:grid;gap:1rem}
 .footer-brand{margin:0;font-size:1.15rem;font-weight:600;letter-spacing:-.02em;color:var(--paper)}
 .footer-nav{display:flex;flex-wrap:wrap;gap:.15rem 1rem}
-.footer-nav a{display:inline-flex;align-items:center;min-height:2.75rem;font-weight:600;text-underline-offset:.15em}
-.legal{color:var(--mist)}
-.hero-video-credit{margin:0;color:var(--paper);font-size:inherit;font-weight:400;line-height:1.6;opacity:1}
+.footer-nav a{display:inline-flex;align-items:center;min-height:2.75rem;font-weight:600;font-size:1em;text-underline-offset:.15em}
+.legal,.hero-video-credit{margin:0;color:var(--paper);font-size:1em;font-weight:400;line-height:1.6;opacity:1}
 @media(min-width:768px){
   :root{--section-space:6.5rem}
   html{scroll-padding-top:4.5rem}
@@ -344,7 +343,7 @@ figcaption{padding:.75rem;border-top:1px solid var(--line);color:var(--paper)}
           "name": "Who can see my PLC program?",
           "acceptedAnswer": {
             "@type": "Answer",
-            "text": "ManualOS processes your files to write the manual. Extracted program logic, comments, and part details are sent to a third-party service provider that helps write the manual. We don’t use your files to train models, and that provider doesn’t train on API data by default. Uploaded files are processed and deleted when the job finishes and are not kept. The generated PDF stays on the server for up to 24 hours for download, then is deleted. Programs are not sold."
+            "text": "To write your manual, we send content extracted from your files, such as program logic, comments, and part details, to a third-party service provider that helps write the manual. We delete your uploaded files when the job finishes. Download your PDF right away, because we delete it 24 hours after it’s made. Our provider deletes what we send it within 30 days, unless it must keep it longer to enforce its usage policy or comply with the law. Full details are in our Privacy Policy."
           }
         },
         {
@@ -399,7 +398,7 @@ figcaption{padding:.75rem;border-top:1px solid var(--line);color:var(--paper)}
       <ul class="trust-strip">
         <li>Files are deleted when your job finishes</li>
         <li>A rejected file doesn’t use a credit</li>
-        <li>Your PDF stays available for 24 hours</li>
+        <li>Your PDF is deleted after 24 hours</li>
       </ul>
       <p class="hero-note"><a href="/upload.html">Already purchased? Upload a file</a>.</p>
       </div>
@@ -432,12 +431,107 @@ figcaption{padding:.75rem;border-top:1px solid var(--line);color:var(--paper)}
         </figcaption>
       </figure>
     </div>
-    <!-- Hero media slot for PR #8 (cursor/home-hero-video-303d). That PR drops
-         .hero-film-poster, .hero-film-video, and .hero-film-toggle into this frame.
-         Below 768px the video and its control stay hidden: poster only,
-         and this page does not request a video. No third-party player. -->
     <div class="hero-film" id="hero-film">
-      <div class="hero-film-frame"></div>
+      <div class="hero-film-frame">
+        <img class="hero-film-poster" src="/assets/hero/frame-v3a.jpg" width="1280" height="720" alt="" fetchpriority="high" decoding="async">
+        <video class="hero-film-video" muted loop playsinline autoplay preload="none" aria-hidden="true" tabindex="-1" hidden></video>
+        <button type="button" class="btn hero-film-toggle" hidden>Pause</button>
+      </div>
+      <script>
+      (function () {
+        var root = document.getElementById('hero-film');
+        if (!root) return;
+        var poster = root.querySelector('.hero-film-poster');
+        var video = root.querySelector('.hero-film-video');
+        var button = root.querySelector('.hero-film-toggle');
+        if (!poster || !video || !button) return;
+        var SRC = '/assets/hero/manualos-hero-draft-v3-original.mp4';
+        var userPaused = false;
+        var attached = false;
+        var onScreen = true;
+        var painted = false;
+
+        function saveData() {
+          return !!(navigator.connection && navigator.connection.saveData);
+        }
+        function allowed() {
+          return window.matchMedia('(min-width: 768px)').matches && !window.matchMedia('(prefers-reduced-motion: reduce)').matches && !saveData();
+        }
+        function setButton(playing) {
+          button.textContent = playing ? 'Pause' : 'Play';
+          button.setAttribute('aria-pressed', playing ? 'true' : 'false');
+        }
+        function detach() {
+          if (attached) {
+            video.pause();
+            video.removeAttribute('src');
+            video.load();
+            attached = false;
+          }
+          video.hidden = true;
+          button.hidden = true;
+        }
+        function sync() {
+          if (!painted || !allowed()) {
+            detach();
+            return;
+          }
+          if (!attached) {
+            video.muted = true;
+            video.src = SRC;
+            attached = true;
+          }
+          video.hidden = false;
+          button.hidden = false;
+          if (onScreen && !userPaused) {
+            var pending = video.play();
+            if (pending && pending.then) pending.then(function () { setButton(true); }).catch(function () { setButton(false); });
+            else setButton(!video.paused);
+          } else {
+            video.pause();
+            setButton(false);
+          }
+        }
+        button.addEventListener('click', function () {
+          if (!attached) return;
+          if (video.paused || userPaused) {
+            userPaused = false;
+            var pending = video.play();
+            if (pending && pending.catch) pending.catch(function () { setButton(false); });
+            setButton(true);
+          } else {
+            userPaused = true;
+            video.pause();
+            setButton(false);
+          }
+        });
+        if ('IntersectionObserver' in window) {
+          onScreen = false;
+          new IntersectionObserver(function (entries) {
+            onScreen = entries.some(function (entry) { return entry.isIntersecting; });
+            if (painted) sync();
+          }, { threshold: 0 }).observe(root);
+        }
+        function onMediaChange() { if (painted) sync(); }
+        var wide = window.matchMedia('(min-width: 768px)');
+        var reduce = window.matchMedia('(prefers-reduced-motion: reduce)');
+        if (wide.addEventListener) {
+          wide.addEventListener('change', onMediaChange);
+          reduce.addEventListener('change', onMediaChange);
+        }
+        function markPainted() {
+          if (painted) return;
+          requestAnimationFrame(function () {
+            requestAnimationFrame(function () {
+              painted = true;
+              sync();
+            });
+          });
+        }
+        if (poster.complete && poster.naturalWidth > 0) markPainted();
+        else poster.addEventListener('load', markPainted, { once: true });
+      })();
+      </script>
     </div>
   </section>
   <div class="story-band">
@@ -496,7 +590,7 @@ figcaption{padding:.75rem;border-top:1px solid var(--line);color:var(--paper)}
       </ul>
       <div class="privacy">
         <h3>Privacy</h3>
-        <p>ManualOS processes your files to write the manual. Extracted program logic, comments, and part details are sent to a third-party service provider that helps write the manual. We don’t use your files to train models, and that provider doesn’t train on API data by default. Uploaded files are processed and deleted when the job finishes and are not kept. The generated PDF stays on the server for up to 24 hours for download, then is deleted. Programs are not sold. Card numbers are entered at secure checkout, not on this site.</p>
+        <p>To write your manual, we send content extracted from your files, such as program logic, comments, and part details, to a third-party service provider that helps write the manual. We delete your uploaded files when the job finishes. Download your PDF right away, because we delete it 24 hours after it’s made. Our provider deletes what we send it within 30 days, unless it must keep it longer to enforce its usage policy or comply with the law. Full details are in our <a href="/privacy.html">Privacy Policy</a>.</p>
       </div>
     </section>
   </section>
@@ -796,7 +890,7 @@ figcaption{padding:.75rem;border-top:1px solid var(--line);color:var(--paper)}
     </div>
     <div class="faq-item">
       <h3>Who can see my PLC program?</h3>
-      <p>ManualOS processes your files to write the manual. Extracted program logic, comments, and part details are sent to a third-party service provider that helps write the manual. We don’t use your files to train models, and that provider doesn’t train on API data by default. Uploaded files are processed and deleted when the job finishes and are not kept. The generated PDF stays on the server for up to 24 hours for download, then is deleted. Programs are not sold.</p>
+      <p>To write your manual, we send content extracted from your files, such as program logic, comments, and part details, to a third-party service provider that helps write the manual. We delete your uploaded files when the job finishes. Download your PDF right away, because we delete it 24 hours after it’s made. Our provider deletes what we send it within 30 days, unless it must keep it longer to enforce its usage policy or comply with the law. Full details are in our <a href="/privacy.html">Privacy Policy</a>.</p>
     </div>
     <div class="faq-item">
       <h3>Can I cancel Pro, and what about refunds?</h3>
@@ -814,11 +908,14 @@ figcaption{padding:.75rem;border-top:1px solid var(--line);color:var(--paper)}
       <a href="#pricing">Pricing</a>
       <a href="#faq">FAQ</a>
       <a href="/upload.html">Upload</a>
+      <a href="/support.html">Support</a>
+      <a href="/privacy.html">Privacy</a>
+      <a href="/terms.html">Terms</a>
+      <a href="/refunds.html">Refunds</a>
       <a href="/sitemap.xml">Sitemap</a>
       <a href="mailto:support@manualos.com">support@manualos.com</a>
     </nav>
-    <p class="legal">© 2026 ManualOS. manualos.com</p>
-    <p class="legal">Operated by Op3x LLC</p>
+    <p class="legal">© 2026 Op3x LLC. ManualOS is a product of Op3x LLC.</p>
     <p class="hero-video-credit">Hero video created with Grok.</p>
   </div>
 </footer>

@@ -184,6 +184,7 @@ function contentType(file) {
     '.txt': 'text/plain; charset=utf-8',
     '.woff2': 'font/woff2',
     '.webmanifest': 'application/manifest+json',
+    '.mp4': 'video/mp4',
   };
   return types[path.extname(file).toLowerCase()] || 'application/octet-stream';
 }
@@ -219,7 +220,8 @@ async function serveStatic(req, res, urlPath) {
       'Cache-Control': 'no-store',
     });
     res.end(body);
-  } catch {
+  } catch (err) {
+    if (!err || err.code !== 'ENOENT') console.error(err);
     sendJson(res, 404, { error: 'Not found' });
   }
 }
