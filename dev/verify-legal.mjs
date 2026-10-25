@@ -151,15 +151,17 @@ async function main() {
   if (!html['refunds.html'].includes('href="https://manualos.com/refunds.html"')) throw new Error('refunds canonical');
   if (!html['refunds.html'].includes('Prices are in USD, plus applicable taxes.')) throw new Error('refunds missing price note');
   if (!html['terms.html'].includes('refunds until the first manual is delivered')) throw new Error('terms meta description still describes the old refund window');
-  if (!html['terms.html'].includes('$249 per month or $2,490 per year')) throw new Error('terms missing Integrator price');
-  if (!html['terms.html'].includes('25 manuals per month, and unused manuals don\'t roll over')) throw new Error('terms missing Integrator manuals');
-  if (!html['terms.html'].includes('Each extra manual is $9')) throw new Error('terms missing extra-manual price');
-  if (!html['terms.html'].includes('white-label PDFs with the customer\'s own company name and logo')) throw new Error('terms missing white-label');
   if (!html['terms.html'].includes('All prices are plus applicable taxes.')) throw new Error('terms missing tax note');
-  if (!html['terms.html'].includes('Integrator renews monthly or yearly')) throw new Error('terms missing Integrator renewal');
-  if (!html['privacy.html'].includes('for Integrator, the company name and logo you upload for white-label PDFs')) throw new Error('privacy missing white-label collection');
-  if (!html['privacy.html'].includes('for Integrator, monthly manual counts')) throw new Error('privacy missing Integrator counts');
-  if (!html['privacy.html'].includes('kept on our server while you have the Integrator plan')) throw new Error('privacy missing white-label retention');
+  if (!html['terms.html'].includes('each monthly charge can be refunded until the first manual in that billing period is delivered.')) throw new Error('terms missing Pro billing-period refund');
+  for (const name of ['terms.html', 'privacy.html', 'refunds.html']) {
+    if (/Integrator|\$249|\$2,490|white-label/i.test(html[name])) throw new Error(name + ' still mentions Integrator');
+  }
+  if (/\{\{LAUNCH_DATE\}\}/.test(Object.values(html).join('\n'))) throw new Error('a page still uses {{LAUNCH_DATE}}');
+  const temp = 'Some file types are briefly written to temporary storage during conversion and deleted right after.';
+  const kept = 'Uploaded files are processed and deleted when the job finishes; they are not kept.';
+  if (!html['privacy.html'].includes(temp) || !html['privacy.html'].includes(kept)) throw new Error('privacy missing temporary-storage retention wording');
+  if (!html['privacy.html'].includes('up to 24 hours')) throw new Error('privacy missing 24-hour PDF line');
+  if (!html['support.html'].includes('backend PR #8')) throw new Error('support script missing backend PR #8 note');
   if (/team seats/i.test(html['terms.html'] + html['privacy.html'])) throw new Error('team seats were invented');
   if (/at any hour/.test(Object.values(html).join('\n'))) throw new Error('an at-any-hour line is still present');
   if (/within \d+ (hour|business day)|response time|we will respond|promptly|immediately/i.test(html['support.html'] + html['terms.html'] + html['refunds.html'])) {
