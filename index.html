@@ -110,11 +110,19 @@ a{color:var(--ink)}
 .spec thead th{background:var(--ink);color:#f3f0e6;font-weight:600;font-size:.78rem;letter-spacing:.05em;text-transform:uppercase}
 .spec td:first-child,.mono{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:.8rem}
 .plan-cards{display:grid;gap:1rem}
-.plan-card{border:1px solid var(--ink);background:var(--sheet);padding:1rem .95rem 1.05rem;display:flex;flex-direction:column;gap:.7rem}
+.plan-card{border:1px solid var(--ink);background:var(--sheet);padding:1rem .95rem 1.05rem;display:flex;flex-direction:column;gap:.7rem;min-width:0}
 .plan-card.is-pro{box-shadow:inset 0 4px 0 var(--yellow)}
 .plan-card .plan{margin:0;font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:.78rem;letter-spacing:.06em;text-transform:uppercase;font-weight:500}
 .plan-card .price{margin:0;font-size:2rem;letter-spacing:-.03em;line-height:1}
 .plan-card .bill{margin:-.35rem 0 0;font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:.75rem;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+.plan-note{margin:0;font-size:.95rem;overflow-wrap:break-word}
+.interval{display:grid;grid-template-columns:1fr 1fr;border:1px solid var(--ink)}
+.interval-opt{min-height:2.75rem;margin:0;border:0;border-left:1px solid var(--ink);background:var(--sheet);color:var(--ink);font:inherit;font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:.75rem;letter-spacing:.04em;text-transform:uppercase;font-weight:500;cursor:pointer;padding:.4rem .5rem}
+.interval-opt:first-child{border-left:0}
+.interval-opt[aria-pressed="true"]{background:var(--ink);color:var(--paper)}
+.interval-opt:hover{background:var(--yellow);color:var(--ink)}
+.interval-opt:disabled{background:#3e444b;color:#f3f0e6;cursor:wait}
+.plan-card dd{overflow-wrap:break-word}
 .plan-card dl{margin:0;display:grid;gap:.65rem}
 .plan-card dt{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;font-weight:500}
 .plan-card dd{margin:.12rem 0 0}
@@ -165,11 +173,11 @@ figcaption{padding:.6rem .7rem .75rem;font-size:.92rem;border-top:1px solid var(
   .steps li:first-child{border-left:0}
   .gallery{grid-template-columns:1fr 1fr;gap:1rem}
   .gallery figure.page:last-child{grid-column:1 / -1}
-  .plan-cards{grid-template-columns:1fr 1fr;align-items:stretch}
 }
 @media(min-width:900px){
   .gallery{grid-template-columns:1fr 1fr 1fr}
   .gallery figure.page:last-child{grid-column:auto}
+  .plan-cards{grid-template-columns:repeat(3,minmax(0,1fr));align-items:stretch}
 }
 @media(max-width:767px){
   .flow-to{transform:rotate(90deg);transform-origin:left center;height:1.25rem}
@@ -232,6 +240,24 @@ figcaption{padding:.6rem .7rem .75rem;font-size:.92rem;border-top:1px solid var(
           "availability": "https://schema.org/InStock",
           "url": "https://manualos.com/#pricing",
           "description": "Monthly subscription with unlimited manuals. Cancel anytime."
+        },
+        {
+          "@type": "Offer",
+          "name": "Integrator",
+          "price": "249",
+          "priceCurrency": "USD",
+          "availability": "https://schema.org/InStock",
+          "url": "https://manualos.com/#pricing",
+          "description": "Monthly plan for system integrators and machine builders who deliver manuals to their customers. 25 manuals per month, white-label PDFs with your own logo and company name, up to 5 team seats, and $9 per extra manual."
+        },
+        {
+          "@type": "Offer",
+          "name": "Integrator yearly",
+          "price": "2490",
+          "priceCurrency": "USD",
+          "availability": "https://schema.org/InStock",
+          "url": "https://manualos.com/#pricing",
+          "description": "Yearly Integrator plan, two months free. 25 manuals per month, white-label PDFs with your own logo and company name, up to 5 team seats, and $9 per extra manual."
         }
       ]
     },
@@ -278,6 +304,14 @@ figcaption{padding:.6rem .7rem .75rem;font-size:.92rem;border-top:1px solid var(
             "@type": "Answer",
             "text": "Pro is month to month. You can cancel anytime by emailing support@manualos.com, and you will not be billed again after the current period. Starter is not a subscription. It is a one-time $39 purchase for 3 manuals. If a payment or a generated manual is wrong, email support@manualos.com and we will help."
           }
+        },
+        {
+          "@type": "Question",
+          "name": "What does the Integrator plan include?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Integrator is for system integrators and machine builders who deliver manuals to their customers. It is $249 per month, or $2,490 per year, which is two months free. It includes 25 manuals per month, white-label PDFs with your own logo and company name, and up to 5 team seats. Each extra manual is $9. Email support@manualos.com to cancel or to get set up."
+          }
         }
       ]
     }
@@ -317,7 +351,7 @@ figcaption{padding:.6rem .7rem .75rem;font-size:.92rem;border-top:1px solid var(
         <a class="btn btn-primary" href="#pricing">See pricing</a>
         <a class="btn btn-ghost" href="#sample">View a sample manual</a>
       </div>
-      <p class="hero-price">Starter $39 once · 3 manuals. Pro $79 a month · unlimited.</p>
+      <p class="hero-price">Starter $39 once · 3 manuals. Pro $79 a month · unlimited. Integrator $249 a month · 25 manuals.</p>
       <p class="hero-note">A .zip of those files is fine. <a href="/upload.html">Already purchased? Upload a file</a>.</p>
       </div>
       <figure class="fan">
@@ -578,7 +612,7 @@ figcaption{padding:.6rem .7rem .75rem;font-size:.92rem;border-top:1px solid var(
   <section class="section" id="pricing" aria-labelledby="pricing-title">
     <p class="kicker"><span class="idx">07</span> Pricing</p>
     <h2 id="pricing-title">Pricing</h2>
-    <p class="section-intro">Starter is a one-time purchase of 3 manuals. Pro is a monthly plan you can cancel anytime.</p>
+    <p class="section-intro">Starter is a one-time purchase of 3 manuals. Pro is a monthly plan you can cancel anytime. Integrator is for teams who deliver manuals to their customers.</p>
     <div class="plan-cards">
       <article class="plan-card">
         <h3 class="plan">Starter</h3>
@@ -620,6 +654,35 @@ figcaption{padding:.6rem .7rem .75rem;font-size:.92rem;border-top:1px solid var(
         </dl>
         <button type="button" class="btn btn-primary btn-price" data-checkout="pro">Start Pro</button>
       </article>
+      <article class="plan-card">
+        <h3 class="plan">Integrator</h3>
+        <p class="price" id="integrator-price">$249</p>
+        <p class="bill" id="integrator-bill">per month</p>
+        <p class="plan-note">$2,490 a year, two months free.</p>
+        <div class="interval" role="group" aria-label="Billing interval">
+          <button type="button" class="interval-opt" aria-pressed="true" data-set-interval="month">Month</button>
+          <button type="button" class="interval-opt" aria-pressed="false" data-set-interval="year">Year</button>
+        </div>
+        <dl>
+          <div>
+            <dt>Files</dt>
+            <dd>PLC program files and CAD files from the list above.</dd>
+          </div>
+          <div>
+            <dt>Best for</dt>
+            <dd>System integrators and machine builders who deliver manuals to their customers.</dd>
+          </div>
+          <div>
+            <dt>Manuals</dt>
+            <dd>25 manuals a month. $9 for each extra manual.</dd>
+          </div>
+          <div>
+            <dt>White-label</dt>
+            <dd>PDFs with your own logo and company name. Up to 5 team seats.</dd>
+          </div>
+        </dl>
+        <button type="button" class="btn btn-outline btn-price" id="integrator-checkout" data-checkout="integrator" data-interval="month">Start Integrator</button>
+      </article>
     </div>
     <p class="need-more">Need more? <a href="mailto:support@manualos.com">Email us</a>.</p>
     <p id="checkout-error" class="checkout-error" role="alert" aria-live="assertive" tabindex="-1"></p>
@@ -651,6 +714,10 @@ figcaption{padding:.6rem .7rem .75rem;font-size:.92rem;border-top:1px solid var(
       <h3>Can I cancel Pro, and what about refunds?</h3>
       <p>Pro is month to month. You can cancel anytime by emailing <a href="mailto:support@manualos.com">support@manualos.com</a>, and you will not be billed again after the current period. Starter is not a subscription. It is a one-time $39 purchase for 3 manuals. If a payment or a generated manual is wrong, email support@manualos.com and we will help.</p>
     </div>
+    <div class="faq-item">
+      <h3>What does the Integrator plan include?</h3>
+      <p>Integrator is for system integrators and machine builders who deliver manuals to their customers. It is $249 per month, or $2,490 per year, which is two months free. It includes 25 manuals per month, white-label PDFs with your own logo and company name, and up to 5 team seats. Each extra manual is $9. Email <a href="mailto:support@manualos.com">support@manualos.com</a> to cancel or to get set up.</p>
+    </div>
   </section>
 </main>
 <footer class="site-footer">
@@ -672,8 +739,19 @@ figcaption{padding:.6rem .7rem .75rem;font-size:.92rem;border-top:1px solid var(
 <script>
 (function () {
   var API_BASE = 'https://manualforge-backend-production.up.railway.app';
+  // Integrator checkout route. Change this if the backend PR uses another path.
+  var INTEGRATOR_CHECKOUT_PATH = '/checkout';
+  var CHECKOUT_PATHS = {
+    starter: '/create-checkout-session',
+    pro: '/create-checkout-session',
+    integrator: INTEGRATOR_CHECKOUT_PATH
+  };
   var checkoutError = document.getElementById('checkout-error');
   var buttons = document.querySelectorAll('[data-checkout]');
+  var intervalButtons = document.querySelectorAll('[data-set-interval]');
+  var integratorPrice = document.getElementById('integrator-price');
+  var integratorBill = document.getElementById('integrator-bill');
+  var integratorButton = document.getElementById('integrator-checkout');
   var busy = false;
 
   buttons.forEach(function (button) {
@@ -682,31 +760,71 @@ figcaption{padding:.6rem .7rem .75rem;font-size:.92rem;border-top:1px solid var(
     });
   });
 
+  intervalButtons.forEach(function (intervalButton) {
+    intervalButton.addEventListener('click', function () {
+      var interval = intervalButton.getAttribute('data-set-interval') === 'year' ? 'year' : 'month';
+      intervalButtons.forEach(function (other) {
+        other.setAttribute('aria-pressed', other === intervalButton ? 'true' : 'false');
+      });
+      if (integratorButton) integratorButton.setAttribute('data-interval', interval);
+      if (integratorPrice) integratorPrice.textContent = interval === 'year' ? '$2,490' : '$249';
+      if (integratorBill) integratorBill.textContent = interval === 'year' ? 'per year' : 'per month';
+    });
+  });
+
+  function setBusyState(isBusy) {
+    buttons.forEach(function (el) {
+      el.disabled = isBusy;
+      if (isBusy) el.setAttribute('aria-busy', 'true');
+      else el.removeAttribute('aria-busy');
+    });
+    intervalButtons.forEach(function (el) {
+      el.disabled = isBusy;
+    });
+  }
+
+  function showIntegratorSoon() {
+    var link = document.createElement('a');
+    link.href = 'mailto:support@manualos.com';
+    link.textContent = 'support@manualos.com';
+    checkoutError.replaceChildren(
+      document.createTextNode('Integrator checkout is opening soon. Email '),
+      link,
+      document.createTextNode(' to get set up.')
+    );
+    checkoutError.focus();
+  }
+
   async function startCheckout(plan, button) {
     if (busy) return;
     busy = true;
     var originalLabel = button.textContent;
     checkoutError.textContent = '';
-    buttons.forEach(function (el) {
-      el.disabled = true;
-      el.setAttribute('aria-busy', 'true');
-    });
+    setBusyState(true);
     button.textContent = 'Starting checkout\u2026';
     try {
-      var res = await fetch(API_BASE + '/create-checkout-session', {
+      var payload = { plan: plan };
+      if (plan === 'integrator') {
+        payload.interval = button.getAttribute('data-interval') === 'year' ? 'year' : 'month';
+      }
+      var res = await fetch(API_BASE + (CHECKOUT_PATHS[plan] || '/create-checkout-session'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ plan: plan })
+        body: JSON.stringify(payload)
       });
       var data = await res.json().catch(function () { return {}; });
+      if (plan === 'integrator' && res.status === 503) {
+        busy = false;
+        setBusyState(false);
+        button.textContent = originalLabel;
+        showIntegratorSoon();
+        return;
+      }
       if (!res.ok || !data || !data.url) throw new Error('checkout failed');
       window.location.href = data.url;
     } catch (err) {
       busy = false;
-      buttons.forEach(function (el) {
-        el.disabled = false;
-        el.removeAttribute('aria-busy');
-      });
+      setBusyState(false);
       button.textContent = originalLabel;
       checkoutError.textContent = 'We couldn\u2019t start checkout. Please try again in a moment.';
       checkoutError.focus();
