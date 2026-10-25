@@ -145,7 +145,7 @@ async function main() {
     '<strong>Pro:</strong> each monthly charge can be refunded until that billing period ends, as long as no manual has been delivered in that period. Ask before your plan renews.',
     "Once a manual is delivered, that purchase or charge can't be refunded, except where required by law.",
     'from the email address you used at checkout.',
-    "If we can't read your files, or the run ends in an error, it doesn't use a credit.",
+    "If a run fails with an error, we give the credit back; if anything goes wrong on our side, email support and we'll restore it.",
     "and we'll help.",
   ];
   for (const phrase of refundRule) {
@@ -160,8 +160,14 @@ async function main() {
   }
   if (html['refunds.html'].includes('backup copies are deleted within 28 days')) throw new Error('refunds includes the backup clause');
   if (/A run that fails|failed run never/.test(Object.values(html).join('\n'))) throw new Error('a page still says every failed run returns a credit');
-  const creditLine = "If we can't read your files, or the run ends in an error, it doesn't use a credit.";
+  const creditLine = "If a run fails with an error, we give the credit back; if anything goes wrong on our side, email support and we'll restore it.";
+  const pagesHtml = Object.values(html).join('\n');
+  if (pagesHtml.includes("If we can't read your files, or the run ends in an error, it doesn't use a credit.")) throw new Error('old interim credit line remains');
+  if (/never uses a credit|doesn['\u2019]t use a credit/i.test(pagesHtml)) throw new Error('a page still makes an absolute credit claim');
   if ((html['index.html'].split(creditLine).length - 1) < 2) throw new Error('homepage credit line missing from the FAQ or JSON-LD');
+  if ((html['terms.html'].split(creditLine).length - 1) < 2) throw new Error('terms credit line missing');
+  if (!html['refunds.html'].includes(creditLine)) throw new Error('refunds credit line missing');
+  if (!html['upload.html'].includes("sessionPlan === 'starter'") || !html['upload.html'].includes(creditLine)) throw new Error('upload credit line is not limited to Starter');
   if (!html['terms.html'].includes('the credits and access from that purchase end.')) throw new Error('terms missing access-ends sentence');
   const chargeback = "Chargebacks and payment disputes: access is suspended while a dispute is open, restored if it's decided in ManualOS's favor, and permanently revoked for the disputed purchase if ManualOS loses it. A dispute doesn't stop you from buying from us again, but we may decline a purchase if we reasonably suspect fraud or abuse.";
   for (const name of ['terms.html', 'refunds.html']) {
@@ -171,7 +177,7 @@ async function main() {
   }
   if (/Integrator|at any hour|tel:/i.test(html['refunds.html'])) throw new Error('refunds page includes Integrator, a phone line, or after-hours wording');
   if (!html['refunds.html'].includes('<title>Refunds and cancellation | ManualOS</title>')) throw new Error('refunds title');
-  if (!html['refunds.html'].includes('content="Refunds until your first manual is delivered (Starter within 30 days, Pro within the billing period), how to cancel Pro, and why a rejected file never uses a credit."')) throw new Error('refunds meta description');
+  if (!html['refunds.html'].includes('content="Refunds until your first manual is delivered (Starter within 30 days, Pro within the billing period), how to cancel Pro, and when a failed run gives the credit back."')) throw new Error('refunds meta description');
   if (!html['refunds.html'].includes('href="https://manualos.com/refunds.html"')) throw new Error('refunds canonical');
   if (!html['refunds.html'].includes('Prices are in USD, plus applicable taxes.')) throw new Error('refunds missing price note');
   if (!html['terms.html'].includes('refunds until the first manual is delivered')) throw new Error('terms meta description still describes the old refund window');

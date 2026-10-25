@@ -344,6 +344,7 @@
 
   var apiBase = resolveApiBase();
   var sessionId = '';
+  var sessionPlan = '';
   var sessionFromQuery = false;
   var uploadEnabled = false;
   var busy = false;
@@ -566,6 +567,7 @@
   }
 
   function applySession(data) {
+    sessionPlan = String(data.plan || '').toLowerCase();
     if (data.remaining === 0) {
       setUploadEnabled(false);
       showAccess('', { showPricing: true, ok: false, hideMessage: true });
@@ -1135,7 +1137,9 @@
       setBusy(false);
       generateBtn.textContent = 'Generate my manual';
       var reason = safeServerMessage({ error: job.error }) || 'Please try again.';
-      showUploadError('The manual couldn’t be finished. ' + reason + ' The credit for this attempt is returned.');
+      var finished = 'The manual couldn’t be finished. ' + reason;
+      if (sessionPlan === 'starter') finished += " If a run fails with an error, we give the credit back; if anything goes wrong on our side, email support and we'll restore it.";
+      showUploadError(finished);
       return;
     }
     var ready = await fetchJobPdf(job.id, token);
