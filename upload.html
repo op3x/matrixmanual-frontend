@@ -218,7 +218,7 @@
         </div>
       </div>
       <ul class="file-list" id="file-list" hidden></ul>
-      <p class="credit-note" id="credit-note">If we can't read your files, we turn them away before any credit is used. If a run ends in an error or doesn't finish, your credit comes back automatically. A finished manual uses a credit, even if it includes warnings. If a credit doesn't come back, or anything else goes wrong on our side, email <a href="mailto:support@manualos.com">support@manualos.com</a> and we'll restore it.</p>
+      <p class="credit-note" id="credit-note" hidden>If we can't read your files, we turn them away before any credit is used. If a run ends in an error or doesn't finish, your credit comes back automatically. A finished manual uses a credit, even if it includes warnings. If a credit doesn't come back, or anything else goes wrong on our side, email <a href="mailto:support@manualos.com">support@manualos.com</a> and we'll restore it.</p>
       <div class="generate-btn-wrap">
         <button class="btn-primary" id="generate-btn" type="submit" disabled>Generate my manual</button>
       </div>
@@ -374,6 +374,7 @@
   var accessMessage = document.getElementById('access-message');
   var accessPricingLink = document.getElementById('access-pricing-link');
   var uploadError = document.getElementById('upload-error');
+  var creditNote = document.getElementById('credit-note');
   var paymentWelcome = document.getElementById('payment-welcome');
   var guidance = document.getElementById('source-guidance');
   var dropHelp = document.getElementById('drop-help');
@@ -573,6 +574,7 @@
 
   function applySession(data) {
     sessionPlan = String(data.plan || '').toLowerCase();
+    syncCreditNote();
     if (data.remaining === 0) {
       setUploadEnabled(false);
       showAccess('', { showPricing: true, ok: false, hideMessage: true });
@@ -779,6 +781,11 @@
   function creditHandback() {
     if (sessionPlan !== 'starter') return '';
     return ' ' + CREDIT_RETURN;
+  }
+
+  function syncCreditNote() {
+    if (!creditNote) return;
+    creditNote.hidden = sessionPlan !== 'starter';
   }
 
   function withHandback(text) {

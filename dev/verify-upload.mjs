@@ -305,11 +305,12 @@ async function main() {
     const banner = await page.$eval('#access-message', (el) => el.textContent);
     if (!/Starter plan/.test(banner) || !/3 manuals remaining/.test(banner)) throw new Error('banner: ' + banner);
     const creditNote = await page.$eval('#credit-note', (el) => ({
+      hidden: el.hidden,
       text: el.innerText.replace(/\s+/g, ' ').trim(),
       href: (el.querySelector('a') || {}).href || '',
     }));
     const creditExpected = "If we can't read your files, we turn them away before any credit is used. If a run ends in an error or doesn't finish, your credit comes back automatically. A finished manual uses a credit, even if it includes warnings. If a credit doesn't come back, or anything else goes wrong on our side, email support@manualos.com and we'll restore it.";
-    if (creditNote.text !== creditExpected) throw new Error('credit note: ' + creditNote.text);
+    if (creditNote.hidden || creditNote.text !== creditExpected) throw new Error('credit note: ' + JSON.stringify(creditNote));
     if (!/mailto:support@manualos.com$/i.test(creditNote.href)) throw new Error('credit note mailto: ' + creditNote.href);
     note('credit note states the hand-back rules and links support', true);
     const acceptPlc = await page.$eval('#file-input', (el) => el.getAttribute('accept'));
@@ -549,8 +550,34 @@ async function main() {
     await openUpload(page, base, '?session_id=cs_test_pro');
     const pro = await page.$eval('#access-message', (el) => el.textContent);
     if (!/Pro plan/.test(pro) || !/Unlimited/.test(pro)) throw new Error(pro);
+    const proNote = await page.evaluate(() => {
+      const el = document.getElementById('credit-note');
+      const style = getComputedStyle(el);
+      const needle = "If we can't read your files";
+      const visible = [];
+      const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+      let node;
+      while ((node = walker.nextNode())) {
+        if (!node.textContent.includes(needle)) continue;
+        const parent = node.parentElement;
+        const parentStyle = getComputedStyle(parent);
+        const rect = parent.getBoundingClientRect();
+        if (parentStyle.display === 'none' || parentStyle.visibility === 'hidden' || rect.height < 1) continue;
+        if (parent.closest('[hidden]')) continue;
+        visible.push(parent.id || parent.className);
+      }
+      return {
+        hidden: el.hidden,
+        display: style.display,
+        height: el.getBoundingClientRect().height,
+        visible,
+      };
+    });
+    if (!proNote.hidden || proNote.display !== 'none' || proNote.height > 0 || proNote.visible.length) {
+      throw new Error('pro rendered the credit note ' + JSON.stringify(proNote));
+    }
     await runAxe(page, 'pro session');
-    note('pro session shows unlimited manuals', true);
+    note('pro session shows unlimited manuals and does not render the credit note', true);
 
     await openUpload(page, base);
     await addFile(page, fixtures.exp);
