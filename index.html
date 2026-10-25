@@ -115,6 +115,8 @@ a{color:var(--ink)}
 .plan-card .plan{margin:0;font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:.78rem;letter-spacing:.06em;text-transform:uppercase;font-weight:500}
 .plan-card .price{margin:0;font-size:2rem;letter-spacing:-.03em;line-height:1}
 .plan-card .bill{margin:-.35rem 0 0;font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:.75rem;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+.price-block{display:grid}
+.price-block .tax{margin:.2rem 0 0;font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:.75rem;line-height:1.35;color:var(--muted);overflow-wrap:break-word}
 .plan-note{margin:0;font-size:.95rem;overflow-wrap:break-word}
 .interval{display:grid;grid-template-columns:1fr 1fr;border:1px solid var(--ink)}
 .interval-opt{min-height:2.75rem;margin:0;border:0;border-left:1px solid var(--ink);background:var(--sheet);color:var(--ink);font:inherit;font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:.75rem;letter-spacing:.04em;text-transform:uppercase;font-weight:500;cursor:pointer;padding:.4rem .5rem}
@@ -624,8 +626,11 @@ figcaption{padding:.6rem .7rem .75rem;font-size:.92rem;border-top:1px solid var(
     <div class="plan-cards">
       <article class="plan-card">
         <h3 class="plan">Starter</h3>
-        <p class="price">$39</p>
-        <p class="bill">one-time</p>
+        <div class="price-block">
+          <p class="price">$39</p>
+          <p class="bill">one-time</p>
+          <p class="tax">plus applicable taxes</p>
+        </div>
         <dl>
           <div>
             <dt>Files</dt>
@@ -648,8 +653,11 @@ figcaption{padding:.6rem .7rem .75rem;font-size:.92rem;border-top:1px solid var(
       </article>
       <article class="plan-card is-pro">
         <h3 class="plan">Pro</h3>
-        <p class="price">$79</p>
-        <p class="bill">per month · Monthly</p>
+        <div class="price-block">
+          <p class="price">$79</p>
+          <p class="bill">per month · Monthly</p>
+          <p class="tax">plus applicable taxes</p>
+        </div>
         <dl>
           <div>
             <dt>Files</dt>
@@ -672,9 +680,12 @@ figcaption{padding:.6rem .7rem .75rem;font-size:.92rem;border-top:1px solid var(
       </article>
       <article class="plan-card">
         <h3 class="plan">Integrator</h3>
-        <p class="price" id="integrator-price">$249</p>
-        <p class="bill" id="integrator-bill">per month</p>
-        <p class="plan-note">$2,490 a year, two months free.</p>
+        <div class="price-block">
+          <p class="price" id="integrator-price">$249</p>
+          <p class="bill" id="integrator-bill">per month</p>
+          <p class="tax">plus applicable taxes</p>
+        </div>
+        <p class="plan-note">$2,490 a year, two months free, plus applicable taxes.</p>
         <div class="interval" role="group" aria-label="Billing interval">
           <button type="button" class="interval-opt" aria-pressed="true" data-set-interval="month">Month</button>
           <button type="button" class="interval-opt" aria-pressed="false" data-set-interval="year">Year</button>

@@ -337,6 +337,14 @@ async function main() {
   const yearlyOffer = offers.find((offer) => offer.price === '2490');
   if (!monthlyOffer || monthlyOffer.name !== 'Integrator' || monthlyOffer.priceCurrency !== 'USD') throw new Error('integrator offer');
   if (!yearlyOffer || yearlyOffer.name !== 'Integrator' || yearlyOffer.priceCurrency !== 'USD') throw new Error('integrator yearly offer');
+  const offerPrices = offers.map((offer) => offer.price).join(',');
+  if (offerPrices !== '39,79,249,2490') throw new Error('offer prices changed ' + offerPrices);
+  const planCards = [...index.matchAll(/<article class="plan-card[\s\S]*?<\/article>/g)].map((match) => match[0]);
+  if (planCards.length !== 3 || planCards.some((card) => (card.match(/class="tax"/g) || []).length !== 1 || !card.includes('plus applicable taxes'))) {
+    throw new Error('tax notes missing from a plan card');
+  }
+  if (!planCards[0].includes('>$39<') || !planCards[1].includes('>$79<') || !planCards[2].includes('>$249<')) throw new Error('card prices changed');
+  if (!planCards[2].includes('$2,490 a year, two months free, plus applicable taxes.')) throw new Error('yearly price tax note');
   const reviewMarkup = [];
   (function walk(node) {
     if (!node || typeof node !== 'object') return;
@@ -1009,6 +1017,14 @@ async function main() {
       throw new Error('year checkout ' + JSON.stringify(yearState.call));
     }
     if (yearState.price !== '$2,490' || yearState.bill !== 'per year') throw new Error('year price ' + JSON.stringify(yearState));
+    const taxState = await checkoutPage.evaluate(() => ({
+      notes: [...document.querySelectorAll('#pricing .tax')].map((el) => el.textContent),
+      yearly: document.querySelector('#pricing .plan-note').textContent,
+      prices: [...document.querySelectorAll('#pricing .price')].map((el) => el.textContent),
+    }));
+    if (taxState.notes.length !== 3 || taxState.notes.some((text) => text !== 'plus applicable taxes') || taxState.yearly !== '$2,490 a year, two months free, plus applicable taxes.' || taxState.prices.join('|') !== '$39|$79|$2,490') {
+      throw new Error('tax notes ' + JSON.stringify(taxState));
+    }
     await checkoutPage.click('[data-checkout="pro"]');
     await checkoutPage.waitForFunction(() => {
       const el = document.getElementById('checkout-error');
