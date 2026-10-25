@@ -338,7 +338,13 @@ async function main() {
   if ((indexMarkup.match(/data-statement hidden>Appears on your card statement as LINK\.COM\* MANUALOS/g) || []).length !== 2) throw new Error('statement line is missing beside a buy button');
   if (/will appear on your card statement/.test(html['index.html'])) throw new Error('old card-statement clause is still in the disclosure');
   if (/plus applicable tax(?!es)/.test(html['index.html'])) throw new Error('checkout still says applicable tax');
-  if (!indexMarkup.includes('$39 one time for 3 manuals. Refundable within 30 days if no manual has been delivered.')) throw new Error('starter disclosure missing');
+  if (!indexMarkup.includes('$39 one time for 3 manuals, plus applicable taxes. Refundable within 30 days if no manual has been delivered.')) throw new Error('starter disclosure missing');
+  if (!html['index.html'].includes('Starter $39 once · 3 manuals. Pro $79 a month · unlimited. Plus applicable taxes.')) throw new Error('homepage pricing line missing taxes');
+  if (!html['index.html'].includes('One-time purchase of 3 manuals, plus applicable taxes.')) throw new Error('starter offer description missing taxes');
+  if (!html['index.html'].includes('Monthly subscription with unlimited manuals, plus applicable taxes.')) throw new Error('pro offer description missing taxes');
+  for (const name of pages) {
+    if (/\$39|\$79/.test(html[name]) && !/tax/i.test(html[name])) throw new Error(name + ' states a price without tax');
+  }
   if (/\$249|\$2,490|Start Integrator|integrator-consent/.test(html['index.html'])) throw new Error('homepage still sells Integrator');
   for (const name of ['terms.html', 'refunds.html']) {
     if (!html[name].includes('<p data-direct-section>' + directSeller + '</p>')) throw new Error(name + ' missing direct seller section');
