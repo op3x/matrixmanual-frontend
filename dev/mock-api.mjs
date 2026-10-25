@@ -44,12 +44,13 @@ function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-function sendJson(res, status, body) {
+function sendJson(res, status, body, extraHeaders) {
   const payload = Buffer.from(JSON.stringify(body));
   res.writeHead(status, {
     'Content-Type': 'application/json; charset=utf-8',
     'Content-Length': payload.length,
     'Cache-Control': 'no-store',
+    ...(extraHeaders || {}),
   });
   res.end(payload);
 }
@@ -533,7 +534,7 @@ async function handleJobsPost(req, res) {
   const immediate = errorForScenario(scenario);
   if (immediate) {
     record(req, { method: 'POST', path: '/jobs', status: immediate[0], files: filenames, fields });
-    sendJson(res, immediate[0], immediate[1]);
+    sendJson(res, immediate[0], immediate[1], immediate[0] === 429 ? { 'Retry-After': '90' } : undefined);
     return;
   }
   const now = Date.now();
@@ -620,7 +621,7 @@ const server = http.createServer(async (req, res) => {
       const sessionId = String(payload.session_id || '').trim();
       if (sessionId === 'cs_test_limit') {
         record(req, { method: 'POST', path: '/access-token', status: 429 });
-        return sendJson(res, 429, { error: 'Too many requests.' });
+        return sendJson(res, 429, { error: 'Too many requests.' }, { 'Retry-After': '90' });
       }
       if (sessionId === 'cs_test_drop') {
         record(req, { method: 'POST', path: '/access-token', status: 0 });

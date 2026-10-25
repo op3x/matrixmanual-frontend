@@ -387,10 +387,46 @@
   var FILE_LIMIT_MESSAGE = 'You can add up to 25 files.';
   var RATE_LIMIT_MESSAGE = 'Too many requests, please wait a minute and try again';
 
+  function waitPhrase(seconds) {
+    var whole = Math.round(Number(seconds));
+    if (!Number.isFinite(whole)) return '';
+    if (whole < 60) {
+      var secs = Math.max(1, whole);
+      return secs === 1 ? '1 second' : secs + ' seconds';
+    }
+    if (whole % 60 === 0 && whole < 3600) {
+      var mins = whole / 60;
+      return mins === 1 ? '1 minute' : mins + ' minutes';
+    }
+    if (whole % 3600 === 0) {
+      var hours = whole / 3600;
+      return hours === 1 ? '1 hour' : hours + ' hours';
+    }
+    return whole + ' seconds';
+  }
+
+  function retryAfterSeconds(res) {
+    var header = '';
+    try { header = (res && res.headers && res.headers.get('Retry-After')) || ''; } catch (err) { header = ''; }
+    header = String(header).trim();
+    if (!header) return NaN;
+    if (/^\d+$/.test(header)) return Number(header);
+    var when = Date.parse(header);
+    if (!Number.isFinite(when)) return NaN;
+    return Math.max(0, Math.round((when - Date.now()) / 1000));
+  }
+
+  function rateLimitMessage(res) {
+    var phrase = waitPhrase(retryAfterSeconds(res));
+    if (!phrase) return RATE_LIMIT_MESSAGE;
+    return 'Too many requests, please wait ' + phrase + ' and try again';
+  }
+
   var apiBase = resolveApiBase();
   var sessionId = '';
   var sessionFromQuery = false;
   var accessToken = '';
+  var tokenSession = '';
   var compatSession = false;
   var currentPlan = '';
   var uploadEnabled = false;
@@ -661,6 +697,7 @@
 
   function loadStoredToken() {
     accessToken = '';
+    tokenSession = '';
     try {
       var raw = sessionStorage.getItem(TOKEN_STORAGE_KEY) || '';
       if (!raw) return;
@@ -672,14 +709,17 @@
         return;
       }
       accessToken = parsed.access_token.trim();
+      tokenSession = typeof parsed.session_id === 'string' ? parsed.session_id.trim() : '';
     } catch (err) {
       accessToken = '';
+      tokenSession = '';
     }
   }
 
-  function saveToken(data) {
+  function saveToken(data, session) {
     accessToken = String(data.access_token || '').trim();
     compatSession = false;
+    tokenSession = String(session || tokenSession || '').trim();
     var expiresAt = data.expires_at || '';
     if (!expiresAt && data.expires_in) {
       expiresAt = new Date(Date.now() + Number(data.expires_in) * 1000).toISOString();
@@ -687,7 +727,8 @@
     try {
       sessionStorage.setItem(TOKEN_STORAGE_KEY, JSON.stringify({
         access_token: accessToken,
-        expires_at: expiresAt
+        expires_at: expiresAt,
+        session_id: tokenSession
       }));
     } catch (err) {}
   }
@@ -749,6 +790,7 @@
   function signOut() {
     var token = accessToken;
     accessToken = '';
+    tokenSession = '';
     sessionId = '';
     sessionFromQuery = false;
     compatSession = false;
@@ -816,9 +858,7 @@
     var data = {};
     try { data = await res.json(); } catch (err) { data = {}; }
     if (res.status === 429) {
-      accessToken = '';
-      try { sessionStorage.removeItem(TOKEN_STORAGE_KEY); } catch (err) {}
-      lockUpload(RATE_LIMIT_MESSAGE);
+      lockUpload(rateLimitMessage(res));
       return { error: true, limited: true };
     }
     if (res.status === 503) {
@@ -834,7 +874,7 @@
       lockUpload(purchaseMessage(data, res.status));
       return { error: true };
     }
-    saveToken(data);
+    saveToken(data, id);
     try { localStorage.removeItem(SESSION_STORAGE_KEY); } catch (err) {}
     applySession(data);
     syncSignOut();
@@ -861,7 +901,7 @@
     var data = {};
     try { data = await res.json(); } catch (err) { data = {}; }
     if (res.status === 429) {
-      if (!keepAccessOnError) lockUpload(RATE_LIMIT_MESSAGE);
+      if (!keepAccessOnError) lockUpload(rateLimitMessage(res));
       return null;
     }
     if (res.status === 401 && sessionId && accessToken) {
@@ -922,9 +962,21 @@
     setStage('done');
   }
 
+  function tokenCoversSession() {
+    if (!accessToken) return false;
+    if (!sessionId || !tokenSession) return true;
+    return sessionId === tokenSession;
+  }
+
   async function bootAccess() {
     loadStoredToken();
     sessionId = readSessionId();
+    if (tokenCoversSession()) {
+      var verified = await verifySession();
+      stripSessionFromUrl();
+      if (verified) await restoreReadyJobs();
+      return;
+    }
     if (sessionId) {
       var exchanged = await exchangeSession(sessionId);
       stripSessionFromUrl();
@@ -939,11 +991,6 @@
         return;
       }
       await restoreReadyJobs();
-      return;
-    }
-    if (accessToken) {
-      var verified = await verifySession();
-      if (verified) await restoreReadyJobs();
       return;
     }
     lockUpload('No purchase found on this browser. Choose a plan to generate manuals.');
@@ -1267,8 +1314,8 @@
     return typeof id === 'string' ? id.trim() : '';
   }
 
-  function serverMessages(status, data) {
-    if (status === 429) return { messages: [RATE_LIMIT_MESSAGE], server: '' };
+  function serverMessages(status, data, res) {
+    if (status === 429) return { messages: [rateLimitMessage(res)], server: '' };
     var code = data && typeof data.code === 'string' ? data.code : '';
     var ignored = ignoredLines(data);
     if (code === 'duplicate_upload') return { duplicate: true, jobId: duplicateJobId(data), messages: [] };
@@ -1300,7 +1347,7 @@
       return { messages: uniqueLines(zips.concat(ignored)) };
     }
     if (code === 'too_many_files') return { messages: uniqueLines([tooManyMessage(data)].concat(ignored)) };
-    var mapped = friendlyHttpError(status, data);
+    var mapped = friendlyHttpError(status, data, res);
     return { messages: uniqueLines([mapped.message].concat(ignored)), server: mapped.server, pricing: mapped.pricing };
   }
 
@@ -1326,8 +1373,8 @@
     setPhase('ready');
   }
 
-  function friendlyHttpError(status, data) {
-    if (status === 429) return { message: RATE_LIMIT_MESSAGE, server: '' };
+  function friendlyHttpError(status, data, res) {
+    if (status === 429) return { message: rateLimitMessage(res), server: '' };
     var fromApi = apiMessage(data);
     if (fromApi) return { message: fromApi, server: '' };
     var server = safeServerMessage(data);
@@ -1474,7 +1521,7 @@
       if (res.status === 429) {
         resetProgress();
         setBusy(false);
-        showUploadError(RATE_LIMIT_MESSAGE);
+        showUploadError(rateLimitMessage(res));
         return null;
       }
       if (res.status === 401 && !refreshed && sessionId) {
@@ -1556,7 +1603,7 @@
         continue;
       }
       if (res.status === 429) {
-        if (!quiet) showUploadError(RATE_LIMIT_MESSAGE);
+        if (!quiet) showUploadError(rateLimitMessage(res));
         return false;
       }
       if (res.status === 401 && !refreshed && sessionId) {
@@ -1574,7 +1621,7 @@
           var errBody = await readJson(res);
           showUploadError(res.status === 404
             ? "This manual isn't available. Manuals are deleted 24 hours after they're made. Generate it again from your files."
-            : (friendlyHttpError(res.status, errBody).message));
+            : (friendlyHttpError(res.status, errBody, res).message));
         }
         return false;
       }
@@ -1650,7 +1697,7 @@
       resetProgress();
       setBusy(false);
       if (res.status === 402) await verifySession();
-      var mapped = serverMessages(res.status, data);
+      var mapped = serverMessages(res.status, data, res);
       if (mapped.duplicate) {
         showDuplicate(mapped.jobId || '');
         return;
@@ -1752,7 +1799,7 @@
         resetProgress();
         setBusy(false);
         generateBtn.textContent = 'Generate my manual';
-        var missingError = friendlyHttpError(res.status, missing);
+        var missingError = friendlyHttpError(res.status, missing, res);
         showUploadError(missingError.message, { server: missingError.server, pricing: missingError.pricing });
         return;
       }
@@ -1775,7 +1822,7 @@
       setBusy(false);
       generateBtn.textContent = 'Generate my manual';
       if (res.status === 402) await verifySession();
-      var mapped = serverMessages(res.status, data);
+      var mapped = serverMessages(res.status, data, res);
       if (mapped.duplicate) {
         showDuplicate(mapped.jobId || '');
         return;

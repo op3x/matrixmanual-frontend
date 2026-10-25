@@ -1104,10 +1104,44 @@ async function main() {
     await page.waitForFunction(() => document.body.dataset.phase === 'locked');
     const limitCopy = await page.$eval('#payment-welcome-text', (el) => el.textContent);
     const limitPosts = (await requests(base)).filter((entry) => entry.path === '/access-token' && entry.status === 429).length;
-    if (limitCopy !== 'Too many requests, please wait a minute and try again' || limitPosts !== beforeLimitToken + 1) {
+    if (limitCopy !== 'Too many requests, please wait 90 seconds and try again' || limitPosts !== beforeLimitToken + 1) {
       throw new Error('access token 429 ' + JSON.stringify({ limitCopy, limitPosts, beforeLimitToken }));
     }
     note('a 429 from access-token asks the buyer to wait and is not retried', true);
+
+    await openUpload(page, base, '?session_id=cs_test_local');
+    const beforeReuse = (await requests(base)).length;
+    await page.goto(base + '/upload.html?session_id=cs_test_local', { waitUntil: 'networkidle0' });
+    await page.waitForFunction(() => {
+      const phase = document.body.dataset.phase;
+      return phase === 'ready' || phase === 'success';
+    });
+    const reuseLog = (await requests(base)).slice(beforeReuse);
+    const reuseExchange = reuseLog.filter((entry) => entry.method === 'POST' && entry.path === '/access-token');
+    const reuseVerify = reuseLog.filter((entry) => entry.method === 'GET' && entry.path === '/verify-session');
+    if (reuseExchange.length || !reuseVerify.some((entry) => /^Bearer \S+/.test(entry.authorization || ''))) {
+      throw new Error('stored token was not reused ' + JSON.stringify({ reuseExchange, reuseVerify }));
+    }
+    note('a stored unexpired token is reused and is not exchanged again', true);
+
+    await page.evaluate(() => {
+      const raw = JSON.parse(sessionStorage.getItem('manualos_access_token'));
+      raw.access_token = 'tok_rejected';
+      sessionStorage.setItem('manualos_access_token', JSON.stringify(raw));
+    });
+    const beforeRejected = (await requests(base)).length;
+    await page.goto(base + '/upload.html?session_id=cs_test_local', { waitUntil: 'networkidle0' });
+    await page.waitForFunction(() => {
+      const phase = document.body.dataset.phase;
+      return phase === 'ready' || phase === 'success';
+    });
+    const rejectedLog = (await requests(base)).slice(beforeRejected);
+    const rejectedVerify = rejectedLog.filter((entry) => entry.method === 'GET' && entry.path === '/verify-session' && entry.status === 401);
+    const rejectedExchange = rejectedLog.filter((entry) => entry.method === 'POST' && entry.path === '/access-token');
+    if (rejectedVerify.length !== 1 || rejectedExchange.length !== 1 || rejectedExchange[0].status !== 200) {
+      throw new Error('401 did not exchange once ' + JSON.stringify({ rejectedVerify, rejectedExchange }));
+    }
+    note('a rejected stored token is exchanged once after 401', true);
 
     await openUpload(page, base);
     await addFile(page, fixtures.limit);
@@ -1115,7 +1149,7 @@ async function main() {
     await waitPhase(page, 'error');
     const jobLimit = await page.$eval('#upload-error', (el) => el.innerText);
     const jobPosts = (await requests(base)).filter((entry) => entry.method === 'POST' && entry.path === '/jobs' && entry.files.includes('limit.L5X'));
-    if (!/Too many requests, please wait a minute and try again/.test(jobLimit) || jobPosts.length !== 1 || jobPosts[0].status !== 429) {
+    if (!/Too many requests, please wait 90 seconds and try again/.test(jobLimit) || jobPosts.length !== 1 || jobPosts[0].status !== 429) {
       throw new Error('jobs 429 ' + JSON.stringify({ jobLimit, count: jobPosts.length, status: jobPosts[0] && jobPosts[0].status }));
     }
     note('a 429 from upload asks the buyer to wait and is not retried', true);
