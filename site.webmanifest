@@ -3,8 +3,8 @@
   "short_name": "ManualOS",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#f3f0e6",
-  "theme_color": "#f3f0e6",
+  "background_color": "#0B1622",
+  "theme_color": "#0B1622",
   "icons": [
     {
       "src": "/assets/apple-touch-icon.png",
