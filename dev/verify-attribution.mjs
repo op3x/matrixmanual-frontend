@@ -20,7 +20,8 @@ const puppeteer = loadPuppeteer();
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const chromePath = process.env.CHROME_PATH || '/usr/bin/google-chrome';
 const pages = ['index.html', 'upload.html', '404.html', 'privacy.html', 'terms.html', 'refunds.html', 'support.html'];
-const PRIVACY_LINE = 'If you arrive from a link with campaign tags, we store those tags in your browser and attach them to your checkout so we know which ad or post brought you; no third-party analytics or tracking cookies are used.';
+const COLLECT_BULLET = '<strong>Campaign tags:</strong> if you arrive from a link with campaign tags, we keep those tags, the page you landed on, the referring site\'s domain and the time of that first visit in your browser for 90 days, and attach them to your checkout with our payment processor so we know which ad or post brought you. No third-party analytics or tracking cookies are used.';
+const STORAGE_BULLET = '<strong>Campaign tags:</strong> saved in local storage as <code>mos_attr</code> for 90 days; clear this site\'s data to remove them.';
 const DAY = 24 * 60 * 60 * 1000;
 
 function assert(condition, message) {
@@ -153,6 +154,9 @@ async function staticChecks() {
     throw new Error('attribution script sets a cookie or makes a request');
   }
   if (!attr.includes("var KEY = 'mos_attr';")) throw new Error('storage key is not mos_attr');
+  if (!/when the first touch expires, latest is deleted with it/.test(attr)) {
+    throw new Error('expiry comment does not say latest is deleted with the first touch');
+  }
   for (const name of BRAND_NAMES) {
     if (attr.toLowerCase().includes(name.toLowerCase())) throw new Error('attribution.js names ' + name);
   }
@@ -164,7 +168,19 @@ async function staticChecks() {
   const collectStart = privacy.indexOf('What we collect');
   const collectEnd = privacy.indexOf('How your files are processed');
   if (collectStart === -1 || collectEnd === -1 || collectEnd < collectStart) throw new Error('privacy collect section missing');
-  if (!privacy.slice(collectStart, collectEnd).includes(PRIVACY_LINE)) throw new Error('privacy collect section missing the campaign line');
+  const collect = privacy.slice(collectStart, collectEnd);
+  if (!collect.includes(COLLECT_BULLET)) throw new Error('privacy collect section missing the campaign line');
+  const storageStart = privacy.indexOf('Cookies and browser storage');
+  const storageEnd = privacy.indexOf('Logs');
+  if (storageStart === -1 || storageEnd < storageStart) throw new Error('privacy storage section missing');
+  const storage = privacy.slice(storageStart, storageEnd);
+  if (!storage.includes(STORAGE_BULLET)) throw new Error('privacy storage section missing the mos_attr bullet');
+  if (!storage.includes('uses no third-party analytics, advertising, or tracking scripts')) {
+    throw new Error('privacy storage section still claims there are no tracking scripts at all');
+  }
+  if (storage.includes('uses no analytics, advertising, or tracking scripts')) {
+    throw new Error('privacy storage section is missing the third-party qualifier');
+  }
   console.log('PASS attribution script, page hooks, and privacy line');
 }
 
@@ -293,6 +309,66 @@ async function main() {
     assert(from404.landing_path === '/404.html', '404 path ' + from404.landing_path);
     assert(from404.utm_content === 'banner' && from404.msclkid === 'ms-404', '404 tags ' + JSON.stringify(from404));
     console.log('PASS blank tags are ignored and other pages capture tags');
+
+    await page.evaluate(() => localStorage.clear());
+    const wideDigits = '\uFF11\uFF12\uFF13\uFF14\uFF15\uFF16\uFF17\uFF18\uFF19';
+    const filteredQuery = new URLSearchParams({
+      utm_source: 'ads',
+      utm_medium: 'cpc\u0007x',
+      utm_campaign: 'founder@manualos.com',
+      utm_term: '555-123-4567',
+      utm_content: 'fy2026',
+      gclid: '9'.repeat(120),
+      msclkid: 'AbC_click-id',
+    });
+    await page.goto(base + '/?' + filteredQuery.toString(), { waitUntil: 'domcontentloaded' });
+    const filtered = await readAttr(page);
+    assert(filtered.utm_source === 'ads', 'source ' + JSON.stringify(filtered));
+    assert(filtered.utm_medium === 'cpcx', 'control character was stored ' + JSON.stringify(filtered.utm_medium));
+    assert(filtered.utm_content === 'fy2026', 'short digit campaign was dropped');
+    assert(!('utm_campaign' in filtered), 'email was stored ' + filtered.utm_campaign);
+    assert(!('utm_term' in filtered), 'phone number was stored ' + filtered.utm_term);
+    assert(filtered.gclid === '9'.repeat(120), 'digit click id was dropped or capped at 100');
+    assert(filtered.msclkid === 'AbC_click-id', 'msclkid ' + filtered.msclkid);
+    assert(!JSON.stringify(filtered).includes('@'), 'stored record contains an email');
+    assert(!JSON.stringify(filtered).includes('555'), 'stored record contains a phone number');
+    const filteredPost = await clickPlan(page, hits, 'starter');
+    assert(JSON.stringify(filteredPost.body.attribution) === JSON.stringify(filtered), 'checkout sent an unfiltered record');
+    console.log('PASS control characters, emails, and long digit runs are not stored');
+
+    await page.evaluate(() => localStorage.clear());
+    const droppedQuery = new URLSearchParams({
+      utm_source: 'keep',
+      utm_campaign: wideDigits,
+      utm_term: '12345678',
+      utm_content: '12.34.56.789',
+      gclid: 'bad click',
+      msclkid: 'Z'.repeat(600),
+    });
+    await page.goto(base + '/?' + droppedQuery.toString(), { waitUntil: 'domcontentloaded' });
+    const dropped = await readAttr(page);
+    assert(dropped.utm_source === 'keep', 'kept source ' + JSON.stringify(dropped));
+    assert(dropped.utm_term === '12345678', 'eight digits were dropped');
+    assert(!('utm_campaign' in dropped), 'fullwidth digits were stored ' + dropped.utm_campaign);
+    assert(!('utm_content' in dropped), 'separated digits were stored ' + dropped.utm_content);
+    assert(!('gclid' in dropped), 'click id with a space was stored ' + dropped.gclid);
+    assert(dropped.msclkid === 'Z'.repeat(500), 'click id length ' + (dropped.msclkid || '').length);
+    console.log('PASS click ids use a character set and a 500 character cap');
+
+    await page.evaluate(() => localStorage.clear());
+    await page.goto(base + '/?utm_source=' + encodeURIComponent('person@example.com') + '&utm_campaign=founder%2540manualos.com', { waitUntil: 'domcontentloaded' });
+    assert(await readAttr(page) === null, 'an email-only visit created a record');
+    await page.goto(base + '/?utm_source=first', { waitUntil: 'domcontentloaded' });
+    await page.goto(base + '/?utm_source=second&utm_term=' + encodeURIComponent('555-123-4567'), { waitUntil: 'domcontentloaded' });
+    const filteredLatest = await readAttr(page);
+    assert(filteredLatest.utm_source === 'first', 'first touch changed during filtering');
+    assert(filteredLatest.latest && filteredLatest.latest.utm_source === 'second', 'latest source ' + JSON.stringify(filteredLatest.latest));
+    assert(!('utm_term' in filteredLatest.latest), 'latest stored a phone number');
+    await page.goto(base + '/', { waitUntil: 'domcontentloaded' });
+    const latestPost = await clickPlan(page, hits, 'pro');
+    assert(latestPost.body.attribution.latest.utm_source === 'second', 'checkout dropped latest');
+    assert(!JSON.stringify(latestPost.body).includes('555-123-4567'), 'checkout sent a phone number');
+    console.log('PASS latest is still sent and is filtered the same way');
 
     await page.goto(base + '/', { waitUntil: 'domcontentloaded' });
     await page.evaluate(() => { window.mosReadAttribution = null; });

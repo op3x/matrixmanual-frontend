@@ -9,12 +9,71 @@
   var FIELDS = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content', 'gclid', 'msclkid'];
   var UTM = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content'];
   var TOUCH_KEYS = ['first_seen_at', 'landing_path', 'referrer_host'].concat(FIELDS);
+  var CLICK_IDS = { gclid: true, msclkid: true };
+  var CLICK_MAX = 500;
+  // Opaque click ids. Letters, digits, underscore, and hyphen only.
+  var CLICK_CHARS = /^[A-Za-z0-9_-]+$/;
+  var EMAIL_LIKE = /[^\s@]+@[^\s@]+/;
 
-  function cap(value) {
-    if (value == null) return '';
-    var text = String(value).replace(/^\s+|\s+$/g, '');
-    if (!text) return '';
-    return text.length > MAX ? text.slice(0, MAX) : text;
+  function stripControls(value) {
+    return String(value).replace(/\p{Cc}/gu, '');
+  }
+
+  function trim(value) {
+    return value.replace(/^\s+|\s+$/g, '');
+  }
+
+  function capLength(value, max) {
+    if (value.length <= max) return value;
+    var end = max;
+    var tail = value.charCodeAt(end - 1);
+    if (tail >= 0xD800 && tail <= 0xDBFF) end -= 1;
+    return end > 0 ? value.slice(0, end) : '';
+  }
+
+  function decodeOnce(value) {
+    if (value.indexOf('%') === -1) return '';
+    try {
+      var decoded = decodeURIComponent(value);
+      return decoded === value ? '' : decoded;
+    } catch (err) {
+      return '';
+    }
+  }
+
+  function looksLikeEmail(value) {
+    var normalized = value.normalize('NFKC');
+    if (EMAIL_LIKE.test(normalized)) return true;
+    var decoded = decodeOnce(normalized);
+    return Boolean(decoded && EMAIL_LIKE.test(decoded.normalize('NFKC')));
+  }
+
+  // Same digit rule as the checkout service: NFKC, drop separators, then any
+  // run of 9 or more digits. The stored text itself is not rewritten.
+  function hasLongDigitRun(value) {
+    var compact = value.normalize('NFKC').replace(/[\s().+\-]/g, '');
+    if (/\d{9,}/.test(compact)) return true;
+    var decoded = decodeOnce(value);
+    if (!decoded) return false;
+    return /\d{9,}/.test(decoded.normalize('NFKC').replace(/[\s().+\-]/g, ''));
+  }
+
+  function cleanValue(key, value) {
+    try {
+      if (value == null) return '';
+      var text = trim(stripControls(value));
+      if (!text) return '';
+      if (CLICK_IDS[key]) {
+        if (!CLICK_CHARS.test(text)) return '';
+        return capLength(text, CLICK_MAX);
+      }
+      if (looksLikeEmail(text) || hasLongDigitRun(text)) return '';
+      text = capLength(text, MAX);
+      if (!text || looksLikeEmail(text) || hasLongDigitRun(text)) return '';
+      return text;
+    } catch (err) {
+      return '';
+    }
   }
 
   function hasNamed(obj, names) {
@@ -29,7 +88,7 @@
     try {
       var qs = new URLSearchParams(search || '');
       for (var i = 0; i < FIELDS.length; i++) {
-        var value = cap(qs.get(FIELDS[i]));
+        var value = cleanValue(FIELDS[i], qs.get(FIELDS[i]));
         if (value) out[FIELDS[i]] = value;
       }
     } catch (err) {}
@@ -38,8 +97,9 @@
 
   function landingPath() {
     try {
-      var path = cap(location.pathname || '/');
-      return path.charAt(0) === '/' ? path : '/' + path;
+      var path = cleanValue('landing_path', location.pathname || '/');
+      if (!path || path.charAt(0) !== '/') return '/';
+      return path;
     } catch (err) {
       return '/';
     }
@@ -55,7 +115,7 @@
       var there = String(host).toLowerCase();
       if (!there || there === here) return '';
       if (here && (there === 'www.' + here || here === 'www.' + there)) return '';
-      return cap(host);
+      return cleanValue('referrer_host', host);
     } catch (err) {
       return '';
     }
@@ -63,7 +123,8 @@
 
   function copyTouch(target, source, keys) {
     for (var i = 0; i < keys.length; i++) {
-      var value = cap(source && typeof source[keys[i]] === 'string' ? source[keys[i]] : '');
+      var raw = source && typeof source[keys[i]] === 'string' ? source[keys[i]] : '';
+      var value = cleanValue(keys[i], raw);
       if (value) target[keys[i]] = value;
     }
   }
@@ -116,6 +177,8 @@
   }
 
   function fresh(data) {
+    // The 90-day limit belongs to the first visit. A latest touch does not get
+    // its own lifetime: when the first touch expires, latest is deleted with it.
     if (!data || typeof data.first_seen_at !== 'string') return false;
     var seen = Date.parse(data.first_seen_at);
     if (!isFinite(seen)) return false;
