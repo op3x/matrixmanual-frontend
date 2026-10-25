@@ -62,8 +62,13 @@ async function shoot(page, name, scrollSelector) {
     await page.setViewport({ ...viewport, deviceScaleFactor: 1 });
     const handle = await page.$(scrollSelector);
     if (!handle) throw new Error(`${name} missing ${scrollSelector}`);
-    await handle.evaluate((el) => el.scrollIntoView({ block: 'center', inline: 'nearest' }));
-    await new Promise((resolve) => setTimeout(resolve, 200));
+    await handle.evaluate((el) => el.scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'instant' }));
+    await page.waitForFunction((selector) => {
+      const el = document.querySelector(selector);
+      if (!el) return false;
+      const box = el.getBoundingClientRect();
+      return box.width >= 40 && box.height >= 20 && box.bottom > 0 && box.top < window.innerHeight;
+    }, {}, scrollSelector);
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
     if (overflow > 1) throw new Error(`${name} at ${viewport.width}px overflows by ${overflow}px`);
     const file = path.join(shotDir, `${name}_${viewport.width}.png`);
