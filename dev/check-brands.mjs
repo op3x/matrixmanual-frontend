@@ -1,5 +1,9 @@
 // Fails when shipped HTML or JS names a real vendor or product,
 // or the retired sample names CP-200, CP200, and Acme.
+// Grok is a vendor name. The only allowed occurrence is the exact footer
+// line "Hero video created with Grok." in <p class="hero-video-credit">
+// inside <footer>. Any other Grok text, including alt, title, aria-label,
+// a link, or a credit next to the video, still fails.
 // dev/ is out of scope: the upload check types sample values into the form.
 // Binary assets are not scanned.
 import { readdir, readFile } from 'node:fs/promises';
@@ -32,6 +36,7 @@ export const BRAND_NAMES = [
   'Acme',
   'CP-200',
   'CP200',
+  'Grok',
 ];
 
 function brandPattern(name) {
@@ -43,10 +48,70 @@ function brandPattern(name) {
 
 const PATTERNS = BRAND_NAMES.map((name) => ({ name, re: brandPattern(name) }));
 
+export const HERO_CREDIT_TEXT = 'Hero video created with Grok.';
+
+const HERO_CREDIT_RE = /<p\b[^>]*\bclass\s*=\s*["'][^"']*\bhero-video-credit\b[^"']*["'][^>]*>\s*Hero video created with Grok\.\s*<\/p>/gi;
+
+function footerRanges(text) {
+  const ranges = [];
+  for (const match of text.matchAll(/<footer\b[\s\S]*?<\/footer>/gi)) {
+    ranges.push([match.index, match.index + match[0].length]);
+  }
+  return ranges;
+}
+
+export function maskHeroCredit(text) {
+  const ranges = footerRanges(text);
+  if (!ranges.length) return text;
+  HERO_CREDIT_RE.lastIndex = 0;
+  return text.replace(HERO_CREDIT_RE, (match, offset) => {
+    const inside = ranges.some(([from, to]) => offset >= from && offset + match.length <= to);
+    return inside ? '<p class="hero-video-credit"></p>' : match;
+  });
+}
+
 function excerpt(text, index) {
   const start = Math.max(0, index - 40);
   const end = Math.min(text.length, index + 60);
   return text.slice(start, end).replace(/\s+/g, ' ');
+}
+
+export function findBrandHitsInText(file, text) {
+  const hits = [];
+  const masked = maskHeroCredit(text);
+  for (const { name, re } of PATTERNS) {
+    re.lastIndex = 0;
+    const match = re.exec(masked);
+    if (match) {
+      hits.push({
+        file,
+        name,
+        excerpt: excerpt(masked, match.index),
+      });
+    }
+  }
+  return hits;
+}
+
+export function heroCreditProblems() {
+  const problems = [];
+  const cases = [
+    ['exact footer credit', '<footer><p class="hero-video-credit">Hero video created with Grok.</p></footer>', false],
+    ['credit beside the video', '<div class="hero-film"><p>Created with Grok</p></div>', true],
+    ['alt text', '<img alt="Made with Grok">', true],
+    ['title', '<video title="Grok film"></video>', true],
+    ['aria-label', '<button aria-label="Play the Grok film">Play</button>', true],
+    ['linked credit', '<footer><p class="hero-video-credit"><a href="/about">Hero video created with Grok.</a></p></footer>', true],
+    ['missing period', '<footer><p class="hero-video-credit">Hero video created with Grok</p></footer>', true],
+    ['outside the footer', '<p class="hero-video-credit">Hero video created with Grok.</p>', true],
+    ['extra wording', '<footer><p class="hero-video-credit">Hero video created with Grok. A real technician.</p></footer>', true],
+  ];
+  for (const [label, html, shouldHit] of cases) {
+    const hits = findBrandHitsInText(label, html).filter((hit) => hit.name === 'Grok');
+    if (shouldHit && !hits.length) problems.push(label + ' should flag Grok');
+    if (!shouldHit && hits.length) problems.push(label + ' should allow only the footer credit');
+  }
+  return problems;
 }
 
 export async function findBrandHits(rootDir) {
@@ -63,16 +128,7 @@ export async function findBrandHits(rootDir) {
       }
       if (!/\.(html|js)$/i.test(entry.name)) continue;
       const text = await readFile(full, 'utf8');
-      for (const { name, re } of PATTERNS) {
-        const match = re.exec(text);
-        if (match) {
-          hits.push({
-            file: path.relative(rootDir, full),
-            name,
-            excerpt: excerpt(text, match.index),
-          });
-        }
-      }
+      hits.push(...findBrandHitsInText(path.relative(rootDir, full), text));
     }
   }
   await walk(rootDir);
@@ -80,17 +136,23 @@ export async function findBrandHits(rootDir) {
 }
 
 export async function assertNoBrandNames(rootDir) {
+  const problems = heroCreditProblems();
   const hits = await findBrandHits(rootDir);
-  if (!hits.length) return;
-  const lines = hits.map((hit) => `${hit.file}: ${hit.name} — ${hit.excerpt}`);
+  if (!problems.length && !hits.length) return;
+  const lines = [
+    ...problems,
+    ...hits.map((hit) => `${hit.file}: ${hit.name} — ${hit.excerpt}`),
+  ];
   throw new Error('shipped HTML/JS names a vendor or product:\n' + lines.join('\n'));
 }
 
 const isMain = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
 if (isMain) {
   const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+  const problems = heroCreditProblems();
   const hits = await findBrandHits(root);
-  if (hits.length) {
+  if (problems.length || hits.length) {
+    for (const problem of problems) console.error(problem);
     for (const hit of hits) console.error(`${hit.file}: ${hit.name} — ${hit.excerpt}`);
     process.exitCode = 1;
   } else {
