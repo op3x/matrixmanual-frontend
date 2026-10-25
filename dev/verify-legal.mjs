@@ -242,8 +242,15 @@ async function main() {
     }
   }
   const businessLabel = "I'm buying for my business (not personal use)";
+  const caBlock = "Personal (non-business) purchases from Canada are coming soon. If you're buying for a business, tick the box above.";
   if ((html['index.html'].split(businessLabel).length - 1) !== 2) throw new Error('business checkbox is not beside both paid plans');
-  if (!html['index.html'].includes('buyingForBusiness: !!(business && business.checked)')) throw new Error('checkout does not send buyingForBusiness');
+  if (!html['index.html'].includes("var ATTESTATION_VERSION = 'ca-b2b-v1';")) throw new Error('attestation version is not ca-b2b-v1');
+  if (!html['index.html'].includes('billingCountry: country')) throw new Error('checkout does not send billingCountry');
+  if (!html['index.html'].includes('caBusinessAttestation: !!(business && business.checked)')) throw new Error('checkout does not send caBusinessAttestation as a boolean');
+  if (!html['index.html'].includes('attestationVersion: ATTESTATION_VERSION')) throw new Error('checkout does not send attestationVersion');
+  if (!html['index.html'].includes(caBlock)) throw new Error('Canada block message is missing');
+  if (!html['index.html'].includes("data.code === 'ca_business_required'")) throw new Error('checkout does not show the Canada block for ca_business_required');
+  if (html['index.html'].includes('buyingForBusiness')) throw new Error('checkout still sends buyingForBusiness');
   for (const id of ['starter-business', 'pro-business']) {
     const tag = (html['index.html'].match(new RegExp('<input[^>]*id="' + id + '"[^>]*>')) || [''])[0];
     if (!tag) throw new Error('missing ' + id);
@@ -647,6 +654,7 @@ async function main() {
     await runAxe(page, 'support opt-in failure');
 
     await page.goto(base + '/index.html#pricing', { waitUntil: 'networkidle0' });
+    await page.select('#pro-billing-country', 'US');
     const proGate = await page.evaluate(() => {
       const input = document.getElementById('pro-consent');
       const label = document.querySelector('label[for="pro-consent"]');
@@ -689,22 +697,24 @@ async function main() {
     await page.waitForFunction(() => location.pathname.endsWith('/upload.html'));
     const checkout = (await fetch(base + '/__mock/requests').then((res) => res.json())).filter((item) => item.path === '/create-checkout-session').slice(beforeCheckout);
     if (checkout.length !== 1 || checkout[0].status !== 200) throw new Error('checkout response ' + JSON.stringify(checkout));
-    if (checkout[0].plan !== 'pro' || checkout[0].renewalConsent !== true || checkout[0].termsAccepted !== true || checkout[0].termsConsent !== undefined || checkout[0].termsVersion !== 'terms-rev-a-m2' || checkout[0].disclosureVersion !== 'pro-renew-b2-mp' || checkout[0].buyingForBusiness !== false || !checkout[0].fields.includes('termsAccepted') || !checkout[0].fields.includes('buyingForBusiness') || checkout[0].fields.includes('termsConsent')) {
+    if (checkout[0].plan !== 'pro' || checkout[0].renewalConsent !== true || checkout[0].termsAccepted !== true || checkout[0].termsConsent !== undefined || checkout[0].termsVersion !== 'terms-rev-a-m2' || checkout[0].disclosureVersion !== 'pro-renew-b2-mp' || checkout[0].billingCountry !== 'US' || checkout[0].caBusinessAttestation !== false || checkout[0].attestationVersion !== 'ca-b2b-v1' || !checkout[0].fields.includes('termsAccepted') || !checkout[0].fields.includes('billingCountry') || !checkout[0].fields.includes('caBusinessAttestation') || !checkout[0].fields.includes('attestationVersion') || checkout[0].fields.includes('buyingForBusiness') || checkout[0].fields.includes('termsConsent')) {
       throw new Error('checkout body ' + JSON.stringify(checkout[0]));
     }
 
-    await page.goto(base + '/index.html#pricing', { waitUntil: 'networkidle0' });
+    await page.goto(base + '/index.html#pricing?seller=starter', { waitUntil: 'networkidle0' });
+    await page.select('#starter-billing-country', 'US');
     const starterDisabled = await page.$eval('[data-checkout="starter"]', (el) => el.disabled);
     if (!starterDisabled) throw new Error('starter button starts enabled');
     await page.click('#starter-consent');
     await page.click('[data-checkout="starter"]');
     await page.waitForFunction(() => location.pathname.endsWith('/upload.html'));
     const starter = (await fetch(base + '/__mock/requests').then((res) => res.json())).filter((item) => item.path === '/create-checkout-session').pop();
-    if (starter.plan !== 'starter' || starter.renewalConsent !== false || starter.termsAccepted !== true || starter.termsConsent !== undefined || starter.disclosureVersion !== 'starter-disclosure-b2-mp' || starter.buyingForBusiness !== false || starter.fields.includes('termsConsent')) {
+    if (starter.plan !== 'starter' || starter.renewalConsent !== false || starter.termsAccepted !== true || starter.termsConsent !== undefined || starter.disclosureVersion !== 'starter-disclosure-b2-mp' || starter.billingCountry !== 'US' || starter.caBusinessAttestation !== false || starter.attestationVersion !== 'ca-b2b-v1' || starter.fields.includes('termsConsent')) {
       throw new Error('starter body ' + JSON.stringify(starter));
     }
 
-    await page.goto(base + '/index.html#pricing', { waitUntil: 'networkidle0' });
+    await page.goto(base + '/index.html#pricing?seller=business', { waitUntil: 'networkidle0' });
+    await page.select('#pro-billing-country', 'US');
     const businessFocus = await page.evaluate(() => {
       const input = document.getElementById('pro-business');
       const label = document.querySelector('label[for="pro-business"]');
@@ -730,8 +740,51 @@ async function main() {
     await page.click('[data-checkout="pro"]');
     await page.waitForFunction(() => location.pathname.endsWith('/upload.html'));
     const businessCheckout = (await fetch(base + '/__mock/requests').then((res) => res.json())).filter((item) => item.path === '/create-checkout-session').pop();
-    if (!businessCheckout || businessCheckout.status !== 200 || businessCheckout.plan !== 'pro' || businessCheckout.buyingForBusiness !== true || businessCheckout.termsAccepted !== true) {
+    if (!businessCheckout || businessCheckout.status !== 200 || businessCheckout.plan !== 'pro' || businessCheckout.billingCountry !== 'US' || businessCheckout.caBusinessAttestation !== true || businessCheckout.attestationVersion !== 'ca-b2b-v1' || businessCheckout.termsAccepted !== true) {
       throw new Error('business checkout body ' + JSON.stringify(businessCheckout));
+    }
+
+    await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 1 });
+    await page.goto(base + '/index.html#pricing?seller=ca', { waitUntil: 'networkidle0' });
+    await page.select('#starter-billing-country', 'CA');
+    await page.click('#starter-consent');
+    const caReady = await page.$eval('[data-checkout="starter"]', (el) => !el.disabled && document.getElementById('starter-business').checked === false);
+    if (!caReady) throw new Error('Canada without the business box left Buy disabled');
+    const beforeCa = (await fetch(base + '/__mock/requests').then((res) => res.json())).filter((item) => item.path === '/create-checkout-session').length;
+    await page.click('[data-checkout="starter"]');
+    const caMessage = "Personal (non-business) purchases from Canada are coming soon. If you're buying for a business, tick the box above.";
+    await page.waitForFunction((expected) => {
+      const err = document.getElementById('starter-ca-error');
+      return err && !err.hidden && err.textContent === expected;
+    }, {}, caMessage);
+    const caState = await page.evaluate(() => {
+      const err = document.getElementById('starter-ca-error');
+      const box = document.getElementById('starter-business');
+      return {
+        text: err.textContent,
+        invalid: box.getAttribute('aria-invalid'),
+        described: box.getAttribute('aria-describedby'),
+        focus: document.activeElement === box,
+        path: location.pathname,
+        generic: document.getElementById('checkout-error').textContent,
+      };
+    });
+    const caPosted = (await fetch(base + '/__mock/requests').then((res) => res.json())).filter((item) => item.path === '/create-checkout-session').slice(beforeCa);
+    if (caState.text !== caMessage || caState.invalid !== 'true' || caState.described !== 'starter-ca-error' || !caState.focus || caState.path.endsWith('/upload.html') || caState.generic) {
+      throw new Error('Canada block message ' + JSON.stringify(caState));
+    }
+    if (caPosted.length !== 1 || caPosted[0].status !== 400 || caPosted[0].code !== 'ca_business_required' || caPosted[0].billingCountry !== 'CA' || caPosted[0].caBusinessAttestation !== false || caPosted[0].attestationVersion !== 'ca-b2b-v1') {
+      throw new Error('Canada block payload ' + JSON.stringify(caPosted));
+    }
+    const caOverflow = await overflow(page);
+    if (caOverflow > 1) throw new Error('Canada block overflows by ' + caOverflow + 'px at 390');
+    await runAxe(page, 'canada business block 390');
+    await page.click('#starter-business');
+    await page.click('[data-checkout="starter"]');
+    await page.waitForFunction(() => location.pathname.endsWith('/upload.html'));
+    const caAllowed = (await fetch(base + '/__mock/requests').then((res) => res.json())).filter((item) => item.path === '/create-checkout-session').pop();
+    if (!caAllowed || caAllowed.status !== 200 || caAllowed.billingCountry !== 'CA' || caAllowed.caBusinessAttestation !== true || caAllowed.attestationVersion !== 'ca-b2b-v1') {
+      throw new Error('Canada business payload ' + JSON.stringify(caAllowed));
     }
 
     await page.goto(base + '/cancel/', { waitUntil: 'networkidle0' });
@@ -967,12 +1020,13 @@ async function main() {
       await page.goto(base + '/' + name, { waitUntil: 'networkidle0' });
       expectSeller(await renderedSeller(page), 'direct', name.startsWith('index') ? 'index' : name);
     }
-    await page.goto(base + '/index.html#pricing', { waitUntil: 'networkidle0' });
+    await page.goto(base + '/index.html#pricing?seller=direct', { waitUntil: 'networkidle0' });
+    await page.select('#pro-billing-country', 'US');
     await page.click('#pro-consent');
     await page.click('[data-checkout="pro"]');
     await page.waitForFunction(() => location.pathname.endsWith('/upload.html'));
     const directCheckout = (await fetch(base + '/__mock/requests').then((res) => res.json())).filter((item) => item.path === '/create-checkout-session').pop();
-    if (!directCheckout || directCheckout.termsAccepted !== true || directCheckout.termsConsent !== undefined || directCheckout.disclosureVersion !== 'pro-renew-b2-direct' || directCheckout.buyingForBusiness !== false) throw new Error('direct checkout ' + JSON.stringify(directCheckout));
+    if (!directCheckout || directCheckout.termsAccepted !== true || directCheckout.termsConsent !== undefined || directCheckout.disclosureVersion !== 'pro-renew-b2-direct' || directCheckout.billingCountry !== 'US' || directCheckout.caBusinessAttestation !== false || directCheckout.attestationVersion !== 'ca-b2b-v1') throw new Error('direct checkout ' + JSON.stringify(directCheckout));
 
     await setConfig({ managedPayments: true, fail: true, hold: false });
     for (const name of ['index.html#pricing', 'terms.html', 'refunds.html', 'privacy.html']) {
@@ -992,7 +1046,8 @@ async function main() {
     expectSeller(await renderedSeller(page), 'direct', 'terms.html');
     await page.goto(base + '/refunds.html', { waitUntil: 'domcontentloaded' });
     expectSeller(await renderedSeller(page), 'direct', 'refunds.html');
-    await page.goto(base + '/index.html#pricing', { waitUntil: 'domcontentloaded' });
+    await page.goto(base + '/index.html#pricing?seller=hold', { waitUntil: 'domcontentloaded' });
+    await page.select('#pro-billing-country', 'US');
     const pendingConfig = await page.evaluate(() => document.documentElement.getAttribute('data-checkout-config'));
     if (pendingConfig) throw new Error('checkout config settled before the request returned: ' + pendingConfig);
     expectSeller(await renderedSeller(page), 'direct', 'index');

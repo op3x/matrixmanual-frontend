@@ -140,6 +140,12 @@ figcaption{padding:.6rem .7rem .75rem;font-size:.92rem;border-top:1px solid var(
 .consent-row input{width:1.5rem;height:1.5rem;margin:0;accent-color:var(--ink)}
 .consent-row input:focus-visible{outline:2px solid var(--ink);outline-offset:3px;box-shadow:0 0 0 4px var(--yellow)}
 .consent-row label{font-weight:600;cursor:pointer;overflow-wrap:anywhere}
+.billing-country{display:grid;gap:.4rem;min-width:0}
+.billing-country label{font-weight:600}
+.billing-country select{width:100%;max-width:100%;min-width:0;min-height:2.75rem;font:inherit;color:var(--ink);background:var(--paper);border:1px solid var(--ink);padding:.4rem .55rem}
+.field-error{margin:0;overflow-wrap:anywhere}
+.field-error[hidden]{display:none}
+.field-error:not([hidden]){padding:.65rem .75rem;border:1px solid var(--ink);border-left:4px solid #6b2a14;background:var(--sheet);color:var(--ink);font-weight:600}
 .btn-price{width:100%;margin-top:0;padding:.55rem .9rem;font-size:1rem;line-height:1.2}
 .checkout-error:empty{margin:0}
 .checkout-error:not(:empty){margin-top:1rem;padding:.75rem .85rem;border:1px solid var(--ink);border-left:4px solid #6b2a14;background:var(--sheet);color:var(--ink);font-weight:600}
@@ -618,13 +624,20 @@ figcaption{padding:.6rem .7rem .75rem;font-size:.92rem;border-top:1px solid var(
         <div class="plan-buy">
           <p class="renew-terms" id="starter-renew-terms">$39 one time for 3 manuals, plus applicable taxes. Refundable within 30 days if no manual has been delivered. By continuing you agree to the <a href="/terms.html">Terms</a> and <a href="/refunds.html">Refund policy</a>.</p>
           <p class="seller-note" id="starter-seller-note" data-seller-note hidden>Your purchase is processed by our authorized reseller, which is the merchant of record. ManualOS is provided by Op3x LLC.</p>
+          <div class="billing-country">
+            <label for="starter-billing-country">Billing country</label>
+            <select id="starter-billing-country" name="starter-billing-country" required autocomplete="billing country">
+              <option value="" selected>Select…</option>
+            </select>
+          </div>
           <div class="consent-row">
             <input id="starter-consent" name="starter-consent" type="checkbox" required aria-describedby="starter-renew-terms starter-seller-note starter-statement">
             <label for="starter-consent">I agree to the <a href="/terms.html">Terms</a> and <a href="/refunds.html">Refund policy</a>.</label>
             <input id="starter-business" name="starter-business" type="checkbox">
             <label for="starter-business">I'm buying for my business (not personal use)</label>
           </div>
-          <button type="button" class="btn btn-outline btn-price" data-checkout="starter" data-consent="starter-consent" data-disclosure="starter-disclosure-b2" data-business="starter-business" disabled>Buy Starter</button>
+          <button type="button" class="btn btn-outline btn-price" data-checkout="starter" data-consent="starter-consent" data-disclosure="starter-disclosure-b2" data-business="starter-business" data-country="starter-billing-country" data-ca-error="starter-ca-error" disabled>Buy Starter</button>
+          <p class="field-error" id="starter-ca-error" role="alert" hidden></p>
           <p class="statement" id="starter-statement" data-statement hidden>Appears on your card statement as LINK.COM* MANUALOS</p>
         </div>
       </article>
@@ -649,6 +662,12 @@ figcaption{padding:.6rem .7rem .75rem;font-size:.92rem;border-top:1px solid var(
         <div class="plan-buy">
           <p class="renew-terms" id="pro-renew-terms">$79/month plus applicable taxes, charged today and every month until you cancel. Cancel online, self-serve, from <a href="/cancel">Manage plan</a>. Each month is refundable until it ends, if no manual was delivered that month.</p>
           <p class="seller-note" id="pro-seller-note" data-seller-note hidden>Your purchase is processed by our authorized reseller, which is the merchant of record. ManualOS is provided by Op3x LLC.</p>
+          <div class="billing-country">
+            <label for="pro-billing-country">Billing country</label>
+            <select id="pro-billing-country" name="pro-billing-country" required autocomplete="billing country">
+              <option value="" selected>Select…</option>
+            </select>
+          </div>
           <div class="consent-row">
             <input id="pro-consent" name="pro-consent" type="checkbox" required aria-describedby="pro-renew-terms pro-auto-renew pro-seller-note pro-statement">
             <label for="pro-consent">I agree to the <a href="/terms.html">Terms</a> and authorize <span data-seller-direct>Op3x LLC to charge my card $79 plus applicable taxes</span><span data-seller-mp hidden>ManualOS's authorized reseller to charge my card $79 plus applicable taxes</span> each month until I cancel.</label>
@@ -656,7 +675,8 @@ figcaption{padding:.6rem .7rem .75rem;font-size:.92rem;border-top:1px solid var(
             <label for="pro-business">I'm buying for my business (not personal use)</label>
           </div>
           <p class="renew-terms" id="pro-auto-renew">Renews automatically at $79 plus applicable taxes each month until you cancel at <a href="/cancel">manualos.com/cancel</a>.</p>
-          <button type="button" class="btn btn-primary btn-price" data-checkout="pro" data-consent="pro-consent" data-subscription="true" data-disclosure="pro-renew-b2" data-business="pro-business" disabled>Start Pro</button>
+          <button type="button" class="btn btn-primary btn-price" data-checkout="pro" data-consent="pro-consent" data-subscription="true" data-disclosure="pro-renew-b2" data-business="pro-business" data-country="pro-billing-country" data-ca-error="pro-ca-error" disabled>Start Pro</button>
+          <p class="field-error" id="pro-ca-error" role="alert" hidden></p>
           <p class="statement" id="pro-statement" data-statement hidden>Appears on your card statement as LINK.COM* MANUALOS</p>
           <p data-mp-section hidden>You can manage or cancel your subscription online at the reseller's order-management site, <a href="https://app.link.com">app.link.com</a>. That is a full online alternative.</p>
         </div>
@@ -724,6 +744,24 @@ figcaption{padding:.6rem .7rem .75rem;font-size:.92rem;border-top:1px solid var(
   var host = location.hostname;
   if (host === 'localhost' || host === '127.0.0.1' || host === '[::1]') API_BASE = location.origin;
   var TERMS_VERSION = 'terms-rev-a-m2';
+  var ATTESTATION_VERSION = 'ca-b2b-v1';
+  var CA_BLOCK = "Personal (non-business) purchases from Canada are coming soon. If you're buying for a business, tick the box above.";
+  var COUNTRIES = [
+    ['AF', 'Afghanistan'], ['AL', 'Albania'], ['DZ', 'Algeria'], ['AR', 'Argentina'],
+    ['AU', 'Australia'], ['AT', 'Austria'], ['BE', 'Belgium'], ['BR', 'Brazil'],
+    ['CA', 'Canada'], ['CL', 'Chile'], ['CN', 'China'], ['CO', 'Colombia'],
+    ['CR', 'Costa Rica'], ['CZ', 'Czechia'], ['DK', 'Denmark'], ['EG', 'Egypt'],
+    ['FI', 'Finland'], ['FR', 'France'], ['DE', 'Germany'], ['GR', 'Greece'],
+    ['HK', 'Hong Kong'], ['HU', 'Hungary'], ['IN', 'India'], ['ID', 'Indonesia'],
+    ['IE', 'Ireland'], ['IL', 'Israel'], ['IT', 'Italy'], ['JP', 'Japan'],
+    ['MY', 'Malaysia'], ['MX', 'Mexico'], ['NL', 'Netherlands'], ['NZ', 'New Zealand'],
+    ['NO', 'Norway'], ['PE', 'Peru'], ['PH', 'Philippines'], ['PL', 'Poland'],
+    ['PT', 'Portugal'], ['RO', 'Romania'], ['SG', 'Singapore'], ['ZA', 'South Africa'],
+    ['KR', 'South Korea'], ['ES', 'Spain'], ['SE', 'Sweden'], ['CH', 'Switzerland'],
+    ['TW', 'Taiwan'], ['TH', 'Thailand'], ['TR', 'Turkey'], ['UA', 'Ukraine'],
+    ['AE', 'United Arab Emirates'], ['GB', 'United Kingdom'], ['US', 'United States'],
+    ['VN', 'Vietnam']
+  ];
   var checkoutError = document.getElementById('checkout-error');
   var buttons = document.querySelectorAll('[data-checkout]');
   var busy = false;
@@ -743,17 +781,81 @@ figcaption{padding:.6rem .7rem .75rem;font-size:.92rem;border-top:1px solid var(
     return mode === 'mp' || mode === 'direct';
   }
 
+  function countrySelect(button) {
+    var id = button.getAttribute('data-country');
+    return id ? document.getElementById(id) : null;
+  }
+
+  function billingCountry(button) {
+    var select = countrySelect(button);
+    var value = select ? String(select.value || '').trim().toUpperCase() : '';
+    return /^[A-Z]{2}$/.test(value) ? value : '';
+  }
+
+  function clearCaBlock(button) {
+    var error = document.getElementById(button.getAttribute('data-ca-error'));
+    var business = businessFor(button);
+    if (error) {
+      error.hidden = true;
+      error.textContent = '';
+    }
+    if (business) {
+      business.removeAttribute('aria-invalid');
+      business.removeAttribute('aria-describedby');
+    }
+  }
+
+  function showCaBlock(button) {
+    var error = document.getElementById(button.getAttribute('data-ca-error'));
+    var business = businessFor(button);
+    if (checkoutError) checkoutError.textContent = '';
+    if (error) {
+      error.hidden = false;
+      error.textContent = CA_BLOCK;
+    }
+    if (business) {
+      business.setAttribute('aria-invalid', 'true');
+      if (error) business.setAttribute('aria-describedby', error.id);
+      business.focus();
+    }
+  }
+
+  function fillCountries(select) {
+    if (!select || select.options.length > 1) return;
+    COUNTRIES.forEach(function (pair) {
+      var option = document.createElement('option');
+      option.value = pair[0];
+      option.textContent = pair[1];
+      select.appendChild(option);
+    });
+  }
+
   function syncButtons() {
     if (busy) return;
     buttons.forEach(function (button) {
       var box = boxFor(button);
-      button.disabled = !(configReady() && box && box.checked);
+      button.disabled = !(configReady() && box && box.checked && billingCountry(button));
     });
   }
 
   buttons.forEach(function (button) {
     var box = boxFor(button);
+    var business = businessFor(button);
+    var select = countrySelect(button);
+    fillCountries(select);
     if (box) box.addEventListener('change', syncButtons);
+    if (business) {
+      business.addEventListener('change', function () {
+        clearCaBlock(button);
+        syncButtons();
+      });
+    }
+    if (select) {
+      select.addEventListener('change', function () {
+        clearCaBlock(button);
+        syncButtons();
+      });
+    }
     button.addEventListener('click', function () {
       startCheckout(button.getAttribute('data-checkout'), button);
     });
@@ -776,8 +878,12 @@ figcaption{padding:.6rem .7rem .75rem;font-size:.92rem;border-top:1px solid var(
   async function startCheckout(plan, button) {
     if (busy) return;
     var box = boxFor(button);
-    if (!configReady() || !box || !box.checked) {
-      if (box) box.focus();
+    var country = billingCountry(button);
+    if (!configReady() || !box || !box.checked || !country) {
+      if (!country) {
+        var select = countrySelect(button);
+        if (select) select.focus();
+      } else if (box) box.focus();
       return;
     }
     busy = true;
@@ -792,7 +898,9 @@ figcaption{padding:.6rem .7rem .75rem;font-size:.92rem;border-top:1px solid var(
       termsAccepted: true,
       termsVersion: TERMS_VERSION,
       disclosureVersion: disclosureVersion,
-      buyingForBusiness: !!(business && business.checked)
+      billingCountry: country,
+      caBusinessAttestation: !!(business && business.checked),
+      attestationVersion: ATTESTATION_VERSION
     };
     checkoutError.textContent = '';
     buttons.forEach(function (el) { el.disabled = true; });
@@ -805,6 +913,14 @@ figcaption{padding:.6rem .7rem .75rem;font-size:.92rem;border-top:1px solid var(
         body: JSON.stringify(payload)
       });
       var data = await res.json().catch(function () { return {}; });
+      if (data && data.code === 'ca_business_required') {
+        busy = false;
+        button.removeAttribute('aria-busy');
+        button.textContent = originalLabel;
+        syncButtons();
+        showCaBlock(button);
+        return;
+      }
       if (!res.ok || !data || !data.url) throw new Error('checkout failed');
       window.location.href = data.url;
     } catch (err) {

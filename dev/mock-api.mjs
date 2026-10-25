@@ -381,11 +381,34 @@ const server = http.createServer(async (req, res) => {
       try { body = JSON.parse(raw.toString('utf8') || '{}'); } catch { body = {}; }
       const plan = body && body.plan;
       const known = plan === 'starter' || plan === 'pro' || plan === 'integrator';
-      const ok = known && body.termsAccepted === true && !Object.prototype.hasOwnProperty.call(body, 'termsConsent') && typeof body.renewalConsent === 'boolean' && typeof body.termsVersion === 'string' && typeof body.disclosureVersion === 'string';
+      const consentOk = known && body.termsAccepted === true && !Object.prototype.hasOwnProperty.call(body, 'termsConsent') && typeof body.renewalConsent === 'boolean' && typeof body.termsVersion === 'string' && typeof body.disclosureVersion === 'string';
+      const countryOk = typeof body.billingCountry === 'string' && /^[A-Z]{2}$/.test(body.billingCountry);
+      const attestationOk = typeof body.caBusinessAttestation === 'boolean';
+      const versionOk = body.attestationVersion === 'ca-b2b-v1';
+      const caBlocked = countryOk && body.billingCountry === 'CA' && body.caBusinessAttestation !== true;
+      const caMessage = "Personal (non-business) purchases from Canada are coming soon. If you're buying for a business, tick the box above.";
+      let status = 200;
+      let errorBody = null;
+      if (!consentOk) {
+        status = 400;
+        errorBody = { error: 'Consent required.' };
+      } else if (!countryOk) {
+        status = 400;
+        errorBody = { error: 'billingCountry must be a two-letter ISO country code.' };
+      } else if (!attestationOk) {
+        status = 400;
+        errorBody = { error: 'caBusinessAttestation must be true or false.' };
+      } else if (!versionOk) {
+        status = 400;
+        errorBody = { error: 'attestationVersion is not accepted.' };
+      } else if (caBlocked) {
+        status = 400;
+        errorBody = { error: caMessage, code: 'ca_business_required' };
+      }
       requests.push({
         method: 'POST',
         path: '/create-checkout-session',
-        status: ok ? 200 : 400,
+        status,
         files: [],
         fields: body && typeof body === 'object' ? Object.keys(body) : [],
         plan,
@@ -393,10 +416,13 @@ const server = http.createServer(async (req, res) => {
         termsAccepted: body.termsAccepted,
         termsVersion: body.termsVersion,
         disclosureVersion: body.disclosureVersion,
-        buyingForBusiness: body.buyingForBusiness,
+        billingCountry: body.billingCountry,
+        caBusinessAttestation: body.caBusinessAttestation,
+        attestationVersion: body.attestationVersion,
+        code: errorBody && errorBody.code,
         interval: body.interval,
       });
-      if (!ok) return sendJson(res, 400, { error: 'Consent required.' });
+      if (errorBody) return sendJson(res, status, errorBody);
       const sessionId = plan === 'pro' ? 'cs_test_pro' : 'cs_test_local';
       return sendJson(res, 200, { url: '/upload.html?session_id=' + sessionId });
     }
