@@ -49,6 +49,79 @@ function excerpt(text, index) {
   return text.slice(start, end).replace(/\s+/g, ' ');
 }
 
+const LINK_STATEMENT = 'Appears on your card statement as LINK.COM* MANUALOS';
+
+function rangesOf(text, re) {
+  const flags = re.flags.includes('g') ? re : new RegExp(re.source, re.flags + 'g');
+  const ranges = [];
+  let match;
+  while ((match = flags.exec(text))) {
+    ranges.push([match.index, match.index + match[0].length, match[0]]);
+    if (match[0].length === 0) flags.lastIndex += 1;
+  }
+  return ranges;
+}
+
+function statementRanges(text) {
+  const ranges = [];
+  let from = 0;
+  while (from < text.length) {
+    const at = text.indexOf(LINK_STATEMENT, from);
+    if (at === -1) break;
+    ranges.push([at, at + LINK_STATEMENT.length]);
+    from = at + LINK_STATEMENT.length;
+  }
+  return ranges;
+}
+
+function mpSectionRanges(text) {
+  const re = /<([a-z0-9]+)[^>]*\sdata-mp-section\b[^>]*>[\s\S]*?<\/\1>/gi;
+  const ranges = [];
+  let match;
+  while ((match = re.exec(text))) ranges.push([match.index, match.index + match[0].length]);
+  return ranges;
+}
+
+function inside(ranges, index) {
+  return ranges.some(([start, end]) => index >= start && index < end);
+}
+
+// "Link" and link.com are allowed only inside data-mp-section.
+// LINK.COM is allowed only inside the exact statement sentence.
+export function disallowedLinkHits(text) {
+  const sections = mpSectionRanges(text);
+  const statements = statementRanges(text);
+  const hits = [];
+  for (const [index, , raw] of rangesOf(text, /\bLink\b/g)) {
+    if (!inside(sections, index)) hits.push({ index, raw, reason: 'Link outside a managed-payments section' });
+  }
+  for (const [index, , raw] of rangesOf(text, /LINK\.COM/g)) {
+    if (!inside(statements, index)) hits.push({ index, raw, reason: 'LINK.COM outside the statement sentence' });
+  }
+  for (const [index, , raw] of rangesOf(text, /link\.com/g)) {
+    if (!inside(sections, index)) hits.push({ index, raw, reason: 'link.com outside a managed-payments section' });
+  }
+  return hits;
+}
+
+export function assertLinkExceptions() {
+  const cases = [
+    ['<p>Pay with Link.</p>', true],
+    ['<p data-statement hidden>Appears on your card statement as LINK.COM* MANUALOS</p>', false],
+    ['<p data-mp-section hidden>Link is the seller and the merchant of record.</p>', false],
+    ['<p>Link is the seller.</p>', true],
+    ['<p data-mp-section hidden>Card shows LINK.COM* MANUALOS</p>', true],
+    ['<p>Use the link below.</p>', false],
+    ['<a class="skip-link" href="#main">Skip</a>', false],
+    ['<p>Cancel at link.com today.</p>', true],
+    ['<p data-mp-section hidden>Subscriptions can also be managed or cancelled from the reseller\'s order-management site (link.com).</p>', false],
+  ];
+  for (const [sample, expectHit] of cases) {
+    const got = disallowedLinkHits(sample).length > 0;
+    if (got !== expectHit) throw new Error('link exception case failed: ' + sample);
+  }
+}
+
 export async function findBrandHits(rootDir) {
   const hits = [];
   async function walk(dir) {
@@ -63,15 +136,13 @@ export async function findBrandHits(rootDir) {
       }
       if (!/\.(html|js)$/i.test(entry.name)) continue;
       const text = await readFile(full, 'utf8');
+      const file = path.relative(rootDir, full);
       for (const { name, re } of PATTERNS) {
         const match = re.exec(text);
-        if (match) {
-          hits.push({
-            file: path.relative(rootDir, full),
-            name,
-            excerpt: excerpt(text, match.index),
-          });
-        }
+        if (match) hits.push({ file, name, excerpt: excerpt(text, match.index) });
+      }
+      for (const hit of disallowedLinkHits(text)) {
+        hits.push({ file, name: 'Link', excerpt: excerpt(text, hit.index) + ' (' + hit.reason + ')' });
       }
     }
   }
@@ -80,6 +151,7 @@ export async function findBrandHits(rootDir) {
 }
 
 export async function assertNoBrandNames(rootDir) {
+  assertLinkExceptions();
   const hits = await findBrandHits(rootDir);
   if (!hits.length) return;
   const lines = hits.map((hit) => `${hit.file}: ${hit.name} — ${hit.excerpt}`);

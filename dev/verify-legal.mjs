@@ -21,8 +21,8 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const shotDir = process.env.SCREENSHOT_DIR || '/opt/cursor/artifacts/screenshots';
 const chromePath = process.env.CHROME_PATH || '/usr/bin/google-chrome';
 const axePath = '/tmp/manualos-test/node_modules/axe-core/axe.min.js';
-const pages = ['index.html', 'upload.html', '404.html', 'privacy.html', 'terms.html', 'refunds.html', 'support.html'];
-const CONSENT = 'I agree to receive text messages from ManualOS at this number: support replies, account alerts, and manual-status alerts. Msg frequency varies. Msg & data rates may apply. Reply STOP to opt out, HELP for help. Consent is not a condition of purchase.';
+const pages = ['index.html', 'upload.html', '404.html', 'privacy.html', 'terms.html', 'refunds.html', 'support.html', 'cancel/index.html'];
+const CONSENT = 'Yes, text me at this number. I agree to receive support replies and order/manual-status texts from ManualOS (Op3x LLC). Msg frequency varies. Msg & data rates may apply. Reply HELP for help, STOP to cancel. Consent is not a condition of purchase. See Terms (/terms.html#sms) and Privacy (/privacy.html#sms).';
 
 function read(name) {
   return readFile(path.join(root, name), 'utf8');
@@ -102,7 +102,7 @@ async function main() {
   }
 
   const banned = ['Twilio', 'Stripe', 'Anthropic', 'Claude', 'OpenAI', 'Bandwidth', 'Vonage', 'Plivo', 'Telnyx', 'Formspree', 'Getform', 'Typeform', 'GitHub'];
-  for (const name of ['privacy.html', 'terms.html', 'refunds.html', 'support.html']) {
+  for (const name of ['privacy.html', 'terms.html', 'refunds.html', 'support.html', 'cancel/index.html']) {
     for (const word of banned) {
       if (html[name].includes(word)) throw new Error(name + ' contains ' + word);
     }
@@ -164,17 +164,94 @@ async function main() {
   if (!html['support.html'].includes('backend PR #8')) throw new Error('support script missing backend PR #8 note');
   if (/team seats/i.test(html['terms.html'] + html['privacy.html'])) throw new Error('team seats were invented');
   if (/at any hour/.test(Object.values(html).join('\n'))) throw new Error('an at-any-hour line is still present');
-  if (/within \d+ (hour|business day)|response time|we will respond|promptly|immediately/i.test(html['support.html'] + html['terms.html'] + html['refunds.html'])) {
+  const turnaround = 'Approved refunds are processed within 5 business days. Your bank may take 5–10 business days to show the credit.';
+  const renewalNotice = 'If you bought before these refund limits applied, the new terms apply from your next renewal, and we will email you at least 14 days before that renewal.';
+  const venue = 'Disputes are brought in the state or federal courts serving Winnebago County, Illinois, and you and we consent to their jurisdiction. Either party may bring an individual claim in small-claims court.';
+  const deployDateNote = 'The effective date is filled with the production deploy date when this page is merged.';
+  for (const name of ['terms.html', 'refunds.html']) {
+    if (!html[name].includes(turnaround)) throw new Error(name + ' missing refund turnaround');
+    if (!html[name].includes(renewalNotice)) throw new Error(name + ' missing renewal notice');
+    if (!html[name].includes(venue)) throw new Error(name + ' missing Winnebago venue');
+  }
+  for (const name of ['privacy.html', 'terms.html', 'refunds.html']) {
+    if (!html[name].includes(deployDateNote)) throw new Error(name + ' missing deploy-date note');
+  }
+  if (/arbitration|class-action waiver|class action waiver|jury waiver/i.test(html['terms.html'] + html['refunds.html'] + html['privacy.html'])) {
+    throw new Error('arbitration or class waiver text is present');
+  }
+  const responseScan = (html['support.html'] + html['terms.html'] + html['refunds.html']).split(turnaround).join('');
+  if (/within \d+ (hour|business day)|response time|we will respond|promptly|immediately/i.test(responseScan)) {
     throw new Error('support, terms, or refunds promise a response time');
   }
   if (!/State of Illinois/.test(html['terms.html'])) throw new Error('terms missing Illinois law');
-  const smsNeed = ['support replies', 'account alerts', 'manual-status alerts', 'Message frequency varies', 'Msg &amp; data rates may apply', 'Reply STOP to opt out', 'Reply HELP for help', 'support@manualos.com', 'Mobile numbers and SMS opt-in consent are not shared with or sold to third parties or affiliates for marketing'];
+  if (!html['terms.html'].includes('ManualOS (Op3x LLC)') || !html['privacy.html'].includes('ManualOS (Op3x LLC)')) {
+    throw new Error('SMS copy is missing ManualOS (Op3x LLC)');
+  }
+  const smsNeed = ['support replies', 'order/manual-status texts', 'Message frequency varies', 'Msg &amp; data rates may apply', 'Reply STOP to opt out', 'Reply HELP for help', 'support@manualos.com', 'Mobile numbers and SMS opt-in consent are not shared with or sold to third parties or affiliates for marketing'];
+  if (/account alerts/.test(html['support.html'] + html['privacy.html'] + html['terms.html'])) {
+    throw new Error('account alerts is still promised');
+  }
+  const cancelCopy = 'You can cancel online, self-serve, from our <a href="/cancel">Manage plan</a> link.';
+  const mpCancel = 'You can manage or cancel your subscription online at the reseller\'s order-management site, <a href="https://link.com">link.com</a>. That is a full online alternative.';
+  if (!html['terms.html'].includes(cancelCopy) || !html['refunds.html'].includes(cancelCopy)) throw new Error('online cancel link missing');
+  if (!html['terms.html'].includes('<p data-mp-section hidden>' + mpCancel) || !html['refunds.html'].includes('<p data-mp-section hidden>' + mpCancel)) {
+    throw new Error('managed-payments cancel alternative is missing');
+  }
+  if (!html['cancel/index.html'].includes('id="mp-cancel-lead"') || !html['cancel/index.html'].includes(mpCancel)) {
+    throw new Error('cancel page does not lead with the online alternative');
+  }
+  const retention = "We delete support threads, recordings and transcripts as soon as practicable once they're no longer needed.";
+  if (!html['privacy.html'].includes(retention)) throw new Error('privacy missing practicable deletion sentence');
+  if (!html['privacy.html'].includes('<!-- restore 90-day wording when backend retention PR ships -->')) throw new Error('privacy missing retention restore comment');
+  if (/90 days/i.test(html['privacy.html'] + html['support.html'] + html['terms.html'] + html['refunds.html'])) throw new Error('a 90-day retention promise is still present');
+  for (const name of ['terms.html', 'privacy.html', 'refunds.html', 'support.html']) {
+    if (/Integrator|\$249|\$2,490|per year|yearly/i.test(html[name])) throw new Error(name + ' still mentions an unsold plan');
+  }
+  if (/To cancel, email/.test(html['terms.html'] + html['refunds.html'])) throw new Error('email-only cancel sentence remains');
+  if (/By buying a plan or uploading files, you agree to them/.test(html['terms.html'])) throw new Error('browsewrap sentence remains');
+  if (!html['terms.html'].includes('You accept them when you check the box at checkout')) throw new Error('terms assent sentence missing');
+  const indexMarkup = html['index.html'].slice(0, html['index.html'].lastIndexOf('<script>'));
+  const configJs = await read('checkout-config.js');
+  const resellerNote = 'Your purchase is processed by our authorized reseller, which is the merchant of record. ManualOS is provided by Op3x LLC.';
+  const statementLine = 'Appears on your card statement as LINK.COM* MANUALOS';
+  const mpSeller = 'For purchases made while managed payments are on, Link is the seller and the merchant of record. Link processes payments and refunds, and Link handles payment disputes. Link may still refund a purchase within its own refund window.';
+  const directSeller = 'Op3x LLC is the seller of ManualOS. Op3x LLC processes payments and refunds for these purchases and handles payment disputes.';
+  if (/CHECKOUT_SELLER_MODE|MANAGED_PAYMENTS_ON/.test(html['index.html'] + configJs)) throw new Error('a frontend seller constant is still present');
+  if (!configJs.includes("'/api/checkout-config'") || !html['index.html'].includes('src="/checkout-config.js"')) throw new Error('checkout config is not loaded from the backend');
+  if (!html['terms.html'].includes('src="/checkout-config.js"') || !html['refunds.html'].includes('src="/checkout-config.js"')) throw new Error('legal pages do not load checkout config');
+  if (/\bLink\b|LINK\.COM|Stripe/.test(configJs)) throw new Error('checkout config script names a provider');
+  if (!indexMarkup.includes('data-seller-direct>Op3x LLC to charge my card $79')) throw new Error('variant (a) checkbox is missing');
+  if (!indexMarkup.includes('data-seller-mp hidden>ManualOS\'s authorized reseller to charge my card $79')) throw new Error('reseller checkbox is not hidden by default');
+  if (!indexMarkup.includes('data-seller-note hidden>' + resellerNote)) throw new Error('reseller disclosure is not hidden by default');
+  if ((indexMarkup.match(/data-statement hidden>Appears on your card statement as LINK\.COM\* MANUALOS/g) || []).length !== 2) throw new Error('statement line is missing beside a buy button');
+  if (/will appear on your card statement/.test(html['index.html'])) throw new Error('old card-statement clause is still in the disclosure');
+  if (/plus applicable tax(?!es)/.test(html['index.html'])) throw new Error('checkout still says applicable tax');
+  if (!indexMarkup.includes('$39 one time for 3 manuals. Refundable within 30 days if no manual has been delivered.')) throw new Error('starter disclosure missing');
+  if (/\$249|\$2,490|Start Integrator|integrator-consent/.test(html['index.html'])) throw new Error('homepage still sells Integrator');
+  for (const name of ['terms.html', 'refunds.html']) {
+    if (!html[name].includes('<p data-direct-section>' + directSeller + '</p>')) throw new Error(name + ' missing direct seller section');
+    if (!html[name].includes('<p data-mp-section hidden>' + mpSeller)) throw new Error(name + ' missing hidden merchant-of-record section');
+  }
+  if (!html['cancel/index.html'].includes("var BILLING_PORTAL_PATH = '/billing-portal'")) {
+    throw new Error('billing portal path constant missing');
+  }
+  if (/\bStripe\b|bought through Link|Link account/.test(html['index.html'] + html['cancel/index.html'] + html['terms.html'] + html['refunds.html'])) {
+    throw new Error('a provider name is in the new copy');
+  }
+  for (const id of ['starter-consent', 'pro-consent']) {
+    const tag = (html['index.html'].match(new RegExp('<input[^>]*id="' + id + '"[^>]*>')) || [''])[0];
+    if (!tag) throw new Error('missing ' + id);
+    if (/\schecked\b/.test(tag)) throw new Error(id + ' starts checked');
+    if (!/\srequired\b/.test(tag)) throw new Error(id + ' is not required');
+    if (!html['index.html'].includes('for="' + id + '"')) throw new Error(id + ' has no label');
+  }
   for (const name of ['privacy.html', 'terms.html']) {
     for (const phrase of smsNeed) {
       if (!html[name].includes(phrase)) throw new Error(name + ' missing SMS phrase: ' + phrase);
     }
   }
-  if (!html['support.html'].includes(CONSENT.replace('&', '&amp;'))) throw new Error('checkbox sentence missing');
+  if (!html['support.html'].includes(CONSENT)) throw new Error('consentText constant is not the backend v3 label');
+  if (!html['support.html'].includes('consentText: CONSENT_TEXT')) throw new Error('consent POST does not send consentText');
   if (/id="sms-consent"[^>]*\schecked\b/.test(html['support.html'])) throw new Error('checkbox is checked in HTML');
   if (!html['support.html'].includes("var SUPPORT_PHONE_DISPLAY = '';")) throw new Error('phone constant missing or not empty');
   if (!html['support.html'].includes("var API_BASE = 'https://manualforge-backend-production.up.railway.app';")) throw new Error('API_BASE missing');
@@ -211,7 +288,7 @@ async function main() {
 
     for (const width of [390, 1280]) {
       await page.setViewport({ width, height: width === 390 ? 844 : 1000, deviceScaleFactor: 1 });
-      for (const name of ['support.html', 'privacy.html', 'terms.html', 'refunds.html', '404.html', 'index.html']) {
+      for (const name of ['support.html', 'privacy.html', 'terms.html', 'refunds.html', '404.html', 'index.html', 'cancel/']) {
         await page.goto(base + '/' + name, { waitUntil: 'networkidle0' });
         const extra = await overflow(page);
         if (extra > 1) throw new Error(name + ' overflows by ' + extra + 'px at ' + width);
@@ -280,10 +357,10 @@ async function main() {
     await page.waitForFunction(() => !document.getElementById('form-status').hidden);
     const posted = (await consentCount()).slice(before);
     if (posted.length !== 1 || posted[0].status !== 200) throw new Error('consent response ' + JSON.stringify(posted));
-    if (posted[0].phone !== '(217) 555-0199' || posted[0].consentTextVersion !== 'support-sms-v2' || posted[0].source !== 'website-support-form') {
+    if (posted[0].phone !== '(217) 555-0199' || posted[0].consentTextVersion !== 'support-sms-v3' || posted[0].consentText !== CONSENT || posted[0].source !== 'website-support-form') {
       throw new Error('consent body ' + JSON.stringify(posted[0]));
     }
-    if (posted[0].fields.join(',') !== 'phone,consentTextVersion,source') throw new Error('consent keys ' + posted[0].fields.join(','));
+    if (posted[0].fields.join(',') !== 'phone,consentTextVersion,consentText,source') throw new Error('consent keys ' + posted[0].fields.join(','));
     const mailto = await page.$eval('#email-opener', (el) => el.getAttribute('href'));
     if (!mailto.startsWith('mailto:support@manualos.com?')) throw new Error('mailto target ' + mailto);
     const body = decodeURIComponent(mailto.split('body=')[1]);
@@ -323,6 +400,216 @@ async function main() {
     const failedHidden = await page.$eval('#form-status', (el) => el.hidden);
     if (!failedHidden) throw new Error('email opened after a failed opt-in');
     await runAxe(page, 'support opt-in failure');
+
+    await page.goto(base + '/index.html#pricing', { waitUntil: 'networkidle0' });
+    const proGate = await page.evaluate(() => {
+      const input = document.getElementById('pro-consent');
+      const label = document.querySelector('label[for="pro-consent"]');
+      input.focus({ focusVisible: true });
+      const style = getComputedStyle(input);
+      return {
+        tied: !!(label && label.htmlFor === 'pro-consent'),
+        checked: input.checked,
+        buttonDisabled: document.querySelector('[data-checkout="pro"]').disabled,
+        outlineStyle: style.outlineStyle,
+        outlineWidth: parseFloat(style.outlineWidth),
+        sellerHidden: document.getElementById('pro-seller-note').hidden,
+        statementHidden: document.getElementById('pro-statement').hidden,
+        statement: document.getElementById('pro-statement').textContent,
+        directHidden: label.querySelector('[data-seller-direct]').hidden,
+        mpHidden: label.querySelector('[data-seller-mp]').hidden,
+        label: label.textContent.replace(/\s+/g, ' ').trim(),
+      };
+    });
+    if (!proGate.tied || proGate.checked || !proGate.buttonDisabled || proGate.sellerHidden || proGate.statementHidden || !proGate.directHidden || proGate.mpHidden) {
+      throw new Error('pro consent gate ' + JSON.stringify(proGate));
+    }
+    if (proGate.statement !== 'Appears on your card statement as LINK.COM* MANUALOS') throw new Error('statement ' + proGate.statement);
+    if (proGate.outlineStyle === 'none' || !(proGate.outlineWidth > 0)) throw new Error('pro checkbox focus is not visible ' + JSON.stringify(proGate));
+    if (!proGate.label.includes("ManualOS's authorized reseller to charge my card $79")) {
+      throw new Error('pro label ' + proGate.label);
+    }
+    await page.focus('#pro-consent');
+    await page.keyboard.press('Space');
+    const proEnabled = await page.$eval('[data-checkout="pro"]', (el) => !el.disabled && document.getElementById('pro-consent').checked);
+    if (!proEnabled) throw new Error('keyboard did not enable Start Pro');
+    const beforeCheckout = (await fetch(base + '/__mock/requests').then((res) => res.json())).filter((item) => item.path === '/create-checkout-session').length;
+    await page.click('[data-checkout="pro"]');
+    await page.waitForFunction(() => location.pathname.endsWith('/upload.html'));
+    const checkout = (await fetch(base + '/__mock/requests').then((res) => res.json())).filter((item) => item.path === '/create-checkout-session').slice(beforeCheckout);
+    if (checkout.length !== 1 || checkout[0].status !== 200) throw new Error('checkout response ' + JSON.stringify(checkout));
+    if (checkout[0].plan !== 'pro' || checkout[0].renewalConsent !== true || checkout[0].termsConsent !== true || checkout[0].termsVersion !== 'terms-rev-a-m2' || checkout[0].disclosureVersion !== 'pro-renew-b2-mp') {
+      throw new Error('checkout body ' + JSON.stringify(checkout[0]));
+    }
+
+    await page.goto(base + '/index.html#pricing', { waitUntil: 'networkidle0' });
+    const starterDisabled = await page.$eval('[data-checkout="starter"]', (el) => el.disabled);
+    if (!starterDisabled) throw new Error('starter button starts enabled');
+    await page.click('#starter-consent');
+    await page.click('[data-checkout="starter"]');
+    await page.waitForFunction(() => location.pathname.endsWith('/upload.html'));
+    const starter = (await fetch(base + '/__mock/requests').then((res) => res.json())).filter((item) => item.path === '/create-checkout-session').pop();
+    if (starter.plan !== 'starter' || starter.renewalConsent !== false || starter.termsConsent !== true || starter.disclosureVersion !== 'starter-disclosure-b2-mp') {
+      throw new Error('starter body ' + JSON.stringify(starter));
+    }
+
+    await page.goto(base + '/cancel/', { waitUntil: 'networkidle0' });
+    await page.evaluate(() => localStorage.clear());
+    const portalOrder = await page.evaluate(() => {
+      const lead = document.getElementById('mp-cancel-lead');
+      const mail = document.getElementById('email-backup');
+      return {
+        leadHidden: lead.hidden,
+        leadText: lead.textContent.replace(/\s+/g, ' ').trim(),
+        leadBeforeEmail: lead.compareDocumentPosition(mail) & Node.DOCUMENT_POSITION_FOLLOWING,
+      };
+    });
+    if (portalOrder.leadHidden || !portalOrder.leadBeforeEmail || !portalOrder.leadText.startsWith('You can manage or cancel your subscription online at the reseller\'s order-management site, link.com.')) {
+      throw new Error('cancel page does not lead with link.com ' + JSON.stringify(portalOrder));
+    }
+    const beforePortal = (await fetch(base + '/__mock/requests').then((res) => res.json())).filter((item) => item.path === '/billing-portal').length;
+    await page.click('#cancel-submit');
+    await page.waitForFunction(() => document.getElementById('cancel-error').textContent.startsWith('Manage plan did not open. Use the online option above'));
+    const noPortalFocus = await page.evaluate(() => document.activeElement === document.getElementById('mp-cancel-lead') || document.getElementById('mp-cancel-lead').contains(document.activeElement));
+    if (!noPortalFocus) throw new Error('missing portal did not focus the link.com option');
+    const earlyPortal = (await fetch(base + '/__mock/requests').then((res) => res.json())).filter((item) => item.path === '/billing-portal').slice(beforePortal);
+    if (earlyPortal.length) throw new Error('portal posted without a checkout reference');
+    await page.goto(base + '/cancel/?session_id=cs_test_pro', { waitUntil: 'networkidle0' });
+    await page.click('#cancel-submit');
+    await page.waitForFunction(() => location.pathname.endsWith('/refunds.html'));
+    const linked = (await fetch(base + '/__mock/requests').then((res) => res.json())).filter((item) => item.path === '/billing-portal').pop();
+    if (!linked || linked.session_id !== 'cs_test_pro' || linked.fields.join(',') !== 'session_id') throw new Error('portal body ' + JSON.stringify(linked));
+    await fetch(base + '/__mock/checkout-config', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ managedPayments: true, fail: false, hold: false, portalFail: true }),
+    });
+    await page.goto(base + '/cancel/?session_id=cs_test_pro', { waitUntil: 'networkidle0' });
+    await page.click('#cancel-submit');
+    await page.waitForFunction(() => document.getElementById('cancel-error').textContent.startsWith('Manage plan did not open. Use the online option above'));
+    const failedPortal = await page.evaluate(() => {
+      const lead = document.getElementById('mp-cancel-lead');
+      const mail = document.getElementById('email-backup');
+      const error = document.getElementById('cancel-error').textContent;
+      const focused = document.activeElement === lead || lead.contains(document.activeElement);
+      return {
+        leadHidden: lead.hidden,
+        leadBeforeEmail: Boolean(lead.compareDocumentPosition(mail) & Node.DOCUMENT_POSITION_FOLLOWING),
+        focused,
+        emailOnly: !error.includes('online option above'),
+        error,
+      };
+    });
+    if (failedPortal.leadHidden || !failedPortal.leadBeforeEmail || failedPortal.emailOnly) {
+      throw new Error('portal failure fell back to email only ' + JSON.stringify(failedPortal));
+    }
+    await fetch(base + '/__mock/checkout-config', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ managedPayments: true, fail: false, hold: false, portalFail: false }),
+    });
+
+    async function setConfig(body) {
+      const res = await fetch(base + '/__mock/checkout-config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) throw new Error('mock config ' + res.status);
+    }
+
+    async function renderedSeller(target) {
+      return target.evaluate(() => {
+        function shown(selector) {
+          const el = document.querySelector(selector);
+          if (!el) return null;
+          return !el.closest('[hidden]') && getComputedStyle(el).display !== 'none';
+        }
+        const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+        let text = '';
+        let node;
+        while ((node = walker.nextNode())) {
+          const parent = node.parentElement;
+          if (!parent || parent.closest('[hidden]')) continue;
+          text += node.textContent;
+        }
+        return {
+          note: shown('[data-seller-note]'),
+          statement: shown('[data-statement]'),
+          mpCharge: shown('[data-seller-mp]'),
+          directCharge: shown('[data-seller-direct]'),
+          mpSection: shown('[data-mp-section]'),
+          directSection: shown('[data-direct-section]'),
+          text: text.replace(/\s+/g, ' ').trim(),
+        };
+      });
+    }
+
+    function expectSeller(state, mode, where) {
+      const reseller = "Your purchase is processed by our authorized reseller, which is the merchant of record. ManualOS is provided by Op3x LLC.";
+      const statement = 'Appears on your card statement as LINK.COM* MANUALOS';
+      const mpOn = mode === 'mp';
+      if (where === 'index') {
+        if (state.note !== mpOn || state.statement !== mpOn || state.mpCharge !== mpOn || state.directCharge !== !mpOn) {
+          throw new Error(where + ' ' + mode + ' visibility ' + JSON.stringify(state));
+        }
+        if (mpOn && (!state.text.includes(reseller) || !state.text.includes(statement) || !state.text.includes("ManualOS's authorized reseller to charge my card $79") || !state.text.includes('That is a full online alternative.'))) {
+          throw new Error(where + ' mp copy missing ' + state.text.slice(0, 400));
+        }
+        if (!mpOn && (state.text.includes('link.com') || state.text.includes('authorized reseller') || state.text.includes('LINK.COM') || /\bLink\b/.test(state.text))) {
+          throw new Error(where + ' leaked reseller copy');
+        }
+        if (!mpOn && !state.text.includes('Op3x LLC to charge my card $79')) throw new Error(where + ' missing direct charge');
+      } else {
+        if (state.mpSection !== mpOn || state.directSection !== !mpOn) throw new Error(where + ' ' + mode + ' sections ' + JSON.stringify(state));
+        if (mpOn && (!state.text.includes('Link is the seller and the merchant of record') || !state.text.includes('Link may still refund a purchase within its own refund window') || !state.text.includes('That is a full online alternative.'))) {
+          throw new Error(where + ' mp section missing');
+        }
+        if (!mpOn && (state.text.includes('link.com') || state.text.includes('Link is the seller') || /\bLink\b/.test(state.text))) throw new Error(where + ' leaked Link');
+        if (mpOn && state.text.includes('Op3x LLC is the seller')) throw new Error(where + ' still shows the direct seller');
+        if (!mpOn && !state.text.includes('Op3x LLC is the seller of ManualOS')) throw new Error(where + ' missing direct seller');
+      }
+    }
+
+    await setConfig({ managedPayments: false, fail: false, hold: false });
+    for (const name of ['index.html#pricing', 'terms.html', 'refunds.html']) {
+      await page.goto(base + '/' + name, { waitUntil: 'networkidle0' });
+      expectSeller(await renderedSeller(page), 'direct', name.startsWith('index') ? 'index' : name);
+    }
+    await page.goto(base + '/index.html#pricing', { waitUntil: 'networkidle0' });
+    await page.click('#pro-consent');
+    await page.click('[data-checkout="pro"]');
+    await page.waitForFunction(() => location.pathname.endsWith('/upload.html'));
+    const directCheckout = (await fetch(base + '/__mock/requests').then((res) => res.json())).filter((item) => item.path === '/create-checkout-session').pop();
+    if (!directCheckout || directCheckout.disclosureVersion !== 'pro-renew-b2-direct') throw new Error('direct checkout ' + JSON.stringify(directCheckout));
+
+    await setConfig({ managedPayments: true, fail: true, hold: false });
+    for (const name of ['index.html#pricing', 'terms.html', 'refunds.html']) {
+      const beforeFail = (await fetch(base + '/__mock/requests').then((res) => res.json())).filter((item) => item.path === '/api/checkout-config').length;
+      await page.goto(base + '/' + name, { waitUntil: 'domcontentloaded' });
+      await page.waitForFunction((start) => fetch('/__mock/requests').then((res) => res.json()).then((list) => {
+        const configs = list.filter((item) => item.path === '/api/checkout-config');
+        return configs.length > start && configs[configs.length - 1].status === 500 && document.documentElement.getAttribute('data-checkout-config') === 'direct';
+      }), { timeout: 8000 }, beforeFail);
+      expectSeller(await renderedSeller(page), 'direct', name.startsWith('index') ? 'index' : name);
+    }
+    const failedConfig = (await fetch(base + '/__mock/requests').then((res) => res.json())).filter((item) => item.path === '/api/checkout-config').pop();
+    if (!failedConfig || failedConfig.status !== 500) throw new Error('config failure was not recorded ' + JSON.stringify(failedConfig));
+
+    await setConfig({ managedPayments: true, fail: false, hold: true });
+    await page.goto(base + '/terms.html', { waitUntil: 'domcontentloaded' });
+    expectSeller(await renderedSeller(page), 'direct', 'terms.html');
+    await page.goto(base + '/refunds.html', { waitUntil: 'domcontentloaded' });
+    expectSeller(await renderedSeller(page), 'direct', 'refunds.html');
+    await page.goto(base + '/index.html#pricing', { waitUntil: 'domcontentloaded' });
+    expectSeller(await renderedSeller(page), 'direct', 'index');
+    await setConfig({ managedPayments: true, fail: false, hold: false, release: true });
+    await page.waitForFunction(() => document.getElementById('pro-seller-note') && !document.getElementById('pro-seller-note').hidden);
+    expectSeller(await renderedSeller(page), 'mp', 'index');
+    await page.goto(base + '/terms.html', { waitUntil: 'networkidle0' });
+    expectSeller(await renderedSeller(page), 'mp', 'terms.html');
+    await page.goto(base + '/refunds.html', { waitUntil: 'networkidle0' });
+    expectSeller(await renderedSeller(page), 'mp', 'refunds.html');
 
     if (pageErrors.length) throw new Error('page errors: ' + pageErrors.join(' | '));
     console.log('PASS support form, consent POST, and layouts');

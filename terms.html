@@ -81,10 +81,10 @@ a{color:var(--ink)}
       <span>Eff. <span class="placeholder">[[EFFECTIVE_DATE]]</span></span>
     </div>
     <div class="fill-note">
-      <p><strong>Open items.</strong> A dashed token is a placeholder. Fill it in before this page is final.</p>
+      <p><strong>Open items.</strong> A dashed token is a placeholder. The effective date is filled with the production deploy date when this page is merged.</p>
     </div>
     <h1>Terms of service</h1>
-    <p class="lede">These terms are an agreement between you and Op3x LLC ("we", "us"), which operates ManualOS at manualos.com. By buying a plan or uploading files, you agree to them.</p>
+    <p class="lede">These Terms are a binding agreement between you and Op3x LLC, an Illinois limited liability company doing business as ManualOS ("ManualOS," "we," "us"). You accept them when you check the box at checkout or, for the free sample and support form, when you use the service after being shown a link to them.</p>
 
     <h2><span class="idx">01</span>The service</h2>
     <p>ManualOS reads PLC program files and CAD files and writes a plain-English equipment manual as a PDF. Supported formats:</p>
@@ -111,9 +111,12 @@ a{color:var(--ink)}
       <li><strong>Downloads:</strong> each generated PDF stays on the server for up to 24 hours for download, then is deleted. Save your copy.</li>
     </ul>
     <p>All prices are plus applicable taxes.</p>
+    <p data-direct-section>Op3x LLC is the seller of ManualOS. Op3x LLC processes payments and refunds for these purchases and handles payment disputes.</p>
+    <p data-mp-section hidden>For purchases made while managed payments are on, Link is the seller and the merchant of record. Link processes payments and refunds, and Link handles payment disputes. Link may still refund a purchase within its own refund window. If Link refunds a purchase or accepts a dispute, that purchase is treated as refunded and the credits and access from it end.</p>
 
     <h2><span class="idx">03</span>Subscriptions and cancellation</h2>
-    <p>Pro renews every month and is charged through our payment processor until you cancel. To cancel, email <a href="mailto:support@manualos.com">support@manualos.com</a> from the email address you used at checkout. We will cancel the subscription at the end of your current billing period. You won't be charged again, and Pro access continues until that period ends.</p>
+    <p><strong>Cancelling Pro.</strong> Pro renews automatically every month until you cancel. You can cancel online, self-serve, from our <a href="/cancel">Manage plan</a> link. You can also email <a href="mailto:support@manualos.com?subject=Cancel%20my%20ManualOS%20Pro%20subscription&amp;body=Please%20cancel%20my%20ManualOS%20Pro%20subscription%20at%20the%20end%20of%20the%20current%20billing%20period.">support@manualos.com</a>. Cancellation takes effect at the end of the current billing period: you keep Pro until then and won't be charged again. We'll email you a confirmation.</p>
+    <p data-mp-section hidden>You can manage or cancel your subscription online at the reseller's order-management site, <a href="https://link.com">link.com</a>. That is a full online alternative.</p>
     <p>Pro is intended for normal use by one customer's own projects. We may limit use that is automated, abusive, or far beyond typical use.</p>
 
     <h2><span class="idx">04</span>Refunds and chargebacks</h2>
@@ -123,6 +126,7 @@ a{color:var(--ink)}
       <li><strong>Pro:</strong> each monthly charge can be refunded until that billing period ends, as long as no manual has been delivered in that period. Ask before your plan renews.</li>
     </ul>
     <p>Once a manual is delivered, that purchase or charge can't be refunded, except where required by law. To ask for a refund, email <a href="mailto:support@manualos.com">support@manualos.com</a> from the email address you used at checkout. A run that fails, or a file ManualOS can't read, doesn't use a credit. If a payment or a generated manual is wrong, email <a href="mailto:support@manualos.com">support@manualos.com</a> and we'll help. Your finished PDF is stored for up to 24 hours so you can download it, then deleted. Save your copy.</p>
+    <p>Approved refunds are processed within 5 business days. Your bank may take 5–10 business days to show the credit.</p>
     <ul>
       <li><strong>After a refund:</strong> the credits and access from that purchase end.</li>
       <li><strong>Chargebacks and payment disputes:</strong> access is suspended while a dispute is open, restored if it's decided in ManualOS's favor, and permanently revoked if ManualOS loses it.</li>
@@ -163,15 +167,15 @@ a{color:var(--ink)}
     <p>Our total liability for any claim is limited to the amount you paid us in the 12 months before the claim.</p>
 
     <h2><span class="idx">09</span>Governing law</h2>
-    <p>These terms are governed by the laws of the State of Illinois, without regard to conflict-of-law rules.</p>
+    <p>These terms are governed by the laws of the State of Illinois, without regard to conflict-of-law rules. Disputes are brought in the state or federal courts serving Winnebago County, Illinois, and you and we consent to their jurisdiction. Either party may bring an individual claim in small-claims court.</p>
 
     <h2><span class="idx">10</span>Changes</h2>
-    <p>We may update these terms. We will post the new version here with a new effective date. Changes apply to purchases made after that date.</p>
+    <p>We may update these terms. We will post the new version here with a new effective date. If you bought before these refund limits applied, the new terms apply from your next renewal, and we will email you at least 14 days before that renewal.</p>
 
     <section id="sms" aria-labelledby="sms-title">
       <h2 id="sms-title"><span class="idx">11</span>Text messages</h2>
       <p>You can opt in to text messages on the <a href="/support.html">support form</a>. The box is optional, it starts unchecked, and consent is not a condition of purchase.</p>
-      <p>If you opt in, ManualOS may text that number with support replies, account alerts, and manual-status alerts. Message frequency varies. Msg &amp; data rates may apply.</p>
+      <p>If you opt in, ManualOS (Op3x LLC) may text that number with support replies and order/manual-status texts. Message frequency varies. Msg &amp; data rates may apply.</p>
       <p>Reply STOP to opt out. Reply HELP for help. You can also email <a href="mailto:support@manualos.com">support@manualos.com</a>.</p>
       <p>Mobile numbers and SMS opt-in consent are not shared with or sold to third parties or affiliates for marketing. The details are in the <a href="/privacy.html#sms">privacy policy</a>.</p>
     </section>
@@ -195,5 +199,6 @@ a{color:var(--ink)}
     <p class="legal">© 2026 ManualOS. manualos.com</p>
   </div>
 </footer>
+<script src="/checkout-config.js"></script>
 </body>
 </html>

@@ -14,6 +14,8 @@ const jobs = new Map();
 const pdfs = new Map();
 const holds = new Map();
 const requests = [];
+const configWaiters = [];
+const checkoutConfig = { managedPayments: true, fail: false, hold: false, portalFail: false };
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -319,15 +321,43 @@ const server = http.createServer(async (req, res) => {
       if (sessionId === 'cs_test_empty') return sendJson(res, 200, { valid: true, plan: 'starter', remaining: 0 });
       return sendJson(res, 200, { valid: false, plan: null, remaining: null });
     }
+    if (req.method === 'GET' && url.pathname === '/api/checkout-config') {
+      if (checkoutConfig.hold) await new Promise((resolve) => { configWaiters.push(resolve); });
+      const managedPayments = checkoutConfig.managedPayments === true;
+      if (checkoutConfig.fail) {
+        requests.push({ method: 'GET', path: '/api/checkout-config', status: 500, files: [], fields: [], managedPayments });
+        req.socket.destroy();
+        return;
+      }
+      requests.push({ method: 'GET', path: '/api/checkout-config', status: 200, files: [], fields: [], managedPayments });
+      return sendJson(res, 200, { managedPayments });
+    }
+    if (req.method === 'POST' && url.pathname === '/__mock/checkout-config') {
+      const raw = await readBody(req);
+      let body = {};
+      try { body = JSON.parse(raw.toString('utf8') || '{}'); } catch { body = {}; }
+      if (typeof body.managedPayments === 'boolean') checkoutConfig.managedPayments = body.managedPayments;
+      if (typeof body.fail === 'boolean') checkoutConfig.fail = body.fail;
+      if (typeof body.hold === 'boolean') checkoutConfig.hold = body.hold;
+      if (typeof body.portalFail === 'boolean') checkoutConfig.portalFail = body.portalFail;
+      if (body.release === true) {
+        checkoutConfig.hold = false;
+        const pending = configWaiters.splice(0, configWaiters.length);
+        for (const resolve of pending) resolve();
+      }
+      return sendJson(res, 200, checkoutConfig);
+    }
     if (req.method === 'POST' && url.pathname === '/api/support/sms-consent') {
       const raw = await readBody(req);
       let body = null;
       try { body = JSON.parse(raw.toString('utf8') || '{}'); } catch { body = null; }
       const phone = body && typeof body.phone === 'string' ? body.phone.trim() : '';
       const version = body && body.consentTextVersion;
+      const consentText = body && body.consentText;
       const source = body && body.source;
       const keys = body && typeof body === 'object' ? Object.keys(body) : [];
-      const valid = phone && version === 'support-sms-v2' && source === 'website-support-form' && keys.length === 3;
+      const label = 'Yes, text me at this number. I agree to receive support replies and order/manual-status texts from ManualOS (Op3x LLC). Msg frequency varies. Msg & data rates may apply. Reply HELP for help, STOP to cancel. Consent is not a condition of purchase. See Terms (/terms.html#sms) and Privacy (/privacy.html#sms).';
+      const valid = phone && version === 'support-sms-v3' && consentText === label && source === 'website-support-form';
       requests.push({
         method: 'POST',
         path: '/api/support/sms-consent',
@@ -336,10 +366,58 @@ const server = http.createServer(async (req, res) => {
         fields: keys,
         phone,
         consentTextVersion: version,
+        consentText,
         source,
       });
       if (!valid) return sendJson(res, 400, { error: 'Missing phone, consent version, or source.' });
       return sendJson(res, 200, { ok: true });
+    }
+    if (req.method === 'POST' && url.pathname === '/create-checkout-session') {
+      const raw = await readBody(req);
+      let body = {};
+      try { body = JSON.parse(raw.toString('utf8') || '{}'); } catch { body = {}; }
+      const plan = body && body.plan;
+      const known = plan === 'starter' || plan === 'pro' || plan === 'integrator';
+      const ok = known && body.termsConsent === true && typeof body.renewalConsent === 'boolean' && typeof body.termsVersion === 'string' && typeof body.disclosureVersion === 'string';
+      requests.push({
+        method: 'POST',
+        path: '/create-checkout-session',
+        status: ok ? 200 : 400,
+        files: [],
+        fields: body && typeof body === 'object' ? Object.keys(body) : [],
+        plan,
+        renewalConsent: body.renewalConsent,
+        termsConsent: body.termsConsent,
+        termsVersion: body.termsVersion,
+        disclosureVersion: body.disclosureVersion,
+        interval: body.interval,
+      });
+      if (!ok) return sendJson(res, 400, { error: 'Consent required.' });
+      const sessionId = plan === 'pro' ? 'cs_test_pro' : 'cs_test_local';
+      return sendJson(res, 200, { url: '/upload.html?session_id=' + sessionId });
+    }
+    if (req.method === 'POST' && url.pathname === '/billing-portal') {
+      const raw = await readBody(req);
+      let body = {};
+      try { body = JSON.parse(raw.toString('utf8') || '{}'); } catch { body = {}; }
+      const email = body && typeof body.email === 'string' ? body.email.trim() : '';
+      const sessionId = body && typeof body.session_id === 'string' ? body.session_id.trim() : '';
+      const token = body && typeof body.token === 'string' ? body.token.trim() : '';
+      const ok = Boolean(token) !== Boolean(sessionId);
+      const status = checkoutConfig.portalFail ? 500 : (ok ? 200 : 400);
+      requests.push({
+        method: 'POST',
+        path: '/billing-portal',
+        status,
+        files: [],
+        fields: body && typeof body === 'object' ? Object.keys(body) : [],
+        email,
+        session_id: sessionId,
+        token,
+      });
+      if (checkoutConfig.portalFail) return sendJson(res, 500, { error: 'Portal unavailable.' });
+      if (!ok) return sendJson(res, 400, { error: 'A cancel link is required.' });
+      return sendJson(res, 200, { url: '/refunds.html?portal=1' });
     }
     if (req.method === 'POST' && url.pathname === '/jobs') return await handleJobsPost(req, res);
     if (req.method === 'POST' && url.pathname === '/generate-manual') return await handleLegacy(req, res);
