@@ -10,6 +10,7 @@
   <link rel="manifest" href="/site.webmanifest">
   <meta name="description" content="Upload your PLC or CAD files after checkout. ManualOS checks your plan, then writes a plain-English PDF.">
   <meta name="robots" content="noindex">
+  <meta name="referrer" content="no-referrer">
   <link rel="canonical" href="https://manualos.com/upload.html">
   <meta name="theme-color" content="#f3f0e6">
   <link rel="preconnect" href="https://manualforge-backend-production.up.railway.app" crossorigin>
@@ -27,11 +28,20 @@
     .skip-link{position:absolute;left:.75rem;top:-3rem;background:var(--ink);color:var(--paper);padding:.7rem 1rem;z-index:20;text-decoration:none}
     .skip-link:focus{top:.5rem}
     header{position:sticky;top:0;z-index:100;background:var(--paper);border-bottom:1px solid var(--ink)}
-    nav{display:flex;align-items:center;justify-content:space-between;gap:.75rem;flex-wrap:nowrap;padding:.35rem .85rem;max-width:76rem;margin:0 auto;width:100%}
+    nav{display:flex;align-items:center;justify-content:space-between;gap:.75rem;flex-wrap:wrap;padding:.35rem .85rem;max-width:76rem;margin:0 auto;width:100%}
     .nav-logo{font-family:"IBM Plex Sans",Arial,sans-serif;font-size:1.05rem;font-weight:600;letter-spacing:-.02em;color:var(--ink);text-decoration:none;display:flex;align-items:center;gap:.55rem;min-height:2.75rem}
     .nav-logo-icon{width:1.7rem;height:1.7rem;background:var(--ink);color:var(--paper);display:flex;align-items:center;justify-content:center;font-weight:600;font-size:.95rem;border-bottom:3px solid var(--yellow);border-radius:0}
-    .nav-back{font-size:.95rem;font-weight:600;color:var(--ink);text-decoration:underline;text-underline-offset:.15em;display:inline-flex;align-items:center;min-height:2.75rem;padding:.4rem .2rem}
-    .nav-back:hover{background:var(--yellow);text-decoration:none}
+    .nav-back,.nav-signout{font-size:.95rem;font-weight:600;color:var(--ink);text-decoration:underline;text-underline-offset:.15em;display:inline-flex;align-items:center;min-height:2.75rem;min-width:2.75rem;padding:.4rem .2rem;background:transparent;border:0;cursor:pointer;font-family:inherit}
+    .nav-back:hover,.nav-signout:hover{background:var(--yellow);text-decoration:none}
+    .nav-actions{display:flex;align-items:center;gap:.35rem}
+    .site-footer{background:#0B1622;color:#F4F6F8;margin-top:auto;border-top:4px solid #34C77B;padding:2.5rem 1rem 2.75rem}
+    .site-footer a{color:#F4F6F8;text-decoration:underline;text-underline-offset:.15em}
+    .site-footer a:hover{color:#34C77B}
+    .footer-inner{max-width:75rem;margin:0 auto;display:grid;gap:1rem}
+    .footer-brand{margin:0;font-size:1.15rem;font-weight:600;letter-spacing:-.02em;color:#F4F6F8}
+    .footer-nav{display:flex;flex-wrap:wrap;gap:.15rem 1rem}
+    .footer-nav a{display:inline-flex;align-items:center;min-height:2.75rem;min-width:2.75rem;font-weight:600;color:#F4F6F8}
+    .legal{margin:0;color:#B8C4D0}
     main{flex:1;max-width:46rem;margin:1.25rem auto 3rem;padding:0 .85rem;width:100%}
     .page-eyebrow{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:.72rem;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--ink);margin-bottom:.45rem}
     h1,h2,legend{font-family:"IBM Plex Sans",Arial,sans-serif;font-weight:600;color:var(--ink);line-height:1.15;letter-spacing:-.02em}
@@ -75,6 +85,10 @@
     .file-remove:hover{background:var(--yellow)}
     .credit-note{margin:1rem 0 0;color:var(--muted);font-size:.95rem}
     .generate-btn-wrap{margin-top:1rem}
+    .generate-hint{margin:.55rem 0 0;color:var(--muted);font-size:.95rem;font-weight:600}
+    .duplicate-panel{margin-top:1rem;padding:.75rem .85rem;border:1px solid var(--ink);background:var(--sheet);display:grid;gap:.65rem;justify-items:start}
+    .duplicate-panel p{margin:0;font-weight:600}
+    .duplicate-panel a{font-weight:600;color:var(--ink)}
     .progress-wrap{margin-top:1rem}
     .progress-row{display:flex;justify-content:space-between;gap:1rem;align-items:baseline}
     .progress-label{font-size:.95rem;color:var(--ink);font-weight:600}
@@ -117,7 +131,8 @@
     html.has-session #access-pricing-link{grid-column:2;grid-row:2;flex:none;align-self:start;justify-self:end;margin-top:0;padding-top:calc(.75rem + 1px);min-height:2.75rem;width:7.4rem;justify-content:flex-end;white-space:nowrap}
     html.has-session #access-pricing-link[hidden]{display:inline-flex !important;visibility:hidden}
     html.has-session #access-pricing-link:not([hidden]){display:inline-flex !important;visibility:visible}
-    html.has-session #payment-welcome{display:grid !important;grid-column:1;grid-row:2;margin:0}
+    html.awaiting-welcome #payment-welcome,
+    html.has-session #payment-welcome:not([hidden]){display:grid !important;grid-column:1;grid-row:2;margin:0}
     html.has-session #access-message[aria-hidden="true"]{min-height:0;height:0;overflow:hidden;padding:0;margin:0;border:0}
     html.has-session .access-banner:has(#access-message[aria-hidden="true"]){row-gap:0}
     #payment-welcome.is-locked{background:transparent;border-color:transparent;color:inherit;min-height:4rem}
@@ -139,6 +154,11 @@
       .fields{grid-template-columns:1fr 1fr}
       main{margin-top:2rem}
     }
+    @media (max-width:767px){
+      a:not(.btn):not(.nav-logo),button,.file-remove,summary{min-height:2.75rem;min-width:2.75rem}
+      a:not(.btn):not(.nav-logo){display:inline-block;max-width:100%;box-sizing:border-box}
+      .footer-nav a,.nav-back,.nav-signout{display:inline-flex;align-items:center}
+    }
     @media (max-width:480px){
       main{margin:1rem auto 2.5rem}
       .upload-box{padding:1.15rem .85rem}
@@ -153,6 +173,15 @@
   </style>
   <script>
     document.documentElement.classList.add('has-session');
+    (function () {
+      var fromQuery = '';
+      var stored = '';
+      try { fromQuery = (new URLSearchParams(location.search).get('session_id') || '').trim(); } catch (err) {}
+      try { stored = (localStorage.getItem('manualos_session_id') || '').trim(); } catch (err) {}
+      var token = '';
+      try { token = (sessionStorage.getItem('manualos_access_token') || '').trim(); } catch (err) {}
+      if (fromQuery || (!stored && !token)) document.documentElement.classList.add('awaiting-welcome');
+    })();
   </script>
 </head>
 <body data-phase="checking">
@@ -160,7 +189,10 @@
 <header>
 <nav>
   <a class="nav-logo" href="/"><span class="nav-logo-icon" aria-hidden="true">M</span>ManualOS</a>
-  <a class="nav-back" href="/#pricing">&#8592; Back to pricing</a>
+  <div class="nav-actions">
+    <button type="button" id="sign-out" class="nav-signout" hidden>Sign out</button>
+    <a class="nav-back" href="/#pricing">&#8592; Back to pricing</a>
+  </div>
 </nav>
 </header>
 <main id="main" tabindex="-1">
@@ -182,7 +214,7 @@
           <label class="choice"><input type="radio" name="source" value="cad"> <span>CAD model</span></label>
           <label class="choice"><input type="radio" name="source" value="both"> <span>Both</span></label>
         </div>
-        <p class="hint" id="source-guidance" aria-live="polite">Add a PLC program: .L5X, .L5K, .scl, .st, .exp, PLCopen .xml, .TcPOU, or a .csv or .xlsx tag list, or a zip of those. A tag-table XML is tags only, not the program. Up to 25 files, 50 MB each.</p>
+        <p class="hint" id="source-guidance" aria-live="polite">Add a PLC program: .L5X, .L5K, .scl, .st, .exp, PLCopen .xml, .TcPOU, or a .csv or .xlsx tag list, or a zip of those. A tag-table XML is tags only, not the program. Up to 25 files, 25 MB each. A zip must be 100 MB or smaller once unzipped.</p>
       </fieldset>
       <fieldset id="equipment-fields">
         <legend>Equipment details, optional</legend>
@@ -198,7 +230,7 @@
       <div class="upload-box is-disabled" id="drop-zone" aria-disabled="true">
         <div class="upload-icon" aria-hidden="true"><span class="doc-mark">FILE</span></div>
         <h2 id="drop-title">Drag and drop files here</h2>
-        <p id="drop-help">.L5X, .L5K, .scl, .st, .exp, PLCopen .xml, .TcPOU, .csv, .xlsx, or a zip of those.</p>
+        <p id="drop-help">Drop files here, or choose them.</p>
         <div class="choose-wrap">
           <input class="sr-only" type="file" id="file-input" multiple disabled>
           <label class="btn-primary" for="file-input" id="choose-label">Choose files</label>
@@ -207,7 +239,13 @@
       <ul class="file-list" id="file-list" hidden></ul>
       <p class="credit-note" id="credit-note">A file we reject — wrong format, or no equipment data in the file — does not use a credit.</p>
       <div class="generate-btn-wrap">
-        <button class="btn-primary" id="generate-btn" type="submit" disabled>Generate my manual</button>
+        <button class="btn-primary" id="generate-btn" type="submit" disabled aria-describedby="generate-hint">Generate my manual</button>
+        <p class="generate-hint" id="generate-hint">Add a file first</p>
+      </div>
+      <div class="duplicate-panel" id="duplicate-panel" hidden>
+        <p id="duplicate-message">You already generated a manual from these files</p>
+        <p><a id="existing-job-link" href="#"></a></p>
+        <button type="button" class="btn-outline" id="generate-again">Generate again (uses a credit)</button>
       </div>
     </form>
     <div class="progress-wrap" id="progress-wrap" hidden>
@@ -237,7 +275,7 @@
   </section>
   <section class="export-help" id="export-help" aria-labelledby="export-title">
     <h2 id="export-title">How to export your file</h2>
-    <p class="export-intro">PLC: .L5X, .L5K, .scl, .st, .exp, PLCopen .xml, and .TcPOU. Tag lists: .csv and .xlsx. A tag-table XML is tags only, not the program. CAD: .step and .stp, .iges and .igs, and ASCII .dxf. Archives: a .zip of those files.</p>
+    <p class="export-intro">Follow the steps for the format you have.</p>
     <details class="export">
       <summary>.L5X and .L5K</summary>
       <p>Export the controller program as .L5X. That file is an XML export of the program, including ladder. The older .L5K text export is the same kind of save, with the .L5K type. Upload the .L5X or .L5K file.</p>
@@ -263,32 +301,42 @@
       <p>From the CAD tool, use Save As or Export. Choose STEP (.step or .stp), IGES (.iges or .igs), or ASCII DXF (.dxf). STEP AP214 and AP242 are both fine. STEP and IGES are the 3D model. DXF is a 2D drawing. You can zip several of them.</p>
     </details>
   </section>
-  <section class="platforms" aria-labelledby="platforms-label">
-    <h2 class="platforms-label" id="platforms-label">Accepted files</h2>
-    <ul class="platform-tags">
-      <li>.L5X and .L5K</li>
-      <li>.scl, .st, and .exp</li>
-      <li>.TcPOU</li>
-      <li>PLCopen .xml</li>
-      <li>.csv and .xlsx tag lists</li>
-      <li>.step, .stp, .iges, .igs</li>
-      <li>ASCII .dxf</li>
-      <li>.zip of these</li>
-    </ul>
-  </section>
 </main>
+<footer class="site-footer">
+  <div class="footer-inner">
+    <p class="footer-brand">ManualOS</p>
+    <p>Plain-English equipment manuals. Upload your PLC or CAD files.</p>
+    <nav class="footer-nav" aria-label="Footer">
+      <a href="/#how">How it works</a>
+      <a href="/#sample">Sample</a>
+      <a href="/#pricing">Pricing</a>
+      <a href="/#faq">FAQ</a>
+      <a href="/upload.html">Upload</a>
+      <a href="mailto:support@manualos.com">support@manualos.com</a>
+      <a href="/terms.html">Terms</a>
+      <a href="/privacy.html">Privacy</a>
+      <a href="/refunds.html">Refunds</a>
+    </nav>
+    <p class="legal">© 2026 Op3x LLC. ManualOS is a product of Op3x LLC.</p>
+  </div>
+</footer>
 <script>
 (function () {
   // POST /jobs is the preferred upload (async progress, up to 25 files). It is not
-  // deployed on production yet. When POST /jobs returns 404, this page falls back
-  // to POST /generate-manual for the first PLC file so the current site keeps working.
-  // ?jobs=0 always uses the current generator. ?jobs=1 never falls back.
+  // deployed on production yet. When POST /jobs returns 404 without a purchase code,
+  // this page falls back to POST /generate-manual for the first PLC file so the
+  // current site keeps working. ?jobs=0 always uses the current generator.
+  // ?jobs=1 never falls back. Checkout session_id is exchanged for a bearer token.
+  // When that exchange is unavailable, the page still sends session_id.
   // On localhost the API is the page origin (see dev/mock-api.mjs). On manualos.com
   // it is the production API host. A localhost ?api= override must also be local.
   var PRODUCTION_API = 'https://manualforge-backend-production.up.railway.app';
   var SESSION_STORAGE_KEY = 'manualos_session_id';
+  var CHECKOUT_STORAGE_KEY = 'manualos_checkout_session';
+  var TOKEN_STORAGE_KEY = 'manualos_access_token';
   var MAX_FILES = 25;
-  var MAX_BYTES = 50 * 1024 * 1024;
+  var MAX_BYTES = 25 * 1024 * 1024;
+  var MAX_UNZIPPED_BYTES = 100 * 1024 * 1024;
   var PLC_EXT = ['l5x', 'l5k', 'xml', 'tcpou', 'st', 'scl', 'exp', 'csv', 'xlsx', 'acd', 'zip'];
   var CAD_EXT = ['step', 'stp', 'iges', 'igs', 'dxf', 'zip'];
   var BLOCKED = {
@@ -306,24 +354,29 @@
     failed: 'Generation failed'
   };
   var GUIDANCE = {
-    plc: 'Add a PLC program: .L5X, .L5K, .scl, .st, .exp, PLCopen .xml, .TcPOU, or a .csv or .xlsx tag list, or a zip of those. A tag-table XML is tags only, not the program. Up to 25 files, 50 MB each.',
-    cad: 'Add a CAD model: STEP (.step or .stp), IGES (.iges or .igs), or ASCII DXF (.dxf), or a zip of those. Up to 25 files, 50 MB each.',
-    both: 'Add the PLC program and the CAD model together. They are written up as one manual. You can mix the PLC types above with STEP, IGES, or DXF, including a zip. Up to 25 files, 50 MB each.'
+    plc: 'Add a PLC program: .L5X, .L5K, .scl, .st, .exp, PLCopen .xml, .TcPOU, or a .csv or .xlsx tag list, or a zip of those. A tag-table XML is tags only, not the program. Up to 25 files, 25 MB each. A zip must be 100 MB or smaller once unzipped.',
+    cad: 'Add a CAD model: STEP (.step or .stp), IGES (.iges or .igs), or ASCII DXF (.dxf), or a zip of those. Up to 25 files, 25 MB each. A zip must be 100 MB or smaller once unzipped.',
+    both: 'Add the PLC program and the CAD model together. They are written up as one manual. You can mix the PLC types above with STEP, IGES, or DXF, including a zip. Up to 25 files, 25 MB each. A zip must be 100 MB or smaller once unzipped.'
   };
   var DROP_HELP = {
-    plc: '.L5X, .L5K, .scl, .st, .exp, PLCopen .xml, .TcPOU, .csv, .xlsx, or a zip of those.',
-    cad: 'STEP, IGES, DXF, or a zip of those.',
-    both: 'PLC program files and CAD files together, or a zip of both.'
+    plc: 'Drop files here, or choose them.',
+    cad: 'Drop files here, or choose them.',
+    both: 'Drop files here, or choose them.'
   };
+  var FILE_LIMIT_MESSAGE = 'You can add up to 25 files.';
+  var RATE_LIMIT_MESSAGE = 'Too many requests, please wait a minute and try again';
 
   var apiBase = resolveApiBase();
   var sessionId = '';
   var sessionFromQuery = false;
+  var accessToken = '';
+  var compatSession = false;
   var uploadEnabled = false;
   var busy = false;
   var runToken = 0;
   var fileSeq = 0;
   var selectedFiles = [];
+  var confirmDuplicate = false;
   var downloadUrl = '';
 
   var dropZone = document.getElementById('drop-zone');
@@ -350,6 +403,12 @@
   var warningBlock = document.getElementById('warning-block');
   var warningsEl = document.getElementById('warnings');
   var downloadLink = document.getElementById('download-link');
+  var dropTitle = document.getElementById('drop-title');
+  var generateHint = document.getElementById('generate-hint');
+  var duplicatePanel = document.getElementById('duplicate-panel');
+  var duplicateMessage = document.getElementById('duplicate-message');
+  var existingJobLink = document.getElementById('existing-job-link');
+  var generateAgainBtn = document.getElementById('generate-again');
 
   function resolveApiBase() {
     var host = location.hostname;
@@ -386,6 +445,46 @@
     if (bytes < 1024) return bytes + ' B';
     if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
     return (bytes / 1048576).toFixed(1) + ' MB';
+  }
+
+  function formatOverLimit(bytes) {
+    var mb = Number(bytes) / 1048576;
+    if (!Number.isFinite(mb) || mb < 0) mb = 0;
+    var shown = Math.ceil(mb * 10 - 1e-9) / 10;
+    if (bytes > MAX_BYTES && shown <= 25) shown = 25.1;
+    return shown.toFixed(1) + ' MB';
+  }
+
+  function oversizeMessage(name, bytes) {
+    return name + ' is ' + formatOverLimit(bytes) + '; each file must be 25 MB or smaller.';
+  }
+
+  function fileCountMessage(count) {
+    return count + ' files are picked; the limit is ' + MAX_FILES + '.';
+  }
+
+  function uniqueLines(lines) {
+    var seen = {};
+    var out = [];
+    (lines || []).forEach(function (line) {
+      var text = String(line || '').trim();
+      if (!text || seen[text]) return;
+      seen[text] = true;
+      out.push(text);
+    });
+    return out;
+  }
+
+  function chosenName(name) {
+    var raw = String(name || '').trim();
+    if (!raw) return '';
+    var base = raw.split(/[/\\]/).pop();
+    var found = '';
+    selectedFiles.forEach(function (item) {
+      var picked = item.file.name;
+      if (picked.toLowerCase() === raw.toLowerCase() || picked.toLowerCase() === base.toLowerCase()) found = picked;
+    });
+    return found;
   }
 
   function extensionOf(name) {
@@ -505,13 +604,15 @@
     var welcomeText = document.getElementById('payment-welcome-text');
     if (welcomeText) welcomeText.textContent = '';
     document.documentElement.classList.remove('has-session');
+    document.documentElement.classList.remove('awaiting-welcome');
   }
 
   function fillReservedWelcome(message, locked) {
-    if (!document.documentElement.classList.contains('has-session')) {
+    if (!message) {
       dismissWelcome();
       return;
     }
+    document.documentElement.classList.add('has-session');
     var welcomeText = document.getElementById('payment-welcome-text');
     if (welcomeText) welcomeText.textContent = message || '';
     if (paymentWelcome) {
@@ -526,16 +627,127 @@
     var fromQuery = (params.get('session_id') || '').trim();
     if (fromQuery) {
       sessionFromQuery = true;
-      try { localStorage.setItem(SESSION_STORAGE_KEY, fromQuery); } catch (err) {}
+      try { sessionStorage.setItem(CHECKOUT_STORAGE_KEY, fromQuery); } catch (err) {}
       return fromQuery;
     }
+    try {
+      var remembered = (sessionStorage.getItem(CHECKOUT_STORAGE_KEY) || '').trim();
+      if (remembered) return remembered;
+    } catch (err) {}
     try { return (localStorage.getItem(SESSION_STORAGE_KEY) || '').trim(); } catch (err) { return ''; }
+  }
+
+  function loadStoredToken() {
+    accessToken = '';
+    try {
+      var raw = sessionStorage.getItem(TOKEN_STORAGE_KEY) || '';
+      if (!raw) return;
+      var parsed = JSON.parse(raw);
+      if (!parsed || typeof parsed.access_token !== 'string' || !parsed.access_token.trim()) return;
+      var expiresAt = parsed.expires_at ? Date.parse(parsed.expires_at) : 0;
+      if (expiresAt && expiresAt <= Date.now()) {
+        sessionStorage.removeItem(TOKEN_STORAGE_KEY);
+        return;
+      }
+      accessToken = parsed.access_token.trim();
+    } catch (err) {
+      accessToken = '';
+    }
+  }
+
+  function saveToken(data) {
+    accessToken = String(data.access_token || '').trim();
+    compatSession = false;
+    var expiresAt = data.expires_at || '';
+    if (!expiresAt && data.expires_in) {
+      expiresAt = new Date(Date.now() + Number(data.expires_in) * 1000).toISOString();
+    }
+    try {
+      sessionStorage.setItem(TOKEN_STORAGE_KEY, JSON.stringify({
+        access_token: accessToken,
+        expires_at: expiresAt
+      }));
+    } catch (err) {}
+  }
+
+  function credentialHeaders(extra) {
+    var headers = {};
+    if (extra) {
+      Object.keys(extra).forEach(function (key) { headers[key] = extra[key]; });
+    }
+    if (accessToken) headers.Authorization = 'Bearer ' + accessToken;
+    else if (sessionId) headers['X-Session-Id'] = sessionId;
+    return headers;
+  }
+
+  function appendCredential(formData) {
+    if (!accessToken && sessionId) formData.append('session_id', sessionId);
+  }
+
+  function purchaseMessage(data, status) {
+    var code = data && (data.code || data.error_code || data.errorCode);
+    if (typeof code === 'string') code = code.trim().toLowerCase();
+    else code = '';
+    var server = safeServerMessage(data);
+    if (status === 404 || code === 'purchase_not_found' || code === 'session_not_found' || code === 'not_found' || code === 'unknown_session') {
+      return 'This purchase wasn\u2019t found. Choose a plan to generate manuals.';
+    }
+    if (status === 403 || code === 'purchase_inactive' || code === 'session_inactive' || code === 'not_active') {
+      if (server && !/not active/i.test(server)) return server;
+      return 'This purchase isn\u2019t active. Choose a plan to generate manuals.';
+    }
+    if (server && /refund|dispute|suspended/i.test(server)) return server;
+    if (!data || !data.plan) return 'This purchase wasn\u2019t found. Choose a plan to generate manuals.';
+    return 'This purchase isn\u2019t active. Choose a plan to generate manuals.';
+  }
+
+  function syncSignOut() {
+    var button = document.getElementById('sign-out');
+    if (!button) return;
+    button.hidden = !(sessionId || accessToken);
+  }
+
+  function stripSessionFromUrl() {
+    try {
+      var url = new URL(window.location.href);
+      if (!url.searchParams.has('session_id')) return;
+      url.searchParams.delete('session_id');
+      var next = url.pathname + url.search + url.hash;
+      history.replaceState(null, '', next);
+    } catch (err) {}
+  }
+
+  function clearStoredAccess() {
+    try { localStorage.removeItem(SESSION_STORAGE_KEY); } catch (err) {}
+    try { sessionStorage.removeItem(TOKEN_STORAGE_KEY); } catch (err) {}
+    try { sessionStorage.removeItem(CHECKOUT_STORAGE_KEY); } catch (err) {}
+    try { sessionStorage.removeItem(SESSION_STORAGE_KEY); } catch (err) {}
+  }
+
+  function signOut() {
+    var token = accessToken;
+    accessToken = '';
+    sessionId = '';
+    sessionFromQuery = false;
+    compatSession = false;
+    clearStoredAccess();
+    stripSessionFromUrl();
+    syncSignOut();
+    resetComposer();
+    lockUpload('No purchase found on this browser. Choose a plan to generate manuals.');
+    if (!token) return;
+    fetch(apiBase + '/access-token/revoke', {
+      method: 'POST',
+      headers: { Authorization: 'Bearer ' + token },
+      cache: 'no-store'
+    }).catch(function () {});
   }
 
   function lockUpload(message) {
     setUploadEnabled(false);
     showAccess('', { showPricing: true, ok: false, hideMessage: true });
     fillReservedWelcome(message, true);
+    syncSignOut();
     if (document.body.dataset.phase !== 'progress' && document.body.dataset.phase !== 'success') setPhase('locked');
   }
 
@@ -550,7 +762,9 @@
       return;
     }
     setUploadEnabled(true);
-    showAccess(planLabel(data.plan) + ' plan \u00b7 ' + remainingLabel(data.remaining), { showPricing: false, ok: true });
+    var accessLine = planLabel(data.plan) + ' plan \u00b7 ' + remainingLabel(data.remaining);
+    if (data.billingIssue) accessLine += ' Payment needs attention.';
+    showAccess(accessLine, { showPricing: false, ok: true });
     if (document.body.dataset.phase !== 'progress' && document.body.dataset.phase !== 'success' && document.body.dataset.phase !== 'error') {
       setPhase('ready');
     }
@@ -563,29 +777,152 @@
     }
   }
 
+  async function exchangeSession(id) {
+    var res;
+    try {
+      res = await fetch(apiBase + '/access-token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ session_id: id }),
+        cache: 'no-store'
+      });
+    } catch (err) {
+      return { network: true };
+    }
+    var data = {};
+    try { data = await res.json(); } catch (err) { data = {}; }
+    if (res.status === 429) {
+      accessToken = '';
+      try { sessionStorage.removeItem(TOKEN_STORAGE_KEY); } catch (err) {}
+      lockUpload(RATE_LIMIT_MESSAGE);
+      return { error: true, limited: true };
+    }
+    if (res.status === 503) {
+      compatSession = true;
+      accessToken = '';
+      try { sessionStorage.removeItem(TOKEN_STORAGE_KEY); } catch (err) {}
+      try { localStorage.setItem(SESSION_STORAGE_KEY, id); } catch (err) {}
+      return { compat: true };
+    }
+    if (!res.ok || !data.access_token) {
+      accessToken = '';
+      try { sessionStorage.removeItem(TOKEN_STORAGE_KEY); } catch (err) {}
+      lockUpload(purchaseMessage(data, res.status));
+      return { error: true };
+    }
+    saveToken(data);
+    try { localStorage.removeItem(SESSION_STORAGE_KEY); } catch (err) {}
+    applySession(data);
+    syncSignOut();
+    return { ok: true, data: data };
+  }
+
   async function verifySession(options) {
     var keepAccessOnError = !!(options && options.keepAccessOnError);
-    if (!sessionId) {
+    if (!accessToken && !sessionId) {
       lockUpload('No purchase found on this browser. Choose a plan to generate manuals.');
       return null;
     }
+    var url = apiBase + '/verify-session';
+    var headers = {};
+    if (accessToken) headers.Authorization = 'Bearer ' + accessToken;
+    else url += '?session_id=' + encodeURIComponent(sessionId);
     var res;
     try {
-      res = await fetch(apiBase + '/verify-session?session_id=' + encodeURIComponent(sessionId), { cache: 'no-store' });
+      res = await fetch(url, { headers: headers, cache: 'no-store' });
     } catch (err) {
       if (!keepAccessOnError) lockUpload('We couldn\u2019t check your purchase just now. Refresh the page, or choose a plan.');
       return null;
     }
     var data = {};
     try { data = await res.json(); } catch (err) { data = {}; }
+    if (res.status === 429) {
+      if (!keepAccessOnError) lockUpload(RATE_LIMIT_MESSAGE);
+      return null;
+    }
+    if (res.status === 401 && sessionId && accessToken) {
+      var refreshed = await exchangeSession(sessionId);
+      if (refreshed.ok) return refreshed.data;
+      if (refreshed.compat) return verifySession(options);
+      return null;
+    }
     if (!res.ok || !data.valid) {
       if (!(keepAccessOnError && !res.ok)) {
-        lockUpload('This purchase isn\u2019t active. Choose a plan to generate manuals.');
+        lockUpload(purchaseMessage(data, res.status));
       }
       return null;
     }
     applySession(data);
+    syncSignOut();
     return data;
+  }
+
+  async function restoreReadyJobs() {
+    if (!accessToken && !sessionId) return;
+    var res;
+    try {
+      res = await fetch(apiBase + '/jobs', { headers: credentialHeaders(), cache: 'no-store' });
+    } catch (err) {
+      return;
+    }
+    if (res.status === 429) return;
+    if (res.status === 401 && sessionId) {
+      var refreshed = await exchangeSession(sessionId);
+      if (!refreshed.ok) return;
+      try {
+        res = await fetch(apiBase + '/jobs', { headers: credentialHeaders(), cache: 'no-store' });
+      } catch (err) {
+        return;
+      }
+    }
+    if (!res.ok) return;
+    var data = await readJson(res);
+    var jobs = Array.isArray(data.jobs) ? data.jobs : [];
+    var ready = jobs.filter(function (job) {
+      if (!job || job.status !== 'succeeded' || !job.id) return false;
+      if (!job.expiresAt) return true;
+      var expiresAt = Date.parse(job.expiresAt);
+      return !Number.isFinite(expiresAt) || expiresAt > Date.now();
+    });
+    if (!ready.length) return;
+    var job = ready[0];
+    var saved = await fetchJobPdf(job.id, runToken, { quiet: true });
+    if (!saved) return;
+    if (job.filename) downloadLink.setAttribute('download', job.filename);
+    successSub.textContent = 'Your PDF is ready. Download it right away. You can re-download it for 24 hours after it’s made, and then it’s deleted.';
+    dismissWelcome();
+    uploadSection.hidden = true;
+    successSection.hidden = false;
+    setBusy(false);
+    setPhase('success');
+    setStage('done');
+  }
+
+  async function bootAccess() {
+    loadStoredToken();
+    sessionId = readSessionId();
+    if (sessionId) {
+      var exchanged = await exchangeSession(sessionId);
+      stripSessionFromUrl();
+      if (exchanged.network) {
+        lockUpload('We couldn\u2019t check your purchase just now. Refresh the page, or choose a plan.');
+        return;
+      }
+      if (exchanged.error) return;
+      if (exchanged.compat) {
+        var compatVerified = await verifySession();
+        if (compatVerified) await restoreReadyJobs();
+        return;
+      }
+      await restoreReadyJobs();
+      return;
+    }
+    if (accessToken) {
+      var verified = await verifySession();
+      if (verified) await restoreReadyJobs();
+      return;
+    }
+    lockUpload('No purchase found on this browser. Choose a plan to generate manuals.');
   }
 
   function syncSource() {
@@ -597,15 +934,13 @@
     guidance.textContent = GUIDANCE[source] || GUIDANCE.plc;
     dropHelp.textContent = DROP_HELP[source] || DROP_HELP.plc;
     fileInput.setAttribute('accept', acceptAttribute(source));
-    clearUploadError();
-    renderFiles();
-    updateGenerateButton();
+    presentSelection();
   }
 
   function rejectReason(file, source) {
     if (!file) return 'Choose a file.';
     if (file.size <= 0) return file.name + ' is empty.';
-    if (file.size > MAX_BYTES) return file.name + ' is ' + formatSize(file.size) + '. Each file must be 50 MB or smaller. This did not use a credit.';
+    if (file.size > MAX_BYTES) return oversizeMessage(file.name, file.size);
     var ext = extensionOf(file.name);
     if (BLOCKED[ext]) return BLOCKED[ext] + ' This did not use a credit.';
     if (!ext || extensionsFor(source).indexOf(ext) === -1) {
@@ -614,36 +949,125 @@
     return '';
   }
 
-  function addFiles(fileListLike) {
+  function selectionNotices(extra) {
+    var messages = extra ? extra.slice() : [];
+    selectedFiles.forEach(function (item) {
+      if (item.empty) messages.push(item.file.name + ' is empty.');
+    });
+    if (selectedFiles.length > MAX_FILES) messages.push(fileCountMessage(selectedFiles.length));
+    return uniqueLines(messages);
+  }
+
+  function presentSelection(extra) {
+    hideDuplicate();
+    renderFiles();
+    updateGenerateButton();
+    var messages = selectionNotices(extra);
+    if (messages.length) showUploadError(messages, { keepPhase: true });
+    else clearUploadError();
+  }
+
+  async function hashFile(file) {
+    if (!window.crypto || !crypto.subtle || !crypto.subtle.digest) {
+      return String(file.size) + ':' + String(file.lastModified);
+    }
+    var digest = await crypto.subtle.digest('SHA-256', await file.arrayBuffer());
+    var bytes = new Uint8Array(digest);
+    var hex = '';
+    for (var i = 0; i < bytes.length; i += 1) hex += (bytes[i] < 16 ? '0' : '') + bytes[i].toString(16);
+    return hex;
+  }
+
+  async function unzippedBytes(file) {
+    if (extensionOf(file.name) !== 'zip' || file.size < 22) return 0;
+    var tailLen = Math.min(file.size, 65557);
+    var tailBuf = await file.slice(file.size - tailLen, file.size).arrayBuffer();
+    var tail = new Uint8Array(tailBuf);
+    var eocd = -1;
+    var i;
+    for (i = tail.length - 22; i >= 0; i -= 1) {
+      if (tail[i] === 0x50 && tail[i + 1] === 0x4b && tail[i + 2] === 0x05 && tail[i + 3] === 0x06) {
+        eocd = i;
+        break;
+      }
+    }
+    if (eocd < 0) return 0;
+    var view = new DataView(tailBuf);
+    var cdSize = view.getUint32(eocd + 12, true);
+    var cdOffset = view.getUint32(eocd + 16, true);
+    if (cdOffset + cdSize > file.size) return 0;
+    var cdBuf = await file.slice(cdOffset, cdOffset + cdSize).arrayBuffer();
+    var cd = new DataView(cdBuf);
+    var total = 0;
+    var p = 0;
+    while (p + 46 <= cdBuf.byteLength) {
+      if (cd.getUint32(p, true) !== 0x02014b50) break;
+      var uncomp = cd.getUint32(p + 24, true);
+      if (uncomp === 0xffffffff) return MAX_UNZIPPED_BYTES + 1;
+      total += uncomp;
+      if (total > MAX_UNZIPPED_BYTES) return total;
+      p += 46 + cd.getUint16(p + 28, true) + cd.getUint16(p + 30, true) + cd.getUint16(p + 32, true);
+    }
+    return total;
+  }
+
+  async function addFiles(fileListLike) {
     if (!uploadEnabled || busy) return;
     var incoming = Array.prototype.slice.call(fileListLike || []);
     if (!incoming.length) return;
-    var errors = [];
+    var extras = [];
     var source = currentSource();
-    incoming.forEach(function (file) {
+    var index;
+    for (index = 0; index < incoming.length; index += 1) {
+      var file = incoming[index];
+      if (file && file.size <= 0) {
+        fileSeq += 1;
+        selectedFiles.push({ id: String(fileSeq), file: file, empty: true, hash: '' });
+        continue;
+      }
       var reason = rejectReason(file, source);
       if (reason) {
-        errors.push(reason);
-        return;
+        extras.push(reason);
+        continue;
       }
-      if (selectedFiles.length >= MAX_FILES) {
-        errors.push('You can add up to 25 files.');
-        return;
+      if (extensionOf(file.name) === 'zip') {
+        var expanded = 0;
+        try { expanded = await unzippedBytes(file); } catch (err) { expanded = 0; }
+        if (expanded > MAX_UNZIPPED_BYTES) {
+          extras.push(file.name + ' is over 100 MB unzipped. A zip must be 100 MB or smaller once unzipped.');
+          continue;
+        }
       }
-      var duplicate = selectedFiles.some(function (item) {
-        return item.file.name === file.name && item.file.size === file.size && item.file.lastModified === file.lastModified;
+      var hash = '';
+      try { hash = await hashFile(file); } catch (err) { hash = String(file.size) + ':' + String(file.lastModified); }
+      var match = null;
+      selectedFiles.forEach(function (item) {
+        if (!match && item.hash && item.hash === hash) match = item;
       });
-      if (duplicate) {
-        errors.push(file.name + ' is already in the list.');
-        return;
+      if (match) {
+        extras.push(file.name + ' is ignored. It matches ' + match.file.name + '.');
+        continue;
       }
       fileSeq += 1;
-      selectedFiles.push({ id: String(fileSeq), file: file });
+      selectedFiles.push({ id: String(fileSeq), file: file, empty: false, hash: hash });
+    }
+    presentSelection(extras);
+  }
+
+  var fileQueue = Promise.resolve();
+  var pendingAdds = 0;
+  function queueFiles(list) {
+    var files = Array.prototype.slice.call(list || []);
+    if (!files.length) return;
+    pendingAdds += 1;
+    fileInput.dataset.pending = '1';
+    fileQueue = fileQueue.then(function () { return addFiles(files); }).then(function () {
+      pendingAdds -= 1;
+      if (!pendingAdds) delete fileInput.dataset.pending;
+    }, function () {
+      pendingAdds -= 1;
+      if (!pendingAdds) delete fileInput.dataset.pending;
     });
-    renderFiles();
-    updateGenerateButton();
-    if (errors.length) showUploadError(errors, { keepPhase: true });
-    else clearUploadError();
   }
 
   function renderFiles() {
@@ -672,7 +1096,13 @@
       li.appendChild(name);
       li.appendChild(size);
       li.appendChild(remove);
-      if (!fitsSource(item.file, source)) {
+      if (item.empty) {
+        li.classList.add('is-invalid');
+        var emptyHint = document.createElement('span');
+        emptyHint.className = 'file-hint';
+        emptyHint.textContent = 'This file is empty.';
+        li.appendChild(emptyHint);
+      } else if (!fitsSource(item.file, source)) {
         li.classList.add('is-invalid');
         var hint = document.createElement('span');
         hint.className = 'file-hint';
@@ -690,15 +1120,35 @@
 
   function filesAreAcceptable() {
     var source = currentSource();
-    return selectedFiles.length > 0 && selectedFiles.every(function (item) { return fitsSource(item.file, source); });
+    return selectedFiles.length > 0 && selectedFiles.length <= MAX_FILES && selectedFiles.every(function (item) {
+      return !item.empty && item.file.size > 0 && item.file.size <= MAX_BYTES && fitsSource(item.file, source);
+    });
   }
 
   function updateGenerateButton() {
+    var needsFile = selectedFiles.length === 0;
     generateBtn.disabled = busy || !uploadEnabled || !filesAreAcceptable();
+    if (!generateHint) return;
+    generateHint.hidden = !needsFile;
+    if (needsFile) generateBtn.setAttribute('aria-describedby', 'generate-hint');
+    else generateBtn.removeAttribute('aria-describedby');
+  }
+
+  function coarsePointer() {
+    try {
+      return window.matchMedia('(pointer: coarse)').matches || window.matchMedia('(hover: none)').matches;
+    } catch (err) {
+      return false;
+    }
+  }
+
+  function syncDropTitle() {
+    if (!dropTitle) return;
+    dropTitle.textContent = coarsePointer() ? 'Choose files' : 'Drag and drop files here';
   }
 
   function canGenerate() {
-    return uploadEnabled && !busy && !!sessionId && filesAreAcceptable();
+    return uploadEnabled && !busy && !!(sessionId || accessToken) && filesAreAcceptable();
   }
 
   function setBusy(next) {
@@ -743,8 +1193,139 @@
     return text;
   }
 
+  function apiMessage(data) {
+    var raw = data && data.message;
+    if (typeof raw !== 'string') return '';
+    var text = raw.replace(/\s+/g, ' ').trim();
+    if (!text || text.length > 280 || /[<>]/.test(text)) return '';
+    return text;
+  }
+
+  function tooManyMessage(data) {
+    var picked = Number(data && (data.picked != null ? data.picked : data.count));
+    var limit = Number(data && data.limit);
+    if (!Number.isFinite(limit) || limit <= 0) limit = MAX_FILES;
+    if (Number.isFinite(picked) && picked > limit) return picked + ' files are picked; the limit is ' + limit + '.';
+    return FILE_LIMIT_MESSAGE;
+  }
+
+  function serverEntries(data) {
+    var list = [];
+    if (data && Array.isArray(data.files)) list = data.files.slice();
+    else if (data && (data.name || data.filename)) list = [data];
+    return list.map(function (item) {
+      if (typeof item === 'string') return { name: item, size: NaN, limit: NaN };
+      return {
+        name: item && (item.name || item.filename) || '',
+        size: Number(item && item.size),
+        limit: Number(item && item.limit)
+      };
+    });
+  }
+
+  function ignoredLines(data) {
+    var list = data && Array.isArray(data.ignored) ? data.ignored : [];
+    return uniqueLines(list.map(function (item) {
+      var raw = typeof item === 'string' ? item : (item && (item.name || item.filename)) || '';
+      var name = chosenName(raw);
+      if (!name) return '';
+      var otherRaw = item && typeof item === 'object' ? (item.duplicateOf || item.matches || item.duplicate_of || '') : '';
+      var other = chosenName(otherRaw);
+      if (other && other !== name) return name + ' is ignored. It matches ' + other + '.';
+      return name + ' is ignored.';
+    }));
+  }
+
+  function duplicateJobId(data) {
+    if (!data || typeof data !== 'object') return '';
+    var id = data.jobId || data.job_id || data.existingJobId || data.existing_job_id || '';
+    return typeof id === 'string' ? id.trim() : '';
+  }
+
+  function serverMessages(status, data) {
+    if (status === 429) return { messages: [RATE_LIMIT_MESSAGE], server: '' };
+    var code = data && typeof data.code === 'string' ? data.code : '';
+    var ignored = ignoredLines(data);
+    if (code === 'duplicate_upload') return { duplicate: true, jobId: duplicateJobId(data), messages: [] };
+    var fromApi = apiMessage(data);
+    if (fromApi) return { messages: [fromApi], server: '' };
+    if (code === 'file_too_large') {
+      var large = uniqueLines(serverEntries(data).map(function (item) {
+        var name = chosenName(item.name);
+        if (!name || !Number.isFinite(item.size)) return '';
+        return oversizeMessage(name, item.size);
+      }));
+      if (!large.length && !ignored.length) large = ['Each file must be 25 MB or smaller.'];
+      return { messages: uniqueLines(large.concat(ignored)) };
+    }
+    if (code === 'empty_file') {
+      var empty = uniqueLines(serverEntries(data).map(function (item) {
+        var name = chosenName(item.name);
+        return name ? name + ' is empty.' : '';
+      }));
+      if (!empty.length && !ignored.length) empty = ['One of the files is empty.'];
+      return { messages: uniqueLines(empty.concat(ignored)) };
+    }
+    if (code === 'unzipped_too_large') {
+      var zips = uniqueLines(serverEntries(data).map(function (item) {
+        var name = chosenName(item.name);
+        return name ? name + ' is over 100 MB unzipped. A zip must be 100 MB or smaller once unzipped.' : '';
+      }));
+      if (!zips.length && !ignored.length) zips = ['A zip must be 100 MB or smaller once unzipped.'];
+      return { messages: uniqueLines(zips.concat(ignored)) };
+    }
+    if (code === 'too_many_files') return { messages: uniqueLines([tooManyMessage(data)].concat(ignored)) };
+    var mapped = friendlyHttpError(status, data);
+    return { messages: uniqueLines([mapped.message].concat(ignored)), server: mapped.server, pricing: mapped.pricing };
+  }
+
+  function hideDuplicate() {
+    if (!duplicatePanel) return;
+    duplicatePanel.hidden = true;
+    if (existingJobLink) {
+      existingJobLink.textContent = '';
+      existingJobLink.href = '#';
+      delete existingJobLink.dataset.jobId;
+    }
+  }
+
+  function showDuplicate(jobId) {
+    clearUploadError();
+    if (duplicateMessage) duplicateMessage.textContent = 'You already generated a manual from these files';
+    if (existingJobLink) {
+      existingJobLink.textContent = jobId;
+      existingJobLink.href = '#job-' + jobId;
+      existingJobLink.dataset.jobId = jobId;
+    }
+    if (duplicatePanel) duplicatePanel.hidden = false;
+    setPhase('ready');
+  }
+
   function friendlyHttpError(status, data) {
+    if (status === 429) return { message: RATE_LIMIT_MESSAGE, server: '' };
+    var fromApi = apiMessage(data);
+    if (fromApi) return { message: fromApi, server: '' };
     var server = safeServerMessage(data);
+    var code = data && typeof data.code === 'string' ? data.code : '';
+    if (code === 'too_many_files' || server === 'Upload failed.' || /too many files/i.test(server) || /up to 25 files/i.test(server)) {
+      return { message: code === 'too_many_files' ? tooManyMessage(data) : FILE_LIMIT_MESSAGE, server: '' };
+    }
+    if (code === 'unzipped_too_large') {
+      return { message: 'A zip must be 100 MB or smaller once unzipped.', server: '' };
+    }
+    if (code === 'field_too_long') {
+      return { message: server || 'One of those fields is too long. Shorten it and try again. This did not use a credit.', server: '' };
+    }
+    if (code === 'purchase_not_found' || status === 404 && code) {
+      return { message: 'This purchase wasn\u2019t found. Choose a plan to generate manuals.', pricing: true, server: '' };
+    }
+    if (status === 403 || code === 'purchase_inactive') {
+      if (server && !/not active/i.test(server)) return { message: server, pricing: true, server: '' };
+      return { message: 'This purchase isn\u2019t active. Choose a plan to generate manuals.', pricing: true, server: '' };
+    }
+    if (status === 402 && server && /refund|dispute|suspended/i.test(server)) {
+      return { message: server, pricing: false, server: '' };
+    }
     if (status === 402) {
       return { message: 'There are no manuals left on this plan, or the purchase isn’t active. No credit was used.', pricing: true, server: server };
     }
@@ -846,12 +1427,13 @@
 
   async function pollJob(id, token) {
     var failures = 0;
+    var refreshed = false;
     while (token === runToken) {
       var res;
       try {
         res = await fetch(apiBase + '/jobs/' + encodeURIComponent(id), {
           cache: 'no-store',
-          headers: { 'X-Session-Id': sessionId }
+          headers: credentialHeaders()
         });
         failures = 0;
       } catch (err) {
@@ -864,10 +1446,30 @@
         continue;
       }
       if (token !== runToken) return null;
+      if (res.status === 429) {
+        resetProgress();
+        setBusy(false);
+        showUploadError(RATE_LIMIT_MESSAGE);
+        return null;
+      }
+      if (res.status === 401 && !refreshed && sessionId) {
+        refreshed = true;
+        var again = await exchangeSession(sessionId);
+        if (again.ok || again.compat) continue;
+        resetProgress();
+        setBusy(false);
+        return null;
+      }
+      if (res.status === 401) {
+        resetProgress();
+        setBusy(false);
+        showUploadError('Your sign-in expired. Refresh the page and try again.');
+        return null;
+      }
       if (res.status === 404) {
         resetProgress();
         setBusy(false);
-        showUploadError('This job is no longer available. It may have expired after 24 hours.');
+        showUploadError('This manual isn’t available. Manuals are deleted 24 hours after they’re made. Generate it again from your files.');
         return null;
       }
       var job = await readJson(res);
@@ -897,8 +1499,8 @@
     paintNotes(opts.warnings, opts.coverage);
     var updated = await verifySession({ keepAccessOnError: true });
     var successText = opts.legacy
-      ? 'Your PDF is ready. Download it here.'
-      : 'Your PDF is ready. Download it here. This copy stays available for 24 hours.';
+      ? 'Your PDF is ready. Download it now, because it isn’t kept.'
+      : 'Your PDF is ready. Download it right away. You can re-download it for 24 hours after it’s made, and then it’s deleted.';
     if (updated && updated.remaining === null) successText += ' Unlimited manuals remaining.';
     else if (updated) successText += ' ' + remainingLabel(updated.remaining) + '.';
     successSub.textContent = successText;
@@ -908,10 +1510,13 @@
     setBusy(false);
     setPhase('success');
     setStage('done');
+    if (downloadLink.getAttribute('href')) downloadLink.click();
     successSection.focus();
   }
 
-  async function fetchJobPdf(id, token) {
+  async function fetchJobPdf(id, token, options) {
+    var quiet = !!(options && options.quiet);
+    var refreshed = false;
     var attempt;
     for (attempt = 0; attempt < 5; attempt += 1) {
       if (token !== runToken) return false;
@@ -919,21 +1524,33 @@
       try {
         res = await fetch(apiBase + '/jobs/' + encodeURIComponent(id) + '/pdf', {
           cache: 'no-store',
-          headers: { 'X-Session-Id': sessionId }
+          headers: credentialHeaders()
         });
       } catch (err) {
         await sleep(600);
         continue;
+      }
+      if (res.status === 429) {
+        if (!quiet) showUploadError(RATE_LIMIT_MESSAGE);
+        return false;
+      }
+      if (res.status === 401 && !refreshed && sessionId) {
+        refreshed = true;
+        var again = await exchangeSession(sessionId);
+        if (again.ok || again.compat) continue;
+        return false;
       }
       if (res.status === 409) {
         await sleep(600);
         continue;
       }
       if (!res.ok) {
-        var errBody = await readJson(res);
-        showUploadError(res.status === 404
-          ? 'This manual isn’t available. It may have expired after 24 hours.'
-          : (friendlyHttpError(res.status, errBody).message));
+        if (!quiet) {
+          var errBody = await readJson(res);
+          showUploadError(res.status === 404
+            ? 'This manual isn’t available. Manuals are deleted 24 hours after they’re made. Generate it again from your files.'
+            : (friendlyHttpError(res.status, errBody).message));
+        }
         return false;
       }
       var buffer = await res.arrayBuffer();
@@ -945,7 +1562,7 @@
       await savePdfBlob(buffer);
       return true;
     }
-    showUploadError('The manual isn’t ready to download yet. Wait a moment and try again.');
+    if (!quiet) showUploadError('The manual isn’t ready to download yet. Wait a moment and try again.');
     return false;
   }
 
@@ -985,13 +1602,13 @@
     formData.append('file', file, file.name);
     formData.append('brand', (document.getElementById('manufacturer_name').value || '').trim());
     formData.append('sections', JSON.stringify([]));
-    formData.append('session_id', sessionId);
+    appendCredential(formData);
     appendEquipment(formData);
     var res;
     try {
       res = await fetch(apiBase + '/generate-manual', {
         method: 'POST',
-        headers: { 'X-Session-Id': sessionId },
+        headers: credentialHeaders(),
         body: formData
       });
     } catch (err) {
@@ -1008,8 +1625,12 @@
       resetProgress();
       setBusy(false);
       if (res.status === 402) await verifySession();
-      var mapped = friendlyHttpError(res.status, data);
-      showUploadError(mapped.message, { server: mapped.server, pricing: mapped.pricing });
+      var mapped = serverMessages(res.status, data);
+      if (mapped.duplicate) {
+        showDuplicate(mapped.jobId || '');
+        return;
+      }
+      showUploadError(mapped.messages, { server: mapped.server, pricing: mapped.pricing });
       return;
     }
     var buffer = await res.arrayBuffer();
@@ -1026,10 +1647,34 @@
     await finishSuccess({ legacy: true });
   }
 
+  async function openExistingJob(id) {
+    if (!id || busy) return;
+    hideDuplicate();
+    var token = ++runToken;
+    setBusy(true);
+    setPhase('progress');
+    showProgress('Opening the existing manual…', null);
+    var ready = await fetchJobPdf(id, token);
+    if (token !== runToken) return;
+    generateBtn.textContent = 'Generate my manual';
+    if (!ready) {
+      setBusy(false);
+      return;
+    }
+    await finishSuccess({ warnings: [], coverage: null, legacy: false });
+  }
+
   async function handleGenerate() {
     if (busy) return;
-    if (!uploadEnabled || !sessionId) {
+    var forceDuplicate = confirmDuplicate;
+    confirmDuplicate = false;
+    hideDuplicate();
+    if (!uploadEnabled || (!sessionId && !accessToken)) {
       lockUpload('No purchase found on this browser. Choose a plan to generate manuals.');
+      return;
+    }
+    if (selectedFiles.length > MAX_FILES) {
+      showUploadError(fileCountMessage(selectedFiles.length), { keepPhase: true });
       return;
     }
     if (!selectedFiles.length) {
@@ -1056,13 +1701,14 @@
     }
     var formData = new FormData();
     payloadFiles.forEach(function (file) { formData.append('files', file, file.name); });
-    formData.append('session_id', sessionId);
+    appendCredential(formData);
+    if (forceDuplicate) formData.append('confirmDuplicate', 'true');
     appendEquipment(formData);
     var res;
     try {
       res = await fetch(apiBase + '/jobs', {
         method: 'POST',
-        headers: { 'X-Session-Id': sessionId },
+        headers: credentialHeaders(),
         body: formData
       });
     } catch (err) {
@@ -1074,29 +1720,47 @@
       return;
     }
     if (token !== runToken) return;
-    if (res.status === 404 && mode === 'auto') {
-      await startLegacy(token, payloadFiles, true);
-      if (token === runToken) generateBtn.textContent = 'Generate my manual';
-      return;
+    if (res.status === 404) {
+      var missing = await readJson(res);
+      var missingCode = missing && typeof missing.code === 'string' ? missing.code : '';
+      if (missingCode === 'purchase_not_found') {
+        resetProgress();
+        setBusy(false);
+        generateBtn.textContent = 'Generate my manual';
+        var missingError = friendlyHttpError(res.status, missing);
+        showUploadError(missingError.message, { server: missingError.server, pricing: missingError.pricing });
+        return;
+      }
+      if (mode === 'auto') {
+        await startLegacy(token, payloadFiles, true);
+        if (token === runToken) generateBtn.textContent = 'Generate my manual';
+        return;
+      }
+      if (mode === 'jobs') {
+        resetProgress();
+        setBusy(false);
+        generateBtn.textContent = 'Generate my manual';
+        showUploadError('The multi-file generator isn’t available on this server yet. Nothing was charged.');
+        return;
+      }
     }
     var data = await readJson(res);
-    if (res.status === 404 && mode === 'jobs') {
-      resetProgress();
-      setBusy(false);
-      generateBtn.textContent = 'Generate my manual';
-      showUploadError('The multi-file generator isn’t available on this server yet. Nothing was charged.');
-      return;
-    }
     if (res.status !== 202 || !data.id) {
       resetProgress();
       setBusy(false);
       generateBtn.textContent = 'Generate my manual';
       if (res.status === 402) await verifySession();
-      var mapped = friendlyHttpError(res.status, data);
-      showUploadError(mapped.message, { server: mapped.server, pricing: mapped.pricing });
+      var mapped = serverMessages(res.status, data);
+      if (mapped.duplicate) {
+        showDuplicate(mapped.jobId || '');
+        return;
+      }
+      showUploadError(mapped.messages, { server: mapped.server, pricing: mapped.pricing });
       return;
     }
     document.body.dataset.api = 'jobs';
+    var ignored = ignoredLines(data);
+    if (ignored.length) showModeNote(ignored.join(' '));
     generateBtn.textContent = 'Generating\u2026';
     paintJob(data);
     var job = await pollJob(data.id, token);
@@ -1135,6 +1799,7 @@
     successSection.hidden = true;
     uploadSection.hidden = false;
     generateBtn.textContent = 'Generate my manual';
+    hideDuplicate();
     setBusy(false);
     setPhase(uploadEnabled ? 'ready' : 'locked');
     var firstRadio = document.querySelector('input[name="source"]');
@@ -1142,7 +1807,7 @@
   }
 
   fileInput.addEventListener('change', function () {
-    addFiles(fileInput.files);
+    queueFiles(fileInput.files);
     fileInput.value = '';
   });
 
@@ -1151,9 +1816,7 @@
     if (!button || busy) return;
     var id = button.getAttribute('data-remove');
     selectedFiles = selectedFiles.filter(function (item) { return item.id !== id; });
-    renderFiles();
-    updateGenerateButton();
-    clearUploadError();
+    presentSelection();
   });
 
   uploadForm.addEventListener('submit', function (event) {
@@ -1180,7 +1843,7 @@
     event.preventDefault();
     dropZone.classList.remove('drag-over');
     if (!uploadEnabled || busy) return;
-    addFiles(event.dataTransfer && event.dataTransfer.files);
+    queueFiles(event.dataTransfer && event.dataTransfer.files);
   });
 
   document.getElementById('another-btn').addEventListener('click', function () {
@@ -1188,9 +1851,49 @@
     verifySession({ keepAccessOnError: true });
   });
 
+  document.getElementById('sign-out').addEventListener('click', function () {
+    signOut();
+  });
+
+  if (generateAgainBtn) {
+    generateAgainBtn.addEventListener('click', function () {
+      confirmDuplicate = true;
+      handleGenerate();
+    });
+  }
+  if (existingJobLink) {
+    existingJobLink.addEventListener('click', function (event) {
+      event.preventDefault();
+      openExistingJob(existingJobLink.dataset.jobId || '');
+    });
+  }
+
+  window.addEventListener('pageshow', function (event) {
+    if (!event.persisted) return;
+    var token = '';
+    var stored = '';
+    var checkout = '';
+    var query = '';
+    try { token = (sessionStorage.getItem(TOKEN_STORAGE_KEY) || '').trim(); } catch (err) {}
+    try { stored = (localStorage.getItem(SESSION_STORAGE_KEY) || '').trim(); } catch (err) {}
+    try { checkout = (sessionStorage.getItem(CHECKOUT_STORAGE_KEY) || '').trim(); } catch (err) {}
+    try { query = (new URLSearchParams(location.search).get('session_id') || '').trim(); } catch (err) {}
+    if (token || stored || checkout || query) return;
+    accessToken = '';
+    sessionId = '';
+    sessionFromQuery = false;
+    compatSession = false;
+    syncSignOut();
+    lockUpload('No purchase found on this browser. Choose a plan to generate manuals.');
+  });
+
   syncSource();
-  sessionId = readSessionId();
-  verifySession();
+  syncDropTitle();
+  try {
+    window.matchMedia('(pointer: coarse)').addEventListener('change', syncDropTitle);
+    window.matchMedia('(hover: none)').addEventListener('change', syncDropTitle);
+  } catch (err) {}
+  bootAccess();
 })();
 </script>
 </body>

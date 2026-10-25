@@ -21,8 +21,7 @@ body{margin:0;min-height:100vh;display:flex;flex-direction:column;font-family:"I
 :focus-visible{outline:2px solid var(--ink);outline-offset:2px}
 .skip-link{position:absolute;left:.75rem;top:-3rem;background:var(--ink);color:var(--paper);padding:.7rem 1rem;z-index:5;text-decoration:none}
 .skip-link:focus{top:.5rem}
-header,footer{padding:.35rem .85rem}
-header{border-bottom:1px solid var(--ink)}
+header{padding:.35rem .85rem;border-bottom:1px solid var(--ink)}
 .logo{display:inline-flex;align-items:center;gap:.55rem;min-height:2.75rem;color:var(--ink);text-decoration:none;font-weight:600;font-size:1.05rem;letter-spacing:-.02em}
 .logo-mark{width:1.7rem;height:1.7rem;background:var(--ink);color:var(--paper);display:grid;place-items:center;font-size:.95rem;border-bottom:3px solid var(--yellow)}
 main{flex:1;max-width:40rem;margin:0 auto;padding:2.2rem .85rem;width:100%}
@@ -36,8 +35,18 @@ a.btn{display:inline-flex;align-items:center;justify-content:center;min-height:2
 .btn-primary:hover{background:var(--yellow);color:var(--ink)}
 .btn-outline{background:var(--sheet);color:var(--ink)}
 .btn-outline:hover{background:var(--yellow);color:var(--ink)}
-footer{border-top:1px solid var(--ink);color:#3a3f44}
-footer a{color:var(--ink);display:inline-flex;align-items:center;min-height:2.75rem}
+.site-footer{background:#0B1622;color:#F4F6F8;margin-top:auto;border-top:4px solid #34C77B;padding:2.5rem 1rem 2.75rem}
+.site-footer a{color:#F4F6F8;text-decoration:underline;text-underline-offset:.15em}
+.site-footer a:hover{color:#34C77B}
+.footer-inner{max-width:75rem;margin:0 auto;display:grid;gap:1rem}
+.footer-brand{margin:0;font-size:1.15rem;font-weight:600;letter-spacing:-.02em;color:#F4F6F8}
+.footer-nav{display:flex;flex-wrap:wrap;gap:.15rem 1rem}
+.footer-nav a{display:inline-flex;align-items:center;min-height:2.75rem;min-width:2.75rem;font-weight:600}
+.legal{margin:0;color:#B8C4D0}
+@media(max-width:767px){
+  a:not(.btn):not(.logo){display:inline-block;max-width:100%;min-height:2.75rem;min-width:2.75rem;box-sizing:border-box}
+  .footer-nav a{display:inline-flex;align-items:center}
+}
 </style>
 </head>
 <body>
@@ -58,8 +67,23 @@ footer a{color:var(--ink);display:inline-flex;align-items:center;min-height:2.75
     <a class="btn btn-outline" href="/#pricing">View pricing</a>
   </div>
 </main>
-<footer>
-  <p><a href="mailto:support@manualos.com">support@manualos.com</a></p>
+<footer class="site-footer">
+  <div class="footer-inner">
+    <p class="footer-brand">ManualOS</p>
+    <p>Plain-English equipment manuals. Upload your PLC or CAD files.</p>
+    <nav class="footer-nav" aria-label="Footer">
+      <a href="/#how">How it works</a>
+      <a href="/#sample">Sample</a>
+      <a href="/#pricing">Pricing</a>
+      <a href="/#faq">FAQ</a>
+      <a href="/upload.html">Upload</a>
+      <a href="mailto:support@manualos.com">support@manualos.com</a>
+      <a href="/terms.html">Terms</a>
+      <a href="/privacy.html">Privacy</a>
+      <a href="/refunds.html">Refunds</a>
+    </nav>
+    <p class="legal">© 2026 Op3x LLC. ManualOS is a product of Op3x LLC.</p>
+  </div>
 </footer>
 </body>
 </html>
