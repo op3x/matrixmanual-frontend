@@ -25,6 +25,7 @@ const FORBIDDEN_HERO = [
   'manualos-hero-poster.jpg',
 ];
 const CREDIT = 'Hero video created with Grok.';
+const THIRD_PARTY_VIDEO = ['you', 'tube'].join('');
 
 function sha256(buffer) {
   return createHash('sha256').update(buffer).digest('hex');
@@ -56,7 +57,10 @@ export async function heroFilmProblems(rootDir) {
     if (TEXT_EXT.has(ext)) {
       const text = await readFile(full, 'utf8');
       const lower = text.toLowerCase();
-      if (lower.includes('youtube')) problems.push(rel + ' contains youtube');
+      if (lower.includes(THIRD_PARTY_VIDEO)) problems.push(rel + ' names a third-party video site');
+      if (lower.includes('video host') || lower.includes('video-cookie') || lower.includes('cookies from the video')) {
+        problems.push(rel + ' has a video-host or video-cookie note');
+      }
       if (text.includes('-NdfRTpad-M')) problems.push(rel + ' contains the third-party video id');
       if (lower.includes('mechanical-intelligence')) problems.push(rel + ' contains mechanical-intelligence');
       if (text.includes('Play the short film')) problems.push(rel + ' contains Play the short film');
@@ -64,7 +68,7 @@ export async function heroFilmProblems(rootDir) {
     } else if (ext === '.mp4' || ext === '.jpg' || ext === '.jpeg' || ext === '.webp') {
       const bytes = await readFile(full);
       const lower = bytes.toString('latin1').toLowerCase();
-      if (lower.includes('youtube')) problems.push(rel + ' bytes contain youtube');
+      if (lower.includes(THIRD_PARTY_VIDEO)) problems.push(rel + ' bytes name a third-party video site');
       if (lower.includes('-ndfrtpad-m')) problems.push(rel + ' bytes contain the third-party video id');
       if (lower.includes('psyche')) problems.push(rel + ' bytes contain Psyche');
     }
@@ -136,6 +140,6 @@ if (isMain) {
     for (const problem of problems) console.error(problem);
     process.exitCode = 1;
   } else {
-    console.log('PASS built site has no youtube string, the v3 original files match and keep c2pa, and the footer credit is exact');
+    console.log('PASS built site has no third-party video site, the v3 original files match and keep c2pa, and the footer credit is exact');
   }
 }

@@ -225,7 +225,7 @@ async function main() {
   await assertNoBrandNames(root);
   note('shipped HTML and JS do not name vendors', true);
   await assertHeroFilm(root);
-  note('built site has no youtube string, the v3 original files match and keep c2pa, and the footer credit is exact', true);
+  note('built site has no third-party video site, the v3 original files match and keep c2pa, and the footer credit is exact', true);
 
   const { child, base } = await startMock();
   const browser = await puppeteer.launch({
@@ -798,7 +798,7 @@ async function main() {
         const bg = channel(footerStyle.backgroundColor);
         const creditBox = credit ? credit.getBoundingClientRect() : null;
         return {
-          youtube: document.documentElement.outerHTML.toLowerCase().includes('youtube'),
+          thirdParty: document.documentElement.outerHTML.toLowerCase().includes(['you', 'tube'].join('')),
           oldPoster: document.documentElement.outerHTML.includes('mechanical-intelligence'),
           filmLink: [...document.querySelectorAll('a')].some((a) => /play the short film/i.test(a.textContent || '')),
           iframes: document.querySelectorAll('iframe').length,
@@ -839,7 +839,7 @@ async function main() {
 
     async function assertHeroFrame(page, label, expectVideo) {
       const state = await heroState(page);
-      if (state.youtube || state.oldPoster || state.iframes || state.filmLink) {
+      if (state.thirdParty || state.oldPoster || state.iframes || state.filmLink) {
         throw new Error(label + ' third-party film leaked ' + JSON.stringify(state));
       }
       if (!state.poster || state.width < 200 || Math.abs(state.ratio - (16 / 9)) > 0.08) {
