@@ -301,9 +301,20 @@ async function main() {
   if (!html.includes('name="referrer" content="no-referrer"')) {
     throw new Error('upload.html is missing Referrer-Policy no-referrer');
   }
-  if (/never stored/i.test(index)) throw new Error('homepage still says files are never stored');
-  const retention = (index.match(/kept for 24 hours so you can download it again/g) || []).length;
+  if (/never stored/i.test(index) || /never stored/i.test(html)) throw new Error('copy still says files are never stored');
+  if (/after you leave the page/i.test(index) || /after you leave the page/i.test(html)) throw new Error('copy still says the PDF is dropped when you leave');
+  if (/\bAI\b/i.test(index)) throw new Error('homepage still says AI');
+  const retentionLine = 'You can re-download it for 24 hours after it’s made, and then it’s deleted.';
+  const retention = (index.match(/You can re-download it for 24 hours after it.s made, and then it.s deleted/g) || []).length;
   if (retention < 3) throw new Error('retention sentence count ' + retention);
+  if (!index.includes('You can re-download your PDF for 24 hours, then it’s deleted')) throw new Error('trust strip still hides the 24-hour deletion');
+  if (!html.includes(retentionLine)) throw new Error('upload success copy is missing the 24-hour re-download');
+  if (!html.includes('Manuals are deleted 24 hours after they’re made. Generate it again from your files.')) {
+    throw new Error('expired manual copy is missing the 24-hour deletion');
+  }
+  if (/stays available for 24 hours/.test(html) || /stays available for 24 hours/.test(index)) {
+    throw new Error('copy still says the PDF stays available without saying it is deleted');
+  }
   const anchorIds = ['how', 'sample', 'pricing', 'faq'];
   const missingAnchors = anchorIds.filter((id) => !index.includes(`id="${id}"`));
   if (missingAnchors.length) throw new Error('homepage missing anchors: ' + missingAnchors.join(', '));
@@ -503,6 +514,9 @@ async function main() {
     if (!/Coverage: 100%/.test(successText) || !/12 of 12/.test(successText)) throw new Error('coverage missing: ' + successText);
     if (!/could not be rewritten/i.test(successText)) throw new Error('warning missing');
     if (!/Download PDF/.test(successText)) throw new Error('download button missing');
+    if (!/You can re-download it for 24 hours after it.s made, and then it.s deleted/.test(successText)) {
+      throw new Error('success retention: ' + successText);
+    }
     const pdfHead = await page.evaluate(async () => {
       const link = document.getElementById('download-link');
       const res = await fetch(link.href);
@@ -523,6 +537,7 @@ async function main() {
     if (successHeading !== 'H1') throw new Error('success title is ' + successHeading);
     await runAxe(page, 'success');
     await shoot(page, 'success', '#success-section');
+    await shoot(page, 'retention_upload', '#success-sub');
     note('success shows coverage, warning, and a PDF download', true);
 
     await page.evaluateOnNewDocument(() => {
@@ -545,9 +560,10 @@ async function main() {
         hidden: document.getElementById('success-section').hidden,
         download: link.getAttribute('download') || '',
         head: new TextDecoder().decode(bytes.slice(0, 5)),
+        sub: document.getElementById('success-sub').textContent,
       };
     });
-    if (restored.clicks !== 0 || /session_id/.test(restored.search) || restored.hidden || restored.head !== '%PDF-' || !/manual\.pdf$/.test(restored.download)) {
+    if (restored.clicks !== 0 || /session_id/.test(restored.search) || restored.hidden || restored.head !== '%PDF-' || !/manual\.pdf$/.test(restored.download) || !/re-download it for 24 hours after it.s made, and then it.s deleted/.test(restored.sub || '')) {
       throw new Error('restored download ' + JSON.stringify(restored));
     }
     const restoreLog = await requests(base);
@@ -1428,6 +1444,7 @@ async function main() {
     await assertButtonContrast(page, 'home 1280');
     await runAxe(page, 'home 1280');
     note('home at 1280 top-aligns the hero, keeps the price on the primary button, and does not leave the last preview alone', true);
+    await shoot(page, 'retention_privacy', '.privacy');
 
     await page.goto(base + '/', { waitUntil: 'networkidle0' });
     await page.click('[data-checkout="starter"]');

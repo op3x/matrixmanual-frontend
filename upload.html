@@ -910,7 +910,7 @@
     var saved = await fetchJobPdf(job.id, runToken, { quiet: true });
     if (!saved) return;
     if (job.filename) downloadLink.setAttribute('download', job.filename);
-    successSub.textContent = 'Your PDF is ready. Download it here. This copy stays available for 24 hours.';
+    successSub.textContent = "Your PDF is ready. Download it right away. You can re-download it for 24 hours after it's made, and then it's deleted.";
     dismissWelcome();
     uploadSection.hidden = true;
     successSection.hidden = false;
@@ -1521,7 +1521,7 @@
     var updated = await verifySession({ keepAccessOnError: true });
     var successText = opts.legacy
       ? "Your PDF is ready. Download it now."
-      : "Your PDF is ready. Download it right away, because it's deleted 24 hours after it's made.";
+      : "Your PDF is ready. Download it right away. You can re-download it for 24 hours after it's made, and then it's deleted.";
     if (updated && updated.remaining === null) successText += ' Unlimited manuals remaining.';
     else if (updated) successText += ' ' + remainingLabel(updated.remaining) + '.';
     successSub.textContent = successText;
