@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<!-- Placeholders [MAILING ADDRESS], [EFFECTIVE DATE], and [LOG RETENTION] must be filled in before publishing. This page is not legal advice. -->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Privacy policy — ManualOS</title>
+<meta name="description" content="How ManualOS handles uploaded program and CAD files, payments, logs, and optional support text messages.">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="https://manualos.com/privacy.html">
+<link rel="icon" href="/favicon.ico" sizes="32x32">
+<link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
+<link rel="manifest" href="/site.webmanifest">
+<meta name="theme-color" content="#f3f0e6">
+<link rel="preload" href="/assets/fonts/ibm-plex-sans-600.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/assets/fonts/ibm-plex-sans-400.woff2" as="font" type="font/woff2" crossorigin>
+<style>
+@font-face{font-family:"IBM Plex Sans";font-style:normal;font-weight:400;font-display:swap;src:url("/assets/fonts/ibm-plex-sans-400.woff2") format("woff2");ascent-override:102%;descent-override:27%;line-gap-override:0%}
+@font-face{font-family:"IBM Plex Sans";font-style:normal;font-weight:600;font-display:swap;src:url("/assets/fonts/ibm-plex-sans-600.woff2") format("woff2");ascent-override:102%;descent-override:27%;line-gap-override:0%}
+@font-face{font-family:"IBM Plex Mono";font-style:normal;font-weight:400;font-display:swap;src:url("/assets/fonts/ibm-plex-mono-400.woff2") format("woff2");ascent-override:102%;descent-override:27%;line-gap-override:0%}
+@font-face{font-family:"IBM Plex Mono";font-style:normal;font-weight:500;font-display:swap;src:url("/assets/fonts/ibm-plex-mono-500.woff2") format("woff2");ascent-override:102%;descent-override:27%;line-gap-override:0%}
+:root{--paper:#f3f0e6;--sheet:#f7f4ec;--ink:#17181a;--muted:#3a3f44;--rule:#cfc6b6;--yellow:#e6b400}
+*,*::before,*::after{box-sizing:border-box}
+html{scroll-padding-top:4.5rem;color-scheme:light}
+body{margin:0;min-height:100vh;display:flex;flex-direction:column;font-family:"IBM Plex Sans",Arial,"Helvetica Neue",sans-serif;background:var(--paper);color:var(--ink);line-height:1.55;font-size:1rem}
+:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+.skip-link{position:absolute;left:.75rem;top:-3rem;background:var(--ink);color:var(--paper);padding:.7rem 1rem;z-index:30;text-decoration:none}
+.skip-link:focus{top:.5rem}
+.site-header{position:sticky;top:0;z-index:10;background:var(--paper);border-bottom:1px solid var(--ink)}
+.bar{max-width:76rem;margin:0 auto;padding:.35rem .75rem;display:flex;align-items:center}
+.logo{display:inline-flex;align-items:center;gap:.55rem;min-height:2.75rem;color:var(--ink);text-decoration:none;font-weight:600;font-size:1.05rem;letter-spacing:-.02em}
+.logo-mark{width:1.7rem;height:1.7rem;background:var(--ink);color:var(--paper);display:grid;place-items:center;font-size:.95rem;border-bottom:3px solid var(--yellow)}
+main{flex:1;width:100%;max-width:48rem;margin:0 auto;padding:.75rem .75rem 2.5rem;scroll-margin-top:4.5rem}
+.sheet{border:1px solid var(--ink);background:var(--sheet);padding:1rem .9rem 1.35rem}
+.titleblock{display:grid;grid-template-columns:1.5fr .7fr .7fr;border:1px solid var(--ink);font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:.68rem;letter-spacing:.04em;text-transform:uppercase;margin:0 0 1rem;background:var(--paper)}
+.titleblock span{padding:.32rem .45rem;border-left:1px solid var(--ink);min-width:0;overflow-wrap:anywhere}
+.titleblock span:first-child{border-left:0}
+h1{font-size:clamp(1.8rem,5vw,2.5rem);font-weight:600;letter-spacing:-.02em;line-height:1.15;margin:0 0 .7rem}
+h2{font-size:1.15rem;font-weight:600;letter-spacing:-.01em;line-height:1.25;margin:1.6rem 0 .5rem;padding-top:.7rem;border-top:1px solid var(--ink);scroll-margin-top:4.5rem}
+h2 .idx{display:inline-grid;place-items:center;min-width:1.7rem;height:1.25rem;padding:0 .25rem;margin-right:.45rem;background:var(--yellow);color:var(--ink);font-family:"IBM Plex Mono",ui-monospace,monospace;font-weight:500;font-size:.75rem;letter-spacing:0;vertical-align:.08em}
+p{margin:.55rem 0}
+ul{margin:.4rem 0;padding-left:1.2rem}
+li{margin:.28rem 0}
+strong{font-weight:600}
+a{color:var(--ink)}
+.sheet a{text-decoration:underline;text-underline-offset:.15em}
+.lede{font-size:1.05rem;margin-top:0}
+code{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:.88em}
+.callout,.fill-note{border:1px solid var(--ink);border-left:4px solid var(--yellow);background:var(--paper);padding:.85rem .95rem;margin:1rem 0}
+.fill-note{background:#fff6d6}
+.placeholder{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:.92em;background:#fff6d6;border:1px dashed var(--ink);padding:0 .28rem}
+.site-footer{background:var(--ink);color:#f3f0e6;margin-top:auto;border-top:4px solid var(--yellow);padding:1.5rem .85rem 1.75rem}
+.site-footer a{color:#f3f0e6;text-decoration:none}
+.site-footer a:hover{color:var(--yellow)}
+.site-footer a:focus-visible{outline-color:#f3f0e6}
+.footer-inner{max-width:76rem;margin:0 auto;display:grid;gap:.8rem}
+.footer-brand{margin:0;font-size:1.15rem;font-weight:600;letter-spacing:-.02em}
+.footer-nav{display:flex;flex-wrap:wrap;gap:.15rem .9rem}
+.footer-nav a{display:inline-flex;align-items:center;min-height:2.75rem;font-weight:600;text-underline-offset:.15em}
+.legal{margin:0;color:#d9d2c3;font-size:.95rem}
+@media(min-width:768px){
+  main{padding:1.25rem 1.25rem 3rem}
+  .sheet{padding:1.2rem 1.3rem 1.6rem}
+}
+@media(max-width:420px){
+  .titleblock{font-size:.62rem}
+}
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="site-header">
+  <div class="bar">
+    <a class="logo" href="/"><span class="logo-mark" aria-hidden="true">M</span>ManualOS</a>
+  </div>
+</header>
+<main id="main" tabindex="-1">
+  <article class="sheet">
+    <div class="titleblock">
+      <span>Doc no. LEGAL-01 · Privacy</span>
+      <span>Rev A</span>
+      <span>Eff. <span class="placeholder">[EFFECTIVE DATE]</span></span>
+    </div>
+    <div class="fill-note">
+      <p><strong>Open items.</strong> A dashed token is a placeholder. Fill it in before this page is final: <span class="placeholder">[EFFECTIVE DATE]</span>, <span class="placeholder">[MAILING ADDRESS]</span>, and <span class="placeholder">[LOG RETENTION]</span>.</p>
+    </div>
+    <h1>Privacy policy</h1>
+    <p class="lede">ManualOS turns PLC program files and CAD files into equipment manuals. This page explains what we collect, what happens to your files, and who else handles them. ManualOS is operated by Op3x LLC ("we", "us").</p>
+    <div class="callout">
+      <p><strong>Short version</strong></p>
+      <ul>
+        <li>Uploaded files stay in memory only while your manual is generated, and are never saved to disk.</li>
+        <li>Extracted program logic and device descriptions go to a third-party AI model provider to write the text.</li>
+        <li>The finished PDF can be downloaded for 24 hours. After that, it is no longer available.</li>
+        <li>We don't sell your data, and this site doesn't use cookies or analytics.</li>
+        <li>If you opt in, we may text support replies, account alerts, and manual-status alerts. Mobile numbers and SMS opt-in consent are not shared with or sold to third parties or affiliates for marketing.</li>
+      </ul>
+    </div>
+
+    <h2><span class="idx">01</span>What we collect</h2>
+    <ul>
+      <li><strong>Files you upload:</strong> PLC program files, tag lists, CAD files, or a ZIP of them.</li>
+      <li><strong>Optional equipment details you type in:</strong> manufacturer, product name, model, document number, and revision. They are printed in your manual. We don't ask for a manufacturer address.</li>
+      <li><strong>A checkout reference:</strong> the ID of your checkout session. We use it to check that you have paid and how many manuals you have left.</li>
+      <li><strong>Payment details:</strong> your card, email, and billing details are entered on our payment processor's secure checkout page, not on this site. We don't receive or store your card number.</li>
+      <li><strong>Support requests:</strong> the <a href="/support.html">support form</a> opens your email app addressed to <a href="mailto:support@manualos.com">support@manualos.com</a>. Your name, email, phone, and message are in that email. This site does not store the form, and it does not send the form through another form service.</li>
+      <li><strong>Text-message opt-in:</strong> if you check the optional box on the support form, we send your mobile number, the consent-text version, and the source (the website support form) to our service so we can record that you agreed.</li>
+    </ul>
+    <p>ManualOS has no customer accounts for the manual service. The support form does not create an account. We don't keep a customer database of names or emails.</p>
+
+    <h2><span class="idx">02</span>How your files are processed</h2>
+    <ul>
+      <li><strong>While your manual is generated:</strong> uploaded files are held in the server's memory and are never written to disk. When generation ends, whether it succeeds or fails, they are released from memory.</li>
+      <li><strong>The finished PDF:</strong> it is stored on the server for 24 hours under a random link so you can download it. After 24 hours the link stops working, and the PDF can no longer be downloaded. The file is removed the next time the service cleans up expired manuals. If the service restarts before that cleanup, the file can remain until the host replaces the machine. It still cannot be downloaded after 24 hours.</li>
+      <li><strong>The download link:</strong> anyone who has it can download the PDF during those 24 hours, so don't share it.</li>
+      <li><strong>Job status:</strong> progress and warnings are kept in memory for up to 24 hours. They don't include your name, email, or payment details. A restart clears them sooner.</li>
+    </ul>
+
+    <h2><span class="idx">03</span>AI processing</h2>
+    <p>To write the plain-English text, we send content extracted from your files to a third-party AI model provider. That includes:</p>
+    <ul>
+      <li>program logic and comments</li>
+      <li>routine names</li>
+      <li>tag and device descriptions</li>
+      <li>module catalog numbers</li>
+      <li>CAD assembly names, part numbers, and part descriptions</li>
+    </ul>
+    <p>We don't send your original file as a whole, the equipment details you type in, or any payment information.</p>
+    <p>Under the provider's standard terms for business customers, it does not use this data to train its models. It deletes the data within 30 days, except where longer retention is needed to enforce its usage policies or is required by law.</p>
+
+    <h2><span class="idx">04</span>Payments</h2>
+    <p>Our payment processor handles checkout, cards, receipts, and subscriptions under its own privacy policy. We store a few facts with the processor about your purchase:</p>
+    <ul>
+      <li>which plan you bought</li>
+      <li>for Starter, how many manuals you have used</li>
+    </ul>
+    <p>Each time you generate a manual, we check your plan with the processor. Card numbers are entered at secure checkout, not on this site.</p>
+
+    <h2><span class="idx">05</span>Cookies and browser storage</h2>
+    <ul>
+      <li><strong>No tracking:</strong> this site sets no cookies and uses no analytics, advertising, or tracking scripts. Fonts are served from our own site.</li>
+      <li><strong>Your checkout reference:</strong> after checkout, the upload page saves it in your browser's local storage under the name <code>manualos_session_id</code>. This lets you come back and use your remaining manuals.</li>
+      <li><strong>Removing it:</strong> clear this site's data in your browser. Treat the reference like a key, because anyone who has it can use your remaining manuals.</li>
+    </ul>
+
+    <h2><span class="idx">06</span>Logs</h2>
+    <p>Our servers keep operational logs to run and fix the service. These logs can include:</p>
+    <ul>
+      <li>payment event IDs and statuses</li>
+      <li>error messages, which may contain a file name or a short fragment of a program identifier</li>
+    </ul>
+    <p>Our code does not keep a request log of page bodies or visitor IP addresses. Our website host and our backend host may still record technical request data, such as IP addresses, for security. Hosting logs are kept for <span class="placeholder">[LOG RETENTION]</span> days.</p>
+
+    <h2><span class="idx">07</span>Sharing</h2>
+    <p>We don't sell your files or personal information. We share data only with:</p>
+    <ul>
+      <li>the AI model provider and the payment processor, as described above</li>
+      <li>our hosting providers, to run the service</li>
+      <li>a messaging provider, only to deliver text messages you opted in to</li>
+      <li>others when the law requires it</li>
+    </ul>
+    <p>Mobile numbers and SMS opt-in consent are not shared with or sold to third parties or affiliates for marketing. See <a href="#sms">Text messages</a>.</p>
+
+    <h2><span class="idx">08</span>Retention</h2>
+    <ul>
+      <li><strong>Uploaded files:</strong> only while your manual is generated.</li>
+      <li><strong>Generated PDFs:</strong> available to download for 24 hours, then removed on the next cleanup as described above.</li>
+      <li><strong>Job status:</strong> in memory for up to 24 hours.</li>
+      <li><strong>Data sent to the AI provider:</strong> deleted by the provider within 30 days under its standard terms, with the exceptions in section 03.</li>
+      <li><strong>Purchase records:</strong> held by the payment processor for as long as it, and the law, require.</li>
+      <li><strong>Your checkout reference:</strong> kept in your browser until you clear it.</li>
+      <li><strong>Text-message opt-in:</strong> kept so we can send the messages you agreed to and honor STOP, until you opt out or ask us to delete it.</li>
+      <li><strong>Hosting logs:</strong> <span class="placeholder">[LOG RETENTION]</span> days.</li>
+    </ul>
+
+    <h2><span class="idx">09</span>Security</h2>
+    <p>We protect your data in several ways:</p>
+    <ul>
+      <li>Traffic to the site and the service uses HTTPS.</li>
+      <li>Card details are entered only on the payment processor's checkout page.</li>
+      <li>Uploads are size-limited and checked before processing.</li>
+      <li>Download links use long random IDs.</li>
+    </ul>
+    <p>No system is perfectly secure. Please don't upload files you are not allowed to share with a processing service.</p>
+
+    <h2><span class="idx">10</span>Children</h2>
+    <p>ManualOS is a business tool. It is not directed to children under 13, and we don't knowingly collect information from them.</p>
+
+    <h2><span class="idx">11</span>Your choices</h2>
+    <p>Email <a href="mailto:support@manualos.com">support@manualos.com</a> with a question about your data, or to ask us to delete a text-message opt-in or purchase-related information we control. You can also use the <a href="/support.html">support form</a>. Because we keep no accounts, and uploaded files are not kept after generation, there is usually nothing else stored to delete. Reply STOP to opt out of text messages.</p>
+
+    <h2><span class="idx">12</span>Changes</h2>
+    <p>If we change this policy, we will post the new version here and update the effective date above.</p>
+
+    <section id="sms" aria-labelledby="sms-title">
+      <h2 id="sms-title"><span class="idx">13</span>Text messages</h2>
+      <p>If you opt in on the <a href="/support.html">support form</a>, ManualOS can text the mobile number you enter. The checkbox is optional, it starts unchecked, and consent is not a condition of purchase.</p>
+      <p>We text:</p>
+      <ul>
+        <li>support replies</li>
+        <li>account alerts</li>
+        <li>manual-status alerts</li>
+      </ul>
+      <div class="callout">
+        <ul>
+          <li>Message frequency varies.</li>
+          <li>Msg &amp; data rates may apply.</li>
+          <li>Reply STOP to opt out.</li>
+          <li>Reply HELP for help.</li>
+          <li>Email <a href="mailto:support@manualos.com">support@manualos.com</a> or use the <a href="/support.html">support form</a>.</li>
+        </ul>
+      </div>
+      <p>Mobile numbers and SMS opt-in consent are not shared with or sold to third parties or affiliates for marketing.</p>
+      <p>A messaging provider delivers those texts. It may use the number only to deliver them, not for its own marketing or for an affiliate's marketing.</p>
+      <p>The opt-in record is the mobile number, the version of the consent text, and the source, which is the website support form.</p>
+    </section>
+
+    <h2><span class="idx">14</span>Contact</h2>
+    <p>Op3x LLC, <span class="placeholder">[MAILING ADDRESS]</span>. Email: <a href="mailto:support@manualos.com">support@manualos.com</a>. <a href="/support.html">Support form</a>.</p>
+  </article>
+</main>
+<footer class="site-footer">
+  <div class="footer-inner">
+    <p class="footer-brand">ManualOS</p>
+    <p>Plain-English equipment manuals. Upload your PLC or CAD files.</p>
+    <nav class="footer-nav" aria-label="Footer">
+      <a href="/">Home</a>
+      <a href="/support.html">Support</a>
+      <a href="/privacy.html" aria-current="page">Privacy</a>
+      <a href="/terms.html">Terms</a>
+      <a href="mailto:support@manualos.com">support@manualos.com</a>
+    </nav>
+    <p class="legal">© 2026 ManualOS. manualos.com</p>
+  </div>
+</footer>
+</body>
+</html>

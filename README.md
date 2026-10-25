@@ -2,6 +2,8 @@
 
 Static site for [manualos.com](https://manualos.com). GitHub Pages serves these files. The API is a separate service at `https://manualforge-backend-production.up.railway.app`.
 
+GitHub Pages builds this folder with Jekyll. `_config.yml` excludes `dev/`, so the local mock and checks are not published. Do not add a `.nojekyll` file; that would skip the build and publish `dev/`.
+
 ## Upload page
 
 `upload.html` checks a paid Checkout session with `GET /verify-session?session_id=`, then accepts PLC programs, CAD models, or both.
