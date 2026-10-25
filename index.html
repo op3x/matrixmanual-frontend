@@ -88,8 +88,11 @@ a{color:var(--signal-blue)}
 .logo{display:inline-flex;align-items:center;gap:.55rem;min-height:2.75rem;color:var(--paper);text-decoration:none;font-weight:600;font-size:1.05rem;letter-spacing:-0.02em}
 .logo-mark{width:1.7rem;height:1.7rem;background:var(--steel);color:var(--paper);display:grid;place-items:center;font-size:.95rem;border-bottom:3px solid var(--beacon-amber)}
 .nav{display:flex;flex-wrap:wrap;align-items:center}
+.nav-links{display:flex;flex-wrap:wrap;align-items:center}
 .nav a{display:inline-flex;align-items:center;min-height:2.75rem;padding:.3rem .55rem;color:var(--paper);text-decoration:none;font-weight:600;font-size:.92rem}
 .nav a:hover{text-decoration:underline;text-underline-offset:.18em}
+.nav-toggle{display:none;align-items:center;justify-content:center;width:2.75rem;height:2.75rem;min-width:2.75rem;min-height:2.75rem;padding:0;border:1px solid var(--line);background:transparent;color:var(--paper);cursor:pointer}
+.nav-toggle-icon{width:1rem;height:2px;background:currentColor;box-shadow:0 -.4rem 0 currentColor,0 .4rem 0 currentColor}
 .btn{display:inline-flex;align-items:center;justify-content:center;min-height:2.75rem;padding:.55rem 1rem;font-family:var(--sans-strong);font-weight:600;font-size:1rem;line-height:1.2;text-align:center;text-decoration:none;border:1px solid var(--beacon-amber);cursor:pointer;background:var(--beacon-amber);color:var(--ink);border-radius:0}
 .btn:hover{background:var(--beacon-amber-hover);border-color:var(--beacon-amber-hover);color:var(--ink)}
 .nav a.btn{color:var(--ink)}
@@ -247,7 +250,10 @@ figcaption{padding:.75rem;border-top:1px solid var(--line);color:var(--paper)}
 @media(max-width:767px){
   .flow-to{transform:rotate(90deg);transform-origin:left center;height:1.25rem;justify-self:start}
   .bar,.nav{flex-wrap:nowrap}
-  .nav a:not(.btn){display:none}
+  .nav-toggle{display:inline-flex}
+  .nav-links{display:none;position:absolute;left:0;right:0;top:100%;z-index:20;flex-direction:column;align-items:stretch;gap:.15rem;padding:.5rem 1rem 1rem;background:var(--night);border-bottom:1px solid var(--line)}
+  .nav.is-open .nav-links{display:flex}
+  .nav-links a{min-width:2.75rem;padding:.55rem .2rem}
   .callouts{display:none}
   .fan-stage{margin-bottom:0}
   .hero-cta{flex-direction:column;align-items:stretch}
@@ -255,6 +261,8 @@ figcaption{padding:.75rem;border-top:1px solid var(--line);color:var(--paper)}
   .trust-strip{display:grid;gap:.4rem}
   .trust-strip li:not(:first-child)::before{content:none}
   .hero-film-video,.hero-film-toggle{display:none !important}
+  a:not(.btn):not(.logo){display:inline-block;max-width:100%;min-height:2.75rem;min-width:2.75rem;box-sizing:border-box}
+  .nav .nav-links a,.site-footer .footer-nav a{display:inline-flex;align-items:center;min-height:2.75rem;min-width:2.75rem}
 }
 @media(max-width:639px){
   .gallery .page-extra{display:none}
@@ -344,7 +352,7 @@ figcaption{padding:.75rem;border-top:1px solid var(--line);color:var(--paper)}
           "name": "Who can see my PLC program?",
           "acceptedAnswer": {
             "@type": "Answer",
-            "text": "ManualOS processes your files to write the manual. Extracted program logic, comments, and part details are sent to a third-party service provider that helps write the manual. We don’t use your files to train models, and that provider doesn’t train on API data by default. Uploaded files are processed and deleted when the job finishes and are not kept. The generated PDF stays on the server for up to 24 hours for download, then is deleted. Programs are not sold."
+            "text": "ManualOS processes your files to write the manual. Extracted program logic, comments, and part details are sent to a third-party service provider that helps write the manual. We don’t use your files to train models, and that provider doesn’t train on API data by default. Uploaded files are processed and deleted when the job finishes. The PDF is kept for 24 hours so you can download it again, and then it is deleted. Programs are not sold."
           }
         },
         {
@@ -367,10 +375,16 @@ figcaption{padding:.75rem;border-top:1px solid var(--line);color:var(--paper)}
   <div class="bar">
     <a class="logo" href="/"><span class="logo-mark" aria-hidden="true">M</span>ManualOS</a>
     <nav class="nav" aria-label="Primary">
-      <a href="#how">How it works</a>
-      <a href="#sample">Sample</a>
-      <a href="#pricing">Pricing</a>
-      <a href="#faq">FAQ</a>
+      <button type="button" class="nav-toggle" aria-expanded="false" aria-controls="primary-menu">
+        <span class="nav-toggle-icon" aria-hidden="true"></span>
+        <span class="sr-only" id="nav-toggle-label">Open menu</span>
+      </button>
+      <div class="nav-links" id="primary-menu">
+        <a href="#how">How it works</a>
+        <a href="#sample">Sample</a>
+        <a href="#pricing">Pricing</a>
+        <a href="#faq">FAQ</a>
+      </div>
       <a class="btn btn-nav" href="#pricing">Get started</a>
     </nav>
   </div>
@@ -495,7 +509,7 @@ figcaption{padding:.75rem;border-top:1px solid var(--line);color:var(--paper)}
       </ul>
       <div class="privacy">
         <h3>Privacy</h3>
-        <p>ManualOS processes your files to write the manual. Extracted program logic, comments, and part details are sent to a third-party service provider that helps write the manual. We don’t use your files to train models, and that provider doesn’t train on API data by default. Uploaded files are processed and deleted when the job finishes and are not kept. The generated PDF stays on the server for up to 24 hours for download, then is deleted. Programs are not sold. Card numbers are entered at secure checkout, not on this site.</p>
+        <p>ManualOS processes your files to write the manual. Extracted program logic, comments, and part details are sent to a third-party service provider that helps write the manual. We don’t use your files to train models, and that provider doesn’t train on API data by default. Uploaded files are processed and deleted when the job finishes. The PDF is kept for 24 hours so you can download it again, and then it is deleted. Programs are not sold. Card numbers are entered at secure checkout, not on this site.</p>
       </div>
     </section>
   </section>
@@ -793,7 +807,7 @@ figcaption{padding:.75rem;border-top:1px solid var(--line);color:var(--paper)}
     </div>
     <div class="faq-item">
       <h3>Who can see my PLC program?</h3>
-      <p>ManualOS processes your files to write the manual. Extracted program logic, comments, and part details are sent to a third-party service provider that helps write the manual. We don’t use your files to train models, and that provider doesn’t train on API data by default. Uploaded files are processed and deleted when the job finishes and are not kept. The generated PDF stays on the server for up to 24 hours for download, then is deleted. Programs are not sold.</p>
+      <p>ManualOS processes your files to write the manual. Extracted program logic, comments, and part details are sent to a third-party service provider that helps write the manual. We don’t use your files to train models, and that provider doesn’t train on API data by default. Uploaded files are processed and deleted when the job finishes. The PDF is kept for 24 hours so you can download it again, and then it is deleted. Programs are not sold.</p>
     </div>
     <div class="faq-item">
       <h3>Can I cancel Pro, and what about refunds?</h3>
@@ -812,11 +826,12 @@ figcaption{padding:.75rem;border-top:1px solid var(--line);color:var(--paper)}
       <a href="#pricing">Pricing</a>
       <a href="#faq">FAQ</a>
       <a href="/upload.html">Upload</a>
-      <a href="/sitemap.xml">Sitemap</a>
       <a href="mailto:support@manualos.com">support@manualos.com</a>
+      <a href="/terms.html">Terms</a>
+      <a href="/privacy.html">Privacy</a>
+      <a href="/refunds.html">Refunds</a>
     </nav>
-    <p class="legal">© 2026 ManualOS. manualos.com</p>
-    <p class="legal">Operated by Op3x LLC</p>
+    <p class="legal">© 2026 Op3x LLC. ManualOS is a product of Op3x LLC.</p>
   </div>
 </footer>
 <script>
@@ -862,6 +877,49 @@ figcaption{padding:.75rem;border-top:1px solid var(--line);color:var(--paper)}
       checkoutError.focus();
     }
   }
+})();
+</script>
+<script>
+(function () {
+  var nav = document.querySelector('.nav');
+  var toggle = document.querySelector('.nav-toggle');
+  var menu = document.getElementById('primary-menu');
+  var label = document.getElementById('nav-toggle-label');
+  if (!nav || !toggle || !menu) return;
+
+  function setOpen(open, options) {
+    var opts = options || {};
+    nav.classList.toggle('is-open', open);
+    toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+    if (label) label.textContent = open ? 'Close menu' : 'Open menu';
+    if (open && opts.focusFirst) {
+      var first = menu.querySelector('a');
+      if (first) first.focus();
+    }
+    if (!open && opts.restoreFocus) toggle.focus();
+  }
+
+  toggle.addEventListener('click', function () {
+    var open = toggle.getAttribute('aria-expanded') !== 'true';
+    setOpen(open, { focusFirst: open });
+  });
+
+  document.addEventListener('keydown', function (event) {
+    if (event.key !== 'Escape') return;
+    if (toggle.getAttribute('aria-expanded') !== 'true') return;
+    setOpen(false, { restoreFocus: true });
+  });
+
+  menu.addEventListener('click', function (event) {
+    if (event.target.closest('a')) setOpen(false);
+  });
+
+  nav.addEventListener('focusout', function (event) {
+    if (toggle.getAttribute('aria-expanded') !== 'true') return;
+    var next = event.relatedTarget;
+    if (next && nav.contains(next)) return;
+    setOpen(false);
+  });
 })();
 </script>
 </body>

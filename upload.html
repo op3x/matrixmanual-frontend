@@ -10,6 +10,7 @@
   <link rel="manifest" href="/site.webmanifest">
   <meta name="description" content="Upload your PLC or CAD files after checkout. ManualOS checks your plan, then writes a plain-English PDF.">
   <meta name="robots" content="noindex">
+  <meta name="referrer" content="no-referrer">
   <link rel="canonical" href="https://manualos.com/upload.html">
   <meta name="theme-color" content="#f3f0e6">
   <link rel="preconnect" href="https://manualforge-backend-production.up.railway.app" crossorigin>
@@ -27,11 +28,20 @@
     .skip-link{position:absolute;left:.75rem;top:-3rem;background:var(--ink);color:var(--paper);padding:.7rem 1rem;z-index:20;text-decoration:none}
     .skip-link:focus{top:.5rem}
     header{position:sticky;top:0;z-index:100;background:var(--paper);border-bottom:1px solid var(--ink)}
-    nav{display:flex;align-items:center;justify-content:space-between;gap:.75rem;flex-wrap:nowrap;padding:.35rem .85rem;max-width:76rem;margin:0 auto;width:100%}
+    nav{display:flex;align-items:center;justify-content:space-between;gap:.75rem;flex-wrap:wrap;padding:.35rem .85rem;max-width:76rem;margin:0 auto;width:100%}
     .nav-logo{font-family:"IBM Plex Sans",Arial,sans-serif;font-size:1.05rem;font-weight:600;letter-spacing:-.02em;color:var(--ink);text-decoration:none;display:flex;align-items:center;gap:.55rem;min-height:2.75rem}
     .nav-logo-icon{width:1.7rem;height:1.7rem;background:var(--ink);color:var(--paper);display:flex;align-items:center;justify-content:center;font-weight:600;font-size:.95rem;border-bottom:3px solid var(--yellow);border-radius:0}
-    .nav-back{font-size:.95rem;font-weight:600;color:var(--ink);text-decoration:underline;text-underline-offset:.15em;display:inline-flex;align-items:center;min-height:2.75rem;padding:.4rem .2rem}
-    .nav-back:hover{background:var(--yellow);text-decoration:none}
+    .nav-back,.nav-signout{font-size:.95rem;font-weight:600;color:var(--ink);text-decoration:underline;text-underline-offset:.15em;display:inline-flex;align-items:center;min-height:2.75rem;min-width:2.75rem;padding:.4rem .2rem;background:transparent;border:0;cursor:pointer;font-family:inherit}
+    .nav-back:hover,.nav-signout:hover{background:var(--yellow);text-decoration:none}
+    .nav-actions{display:flex;align-items:center;gap:.35rem}
+    .site-footer{background:#0B1622;color:#F4F6F8;margin-top:auto;border-top:4px solid #34C77B;padding:2.5rem 1rem 2.75rem}
+    .site-footer a{color:#F4F6F8;text-decoration:underline;text-underline-offset:.15em}
+    .site-footer a:hover{color:#34C77B}
+    .footer-inner{max-width:75rem;margin:0 auto;display:grid;gap:1rem}
+    .footer-brand{margin:0;font-size:1.15rem;font-weight:600;letter-spacing:-.02em;color:#F4F6F8}
+    .footer-nav{display:flex;flex-wrap:wrap;gap:.15rem 1rem}
+    .footer-nav a{display:inline-flex;align-items:center;min-height:2.75rem;min-width:2.75rem;font-weight:600;color:#F4F6F8}
+    .legal{margin:0;color:#B8C4D0}
     main{flex:1;max-width:46rem;margin:1.25rem auto 3rem;padding:0 .85rem;width:100%}
     .page-eyebrow{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:.72rem;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--ink);margin-bottom:.45rem}
     h1,h2,legend{font-family:"IBM Plex Sans",Arial,sans-serif;font-weight:600;color:var(--ink);line-height:1.15;letter-spacing:-.02em}
@@ -117,7 +127,8 @@
     html.has-session #access-pricing-link{grid-column:2;grid-row:2;flex:none;align-self:start;justify-self:end;margin-top:0;padding-top:calc(.75rem + 1px);min-height:2.75rem;width:7.4rem;justify-content:flex-end;white-space:nowrap}
     html.has-session #access-pricing-link[hidden]{display:inline-flex !important;visibility:hidden}
     html.has-session #access-pricing-link:not([hidden]){display:inline-flex !important;visibility:visible}
-    html.has-session #payment-welcome{display:grid !important;grid-column:1;grid-row:2;margin:0}
+    html.awaiting-welcome #payment-welcome,
+    html.has-session #payment-welcome:not([hidden]){display:grid !important;grid-column:1;grid-row:2;margin:0}
     html.has-session #access-message[aria-hidden="true"]{min-height:0;height:0;overflow:hidden;padding:0;margin:0;border:0}
     html.has-session .access-banner:has(#access-message[aria-hidden="true"]){row-gap:0}
     #payment-welcome.is-locked{background:transparent;border-color:transparent;color:inherit;min-height:4rem}
@@ -139,6 +150,11 @@
       .fields{grid-template-columns:1fr 1fr}
       main{margin-top:2rem}
     }
+    @media (max-width:767px){
+      a:not(.btn):not(.nav-logo),button,.file-remove,summary{min-height:2.75rem;min-width:2.75rem}
+      a:not(.btn):not(.nav-logo){display:inline-block;max-width:100%;box-sizing:border-box}
+      .footer-nav a,.nav-back,.nav-signout{display:inline-flex;align-items:center}
+    }
     @media (max-width:480px){
       main{margin:1rem auto 2.5rem}
       .upload-box{padding:1.15rem .85rem}
@@ -153,6 +169,15 @@
   </style>
   <script>
     document.documentElement.classList.add('has-session');
+    (function () {
+      var fromQuery = '';
+      var stored = '';
+      try { fromQuery = (new URLSearchParams(location.search).get('session_id') || '').trim(); } catch (err) {}
+      try { stored = (localStorage.getItem('manualos_session_id') || '').trim(); } catch (err) {}
+      var token = '';
+      try { token = (sessionStorage.getItem('manualos_access_token') || '').trim(); } catch (err) {}
+      if (fromQuery || (!stored && !token)) document.documentElement.classList.add('awaiting-welcome');
+    })();
   </script>
 </head>
 <body data-phase="checking">
@@ -160,7 +185,10 @@
 <header>
 <nav>
   <a class="nav-logo" href="/"><span class="nav-logo-icon" aria-hidden="true">M</span>ManualOS</a>
-  <a class="nav-back" href="/#pricing">&#8592; Back to pricing</a>
+  <div class="nav-actions">
+    <button type="button" id="sign-out" class="nav-signout" hidden>Sign out</button>
+    <a class="nav-back" href="/#pricing">&#8592; Back to pricing</a>
+  </div>
 </nav>
 </header>
 <main id="main" tabindex="-1">
@@ -198,7 +226,7 @@
       <div class="upload-box is-disabled" id="drop-zone" aria-disabled="true">
         <div class="upload-icon" aria-hidden="true"><span class="doc-mark">FILE</span></div>
         <h2 id="drop-title">Drag and drop files here</h2>
-        <p id="drop-help">.L5X, .L5K, .scl, .st, .exp, PLCopen .xml, .TcPOU, .csv, .xlsx, or a zip of those.</p>
+        <p id="drop-help">Drop files here, or choose them.</p>
         <div class="choose-wrap">
           <input class="sr-only" type="file" id="file-input" multiple disabled>
           <label class="btn-primary" for="file-input" id="choose-label">Choose files</label>
@@ -237,7 +265,7 @@
   </section>
   <section class="export-help" id="export-help" aria-labelledby="export-title">
     <h2 id="export-title">How to export your file</h2>
-    <p class="export-intro">PLC: .L5X, .L5K, .scl, .st, .exp, PLCopen .xml, and .TcPOU. Tag lists: .csv and .xlsx. A tag-table XML is tags only, not the program. CAD: .step and .stp, .iges and .igs, and ASCII .dxf. Archives: a .zip of those files.</p>
+    <p class="export-intro">Follow the steps for the format you have.</p>
     <details class="export">
       <summary>.L5X and .L5K</summary>
       <p>Export the controller program as .L5X. That file is an XML export of the program, including ladder. The older .L5K text export is the same kind of save, with the .L5K type. Upload the .L5X or .L5K file.</p>
@@ -263,30 +291,39 @@
       <p>From the CAD tool, use Save As or Export. Choose STEP (.step or .stp), IGES (.iges or .igs), or ASCII DXF (.dxf). STEP AP214 and AP242 are both fine. STEP and IGES are the 3D model. DXF is a 2D drawing. You can zip several of them.</p>
     </details>
   </section>
-  <section class="platforms" aria-labelledby="platforms-label">
-    <h2 class="platforms-label" id="platforms-label">Accepted files</h2>
-    <ul class="platform-tags">
-      <li>.L5X and .L5K</li>
-      <li>.scl, .st, and .exp</li>
-      <li>.TcPOU</li>
-      <li>PLCopen .xml</li>
-      <li>.csv and .xlsx tag lists</li>
-      <li>.step, .stp, .iges, .igs</li>
-      <li>ASCII .dxf</li>
-      <li>.zip of these</li>
-    </ul>
-  </section>
 </main>
+<footer class="site-footer">
+  <div class="footer-inner">
+    <p class="footer-brand">ManualOS</p>
+    <p>Plain-English equipment manuals. Upload your PLC or CAD files.</p>
+    <nav class="footer-nav" aria-label="Footer">
+      <a href="/#how">How it works</a>
+      <a href="/#sample">Sample</a>
+      <a href="/#pricing">Pricing</a>
+      <a href="/#faq">FAQ</a>
+      <a href="/upload.html">Upload</a>
+      <a href="mailto:support@manualos.com">support@manualos.com</a>
+      <a href="/terms.html">Terms</a>
+      <a href="/privacy.html">Privacy</a>
+      <a href="/refunds.html">Refunds</a>
+    </nav>
+    <p class="legal">© 2026 Op3x LLC. ManualOS is a product of Op3x LLC.</p>
+  </div>
+</footer>
 <script>
 (function () {
   // POST /jobs is the preferred upload (async progress, up to 25 files). It is not
-  // deployed on production yet. When POST /jobs returns 404, this page falls back
-  // to POST /generate-manual for the first PLC file so the current site keeps working.
-  // ?jobs=0 always uses the current generator. ?jobs=1 never falls back.
+  // deployed on production yet. When POST /jobs returns 404 without a purchase code,
+  // this page falls back to POST /generate-manual for the first PLC file so the
+  // current site keeps working. ?jobs=0 always uses the current generator.
+  // ?jobs=1 never falls back. Checkout session_id is exchanged for a bearer token.
+  // When that exchange is unavailable, the page still sends session_id.
   // On localhost the API is the page origin (see dev/mock-api.mjs). On manualos.com
   // it is the production API host. A localhost ?api= override must also be local.
   var PRODUCTION_API = 'https://manualforge-backend-production.up.railway.app';
   var SESSION_STORAGE_KEY = 'manualos_session_id';
+  var CHECKOUT_STORAGE_KEY = 'manualos_checkout_session';
+  var TOKEN_STORAGE_KEY = 'manualos_access_token';
   var MAX_FILES = 25;
   var MAX_BYTES = 50 * 1024 * 1024;
   var PLC_EXT = ['l5x', 'l5k', 'xml', 'tcpou', 'st', 'scl', 'exp', 'csv', 'xlsx', 'acd', 'zip'];
@@ -311,14 +348,17 @@
     both: 'Add the PLC program and the CAD model together. They are written up as one manual. You can mix the PLC types above with STEP, IGES, or DXF, including a zip. Up to 25 files, 50 MB each.'
   };
   var DROP_HELP = {
-    plc: '.L5X, .L5K, .scl, .st, .exp, PLCopen .xml, .TcPOU, .csv, .xlsx, or a zip of those.',
-    cad: 'STEP, IGES, DXF, or a zip of those.',
-    both: 'PLC program files and CAD files together, or a zip of both.'
+    plc: 'Drop files here, or choose them.',
+    cad: 'Drop files here, or choose them.',
+    both: 'Drop files here, or choose them.'
   };
+  var FILE_LIMIT_MESSAGE = 'You can add up to 25 files.';
 
   var apiBase = resolveApiBase();
   var sessionId = '';
   var sessionFromQuery = false;
+  var accessToken = '';
+  var compatSession = false;
   var uploadEnabled = false;
   var busy = false;
   var runToken = 0;
@@ -505,13 +545,15 @@
     var welcomeText = document.getElementById('payment-welcome-text');
     if (welcomeText) welcomeText.textContent = '';
     document.documentElement.classList.remove('has-session');
+    document.documentElement.classList.remove('awaiting-welcome');
   }
 
   function fillReservedWelcome(message, locked) {
-    if (!document.documentElement.classList.contains('has-session')) {
+    if (!message) {
       dismissWelcome();
       return;
     }
+    document.documentElement.classList.add('has-session');
     var welcomeText = document.getElementById('payment-welcome-text');
     if (welcomeText) welcomeText.textContent = message || '';
     if (paymentWelcome) {
@@ -526,16 +568,127 @@
     var fromQuery = (params.get('session_id') || '').trim();
     if (fromQuery) {
       sessionFromQuery = true;
-      try { localStorage.setItem(SESSION_STORAGE_KEY, fromQuery); } catch (err) {}
+      try { sessionStorage.setItem(CHECKOUT_STORAGE_KEY, fromQuery); } catch (err) {}
       return fromQuery;
     }
+    try {
+      var remembered = (sessionStorage.getItem(CHECKOUT_STORAGE_KEY) || '').trim();
+      if (remembered) return remembered;
+    } catch (err) {}
     try { return (localStorage.getItem(SESSION_STORAGE_KEY) || '').trim(); } catch (err) { return ''; }
+  }
+
+  function loadStoredToken() {
+    accessToken = '';
+    try {
+      var raw = sessionStorage.getItem(TOKEN_STORAGE_KEY) || '';
+      if (!raw) return;
+      var parsed = JSON.parse(raw);
+      if (!parsed || typeof parsed.access_token !== 'string' || !parsed.access_token.trim()) return;
+      var expiresAt = parsed.expires_at ? Date.parse(parsed.expires_at) : 0;
+      if (expiresAt && expiresAt <= Date.now()) {
+        sessionStorage.removeItem(TOKEN_STORAGE_KEY);
+        return;
+      }
+      accessToken = parsed.access_token.trim();
+    } catch (err) {
+      accessToken = '';
+    }
+  }
+
+  function saveToken(data) {
+    accessToken = String(data.access_token || '').trim();
+    compatSession = false;
+    var expiresAt = data.expires_at || '';
+    if (!expiresAt && data.expires_in) {
+      expiresAt = new Date(Date.now() + Number(data.expires_in) * 1000).toISOString();
+    }
+    try {
+      sessionStorage.setItem(TOKEN_STORAGE_KEY, JSON.stringify({
+        access_token: accessToken,
+        expires_at: expiresAt
+      }));
+    } catch (err) {}
+  }
+
+  function credentialHeaders(extra) {
+    var headers = {};
+    if (extra) {
+      Object.keys(extra).forEach(function (key) { headers[key] = extra[key]; });
+    }
+    if (accessToken) headers.Authorization = 'Bearer ' + accessToken;
+    else if (sessionId) headers['X-Session-Id'] = sessionId;
+    return headers;
+  }
+
+  function appendCredential(formData) {
+    if (!accessToken && sessionId) formData.append('session_id', sessionId);
+  }
+
+  function purchaseMessage(data, status) {
+    var code = data && (data.code || data.error_code || data.errorCode);
+    if (typeof code === 'string') code = code.trim().toLowerCase();
+    else code = '';
+    var server = safeServerMessage(data);
+    if (status === 404 || code === 'purchase_not_found' || code === 'session_not_found' || code === 'not_found' || code === 'unknown_session') {
+      return 'This purchase wasn\u2019t found. Choose a plan to generate manuals.';
+    }
+    if (status === 403 || code === 'purchase_inactive' || code === 'session_inactive' || code === 'not_active') {
+      if (server && !/not active/i.test(server)) return server;
+      return 'This purchase isn\u2019t active. Choose a plan to generate manuals.';
+    }
+    if (server && /refund|dispute|suspended/i.test(server)) return server;
+    if (!data || !data.plan) return 'This purchase wasn\u2019t found. Choose a plan to generate manuals.';
+    return 'This purchase isn\u2019t active. Choose a plan to generate manuals.';
+  }
+
+  function syncSignOut() {
+    var button = document.getElementById('sign-out');
+    if (!button) return;
+    button.hidden = !(sessionId || accessToken);
+  }
+
+  function stripSessionFromUrl() {
+    try {
+      var url = new URL(window.location.href);
+      if (!url.searchParams.has('session_id')) return;
+      url.searchParams.delete('session_id');
+      var next = url.pathname + url.search + url.hash;
+      history.replaceState(null, '', next);
+    } catch (err) {}
+  }
+
+  function clearStoredAccess() {
+    try { localStorage.removeItem(SESSION_STORAGE_KEY); } catch (err) {}
+    try { sessionStorage.removeItem(TOKEN_STORAGE_KEY); } catch (err) {}
+    try { sessionStorage.removeItem(CHECKOUT_STORAGE_KEY); } catch (err) {}
+    try { sessionStorage.removeItem(SESSION_STORAGE_KEY); } catch (err) {}
+  }
+
+  function signOut() {
+    var token = accessToken;
+    accessToken = '';
+    sessionId = '';
+    sessionFromQuery = false;
+    compatSession = false;
+    clearStoredAccess();
+    stripSessionFromUrl();
+    syncSignOut();
+    resetComposer();
+    lockUpload('No purchase found on this browser. Choose a plan to generate manuals.');
+    if (!token) return;
+    fetch(apiBase + '/access-token/revoke', {
+      method: 'POST',
+      headers: { Authorization: 'Bearer ' + token },
+      cache: 'no-store'
+    }).catch(function () {});
   }
 
   function lockUpload(message) {
     setUploadEnabled(false);
     showAccess('', { showPricing: true, ok: false, hideMessage: true });
     fillReservedWelcome(message, true);
+    syncSignOut();
     if (document.body.dataset.phase !== 'progress' && document.body.dataset.phase !== 'success') setPhase('locked');
   }
 
@@ -550,7 +703,9 @@
       return;
     }
     setUploadEnabled(true);
-    showAccess(planLabel(data.plan) + ' plan \u00b7 ' + remainingLabel(data.remaining), { showPricing: false, ok: true });
+    var accessLine = planLabel(data.plan) + ' plan \u00b7 ' + remainingLabel(data.remaining);
+    if (data.billingIssue) accessLine += ' Payment needs attention.';
+    showAccess(accessLine, { showPricing: false, ok: true });
     if (document.body.dataset.phase !== 'progress' && document.body.dataset.phase !== 'success' && document.body.dataset.phase !== 'error') {
       setPhase('ready');
     }
@@ -563,29 +718,141 @@
     }
   }
 
+  async function exchangeSession(id) {
+    var res;
+    try {
+      res = await fetch(apiBase + '/access-token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ session_id: id }),
+        cache: 'no-store'
+      });
+    } catch (err) {
+      return { network: true };
+    }
+    var data = {};
+    try { data = await res.json(); } catch (err) { data = {}; }
+    if (res.status === 503) {
+      compatSession = true;
+      accessToken = '';
+      try { sessionStorage.removeItem(TOKEN_STORAGE_KEY); } catch (err) {}
+      try { localStorage.setItem(SESSION_STORAGE_KEY, id); } catch (err) {}
+      return { compat: true };
+    }
+    if (!res.ok || !data.access_token) {
+      accessToken = '';
+      try { sessionStorage.removeItem(TOKEN_STORAGE_KEY); } catch (err) {}
+      lockUpload(purchaseMessage(data, res.status));
+      return { error: true };
+    }
+    saveToken(data);
+    try { localStorage.removeItem(SESSION_STORAGE_KEY); } catch (err) {}
+    applySession(data);
+    syncSignOut();
+    return { ok: true, data: data };
+  }
+
   async function verifySession(options) {
     var keepAccessOnError = !!(options && options.keepAccessOnError);
-    if (!sessionId) {
+    if (!accessToken && !sessionId) {
       lockUpload('No purchase found on this browser. Choose a plan to generate manuals.');
       return null;
     }
+    var url = apiBase + '/verify-session';
+    var headers = {};
+    if (accessToken) headers.Authorization = 'Bearer ' + accessToken;
+    else url += '?session_id=' + encodeURIComponent(sessionId);
     var res;
     try {
-      res = await fetch(apiBase + '/verify-session?session_id=' + encodeURIComponent(sessionId), { cache: 'no-store' });
+      res = await fetch(url, { headers: headers, cache: 'no-store' });
     } catch (err) {
       if (!keepAccessOnError) lockUpload('We couldn\u2019t check your purchase just now. Refresh the page, or choose a plan.');
       return null;
     }
     var data = {};
     try { data = await res.json(); } catch (err) { data = {}; }
+    if (res.status === 401 && sessionId && accessToken) {
+      var refreshed = await exchangeSession(sessionId);
+      if (refreshed.ok) return refreshed.data;
+      if (refreshed.compat) return verifySession(options);
+      return null;
+    }
     if (!res.ok || !data.valid) {
       if (!(keepAccessOnError && !res.ok)) {
-        lockUpload('This purchase isn\u2019t active. Choose a plan to generate manuals.');
+        lockUpload(purchaseMessage(data, res.status));
       }
       return null;
     }
     applySession(data);
+    syncSignOut();
     return data;
+  }
+
+  async function restoreReadyJobs() {
+    if (!accessToken && !sessionId) return;
+    var res;
+    try {
+      res = await fetch(apiBase + '/jobs', { headers: credentialHeaders(), cache: 'no-store' });
+    } catch (err) {
+      return;
+    }
+    if (res.status === 401 && sessionId) {
+      var refreshed = await exchangeSession(sessionId);
+      if (!refreshed.ok) return;
+      try {
+        res = await fetch(apiBase + '/jobs', { headers: credentialHeaders(), cache: 'no-store' });
+      } catch (err) {
+        return;
+      }
+    }
+    if (!res.ok) return;
+    var data = await readJson(res);
+    var jobs = Array.isArray(data.jobs) ? data.jobs : [];
+    var ready = jobs.filter(function (job) {
+      if (!job || job.status !== 'succeeded' || !job.id) return false;
+      if (!job.expiresAt) return true;
+      var expiresAt = Date.parse(job.expiresAt);
+      return !Number.isFinite(expiresAt) || expiresAt > Date.now();
+    });
+    if (!ready.length) return;
+    var job = ready[0];
+    var saved = await fetchJobPdf(job.id, runToken, { quiet: true });
+    if (!saved) return;
+    if (job.filename) downloadLink.setAttribute('download', job.filename);
+    successSub.textContent = 'Your PDF is ready. Download it here. This copy stays available for 24 hours.';
+    dismissWelcome();
+    uploadSection.hidden = true;
+    successSection.hidden = false;
+    setBusy(false);
+    setPhase('success');
+    setStage('done');
+  }
+
+  async function bootAccess() {
+    loadStoredToken();
+    sessionId = readSessionId();
+    if (sessionId) {
+      var exchanged = await exchangeSession(sessionId);
+      stripSessionFromUrl();
+      if (exchanged.network) {
+        lockUpload('We couldn\u2019t check your purchase just now. Refresh the page, or choose a plan.');
+        return;
+      }
+      if (exchanged.error) return;
+      if (exchanged.compat) {
+        var compatVerified = await verifySession();
+        if (compatVerified) await restoreReadyJobs();
+        return;
+      }
+      await restoreReadyJobs();
+      return;
+    }
+    if (accessToken) {
+      var verified = await verifySession();
+      if (verified) await restoreReadyJobs();
+      return;
+    }
+    lockUpload('No purchase found on this browser. Choose a plan to generate manuals.');
   }
 
   function syncSource() {
@@ -619,6 +886,7 @@
     var incoming = Array.prototype.slice.call(fileListLike || []);
     if (!incoming.length) return;
     var errors = [];
+    var limitHit = false;
     var source = currentSource();
     incoming.forEach(function (file) {
       var reason = rejectReason(file, source);
@@ -627,7 +895,7 @@
         return;
       }
       if (selectedFiles.length >= MAX_FILES) {
-        errors.push('You can add up to 25 files.');
+        limitHit = true;
         return;
       }
       var duplicate = selectedFiles.some(function (item) {
@@ -640,6 +908,7 @@
       fileSeq += 1;
       selectedFiles.push({ id: String(fileSeq), file: file });
     });
+    if (limitHit) errors.push(FILE_LIMIT_MESSAGE);
     renderFiles();
     updateGenerateButton();
     if (errors.length) showUploadError(errors, { keepPhase: true });
@@ -745,6 +1014,23 @@
 
   function friendlyHttpError(status, data) {
     var server = safeServerMessage(data);
+    var code = data && typeof data.code === 'string' ? data.code : '';
+    if (code === 'too_many_files' || server === 'Upload failed.' || /too many files/i.test(server) || /up to 25 files/i.test(server)) {
+      return { message: FILE_LIMIT_MESSAGE, server: '' };
+    }
+    if (code === 'field_too_long') {
+      return { message: server || 'One of those fields is too long. Shorten it and try again. This did not use a credit.', server: '' };
+    }
+    if (code === 'purchase_not_found' || status === 404 && code) {
+      return { message: 'This purchase wasn\u2019t found. Choose a plan to generate manuals.', pricing: true, server: '' };
+    }
+    if (status === 403 || code === 'purchase_inactive') {
+      if (server && !/not active/i.test(server)) return { message: server, pricing: true, server: '' };
+      return { message: 'This purchase isn\u2019t active. Choose a plan to generate manuals.', pricing: true, server: '' };
+    }
+    if (status === 402 && server && /refund|dispute|suspended/i.test(server)) {
+      return { message: server, pricing: false, server: '' };
+    }
     if (status === 402) {
       return { message: 'There are no manuals left on this plan, or the purchase isn’t active. No credit was used.', pricing: true, server: server };
     }
@@ -846,12 +1132,13 @@
 
   async function pollJob(id, token) {
     var failures = 0;
+    var refreshed = false;
     while (token === runToken) {
       var res;
       try {
         res = await fetch(apiBase + '/jobs/' + encodeURIComponent(id), {
           cache: 'no-store',
-          headers: { 'X-Session-Id': sessionId }
+          headers: credentialHeaders()
         });
         failures = 0;
       } catch (err) {
@@ -864,6 +1151,20 @@
         continue;
       }
       if (token !== runToken) return null;
+      if (res.status === 401 && !refreshed && sessionId) {
+        refreshed = true;
+        var again = await exchangeSession(sessionId);
+        if (again.ok || again.compat) continue;
+        resetProgress();
+        setBusy(false);
+        return null;
+      }
+      if (res.status === 401) {
+        resetProgress();
+        setBusy(false);
+        showUploadError('Your sign-in expired. Refresh the page and try again.');
+        return null;
+      }
       if (res.status === 404) {
         resetProgress();
         setBusy(false);
@@ -908,10 +1209,13 @@
     setBusy(false);
     setPhase('success');
     setStage('done');
+    if (downloadLink.getAttribute('href')) downloadLink.click();
     successSection.focus();
   }
 
-  async function fetchJobPdf(id, token) {
+  async function fetchJobPdf(id, token, options) {
+    var quiet = !!(options && options.quiet);
+    var refreshed = false;
     var attempt;
     for (attempt = 0; attempt < 5; attempt += 1) {
       if (token !== runToken) return false;
@@ -919,21 +1223,29 @@
       try {
         res = await fetch(apiBase + '/jobs/' + encodeURIComponent(id) + '/pdf', {
           cache: 'no-store',
-          headers: { 'X-Session-Id': sessionId }
+          headers: credentialHeaders()
         });
       } catch (err) {
         await sleep(600);
         continue;
+      }
+      if (res.status === 401 && !refreshed && sessionId) {
+        refreshed = true;
+        var again = await exchangeSession(sessionId);
+        if (again.ok || again.compat) continue;
+        return false;
       }
       if (res.status === 409) {
         await sleep(600);
         continue;
       }
       if (!res.ok) {
-        var errBody = await readJson(res);
-        showUploadError(res.status === 404
-          ? 'This manual isn’t available. It may have expired after 24 hours.'
-          : (friendlyHttpError(res.status, errBody).message));
+        if (!quiet) {
+          var errBody = await readJson(res);
+          showUploadError(res.status === 404
+            ? 'This manual isn’t available. It may have expired after 24 hours.'
+            : (friendlyHttpError(res.status, errBody).message));
+        }
         return false;
       }
       var buffer = await res.arrayBuffer();
@@ -945,7 +1257,7 @@
       await savePdfBlob(buffer);
       return true;
     }
-    showUploadError('The manual isn’t ready to download yet. Wait a moment and try again.');
+    if (!quiet) showUploadError('The manual isn’t ready to download yet. Wait a moment and try again.');
     return false;
   }
 
@@ -985,13 +1297,13 @@
     formData.append('file', file, file.name);
     formData.append('brand', (document.getElementById('manufacturer_name').value || '').trim());
     formData.append('sections', JSON.stringify([]));
-    formData.append('session_id', sessionId);
+    appendCredential(formData);
     appendEquipment(formData);
     var res;
     try {
       res = await fetch(apiBase + '/generate-manual', {
         method: 'POST',
-        headers: { 'X-Session-Id': sessionId },
+        headers: credentialHeaders(),
         body: formData
       });
     } catch (err) {
@@ -1028,8 +1340,12 @@
 
   async function handleGenerate() {
     if (busy) return;
-    if (!uploadEnabled || !sessionId) {
+    if (!uploadEnabled || (!sessionId && !accessToken)) {
       lockUpload('No purchase found on this browser. Choose a plan to generate manuals.');
+      return;
+    }
+    if (selectedFiles.length > MAX_FILES) {
+      showUploadError(FILE_LIMIT_MESSAGE, { keepPhase: true });
       return;
     }
     if (!selectedFiles.length) {
@@ -1056,13 +1372,13 @@
     }
     var formData = new FormData();
     payloadFiles.forEach(function (file) { formData.append('files', file, file.name); });
-    formData.append('session_id', sessionId);
+    appendCredential(formData);
     appendEquipment(formData);
     var res;
     try {
       res = await fetch(apiBase + '/jobs', {
         method: 'POST',
-        headers: { 'X-Session-Id': sessionId },
+        headers: credentialHeaders(),
         body: formData
       });
     } catch (err) {
@@ -1074,19 +1390,31 @@
       return;
     }
     if (token !== runToken) return;
-    if (res.status === 404 && mode === 'auto') {
-      await startLegacy(token, payloadFiles, true);
-      if (token === runToken) generateBtn.textContent = 'Generate my manual';
-      return;
+    if (res.status === 404) {
+      var missing = await readJson(res);
+      var missingCode = missing && typeof missing.code === 'string' ? missing.code : '';
+      if (missingCode === 'purchase_not_found') {
+        resetProgress();
+        setBusy(false);
+        generateBtn.textContent = 'Generate my manual';
+        var missingError = friendlyHttpError(res.status, missing);
+        showUploadError(missingError.message, { server: missingError.server, pricing: missingError.pricing });
+        return;
+      }
+      if (mode === 'auto') {
+        await startLegacy(token, payloadFiles, true);
+        if (token === runToken) generateBtn.textContent = 'Generate my manual';
+        return;
+      }
+      if (mode === 'jobs') {
+        resetProgress();
+        setBusy(false);
+        generateBtn.textContent = 'Generate my manual';
+        showUploadError('The multi-file generator isn’t available on this server yet. Nothing was charged.');
+        return;
+      }
     }
     var data = await readJson(res);
-    if (res.status === 404 && mode === 'jobs') {
-      resetProgress();
-      setBusy(false);
-      generateBtn.textContent = 'Generate my manual';
-      showUploadError('The multi-file generator isn’t available on this server yet. Nothing was charged.');
-      return;
-    }
     if (res.status !== 202 || !data.id) {
       resetProgress();
       setBusy(false);
@@ -1188,9 +1516,31 @@
     verifySession({ keepAccessOnError: true });
   });
 
+  document.getElementById('sign-out').addEventListener('click', function () {
+    signOut();
+  });
+
+  window.addEventListener('pageshow', function (event) {
+    if (!event.persisted) return;
+    var token = '';
+    var stored = '';
+    var checkout = '';
+    var query = '';
+    try { token = (sessionStorage.getItem(TOKEN_STORAGE_KEY) || '').trim(); } catch (err) {}
+    try { stored = (localStorage.getItem(SESSION_STORAGE_KEY) || '').trim(); } catch (err) {}
+    try { checkout = (sessionStorage.getItem(CHECKOUT_STORAGE_KEY) || '').trim(); } catch (err) {}
+    try { query = (new URLSearchParams(location.search).get('session_id') || '').trim(); } catch (err) {}
+    if (token || stored || checkout || query) return;
+    accessToken = '';
+    sessionId = '';
+    sessionFromQuery = false;
+    compatSession = false;
+    syncSignOut();
+    lockUpload('No purchase found on this browser. Choose a plan to generate manuals.');
+  });
+
   syncSource();
-  sessionId = readSessionId();
-  verifySession();
+  bootAccess();
 })();
 </script>
 </body>
