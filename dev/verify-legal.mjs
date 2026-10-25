@@ -22,7 +22,7 @@ const shotDir = process.env.SCREENSHOT_DIR || '/opt/cursor/artifacts/screenshots
 const chromePath = process.env.CHROME_PATH || '/usr/bin/google-chrome';
 const axePath = '/tmp/manualos-test/node_modules/axe-core/axe.min.js';
 const pages = ['index.html', 'upload.html', '404.html', 'privacy.html', 'terms.html', 'support.html'];
-const CONSENT = 'I agree to receive support text messages from ManualOS at this number. Msg frequency varies. Msg & data rates may apply. Reply STOP to opt out, HELP for help. Consent is not a condition of purchase.';
+const CONSENT = 'I agree to receive text messages from ManualOS at this number: support replies, account alerts, and manual-status alerts. Msg frequency varies. Msg & data rates may apply. Reply STOP to opt out, HELP for help. Consent is not a condition of purchase.';
 
 function read(name) {
   return readFile(path.join(root, name), 'utf8');
@@ -98,6 +98,7 @@ async function main() {
     for (const href of ['/support.html', '/privacy.html', '/terms.html']) {
       if (!footer.includes('href="' + href + '"')) throw new Error(name + ' footer missing ' + href);
     }
+    if (footer.includes('/refunds.html')) throw new Error(name + ' footer still links refunds.html');
     if (/hello@manualos\.com/i.test(html[name])) throw new Error(name + ' still uses hello@');
   }
 
@@ -122,19 +123,47 @@ async function main() {
     if (!html[name].includes('250 Trent Lane, Loves Park, IL 61111')) throw new Error(name + ' missing mailing address');
     if (/\[MAILING ADDRESS\]|\[EFFECTIVE DATE\]/.test(html[name])) throw new Error(name + ' still uses an old placeholder');
   }
+  if (/\[\[REFUND_WINDOW\]\]|refunds\.html/.test(Object.values(html).join('\n'))) throw new Error('refunds page or window placeholder is still present');
+  const sitemap = await read('sitemap.xml');
+  if (/refunds\.html/.test(sitemap)) throw new Error('sitemap still lists refunds.html');
+  if (/31-day|31 days/.test(Object.values(html).join('\n') + sitemap)) throw new Error('a page still states a 31-day refund window');
+  const refundNeed = [
+    'Refunds and chargebacks',
+    'you can get a full refund by emailing',
+    'until you receive your first manual from that purchase',
+    "After a manual is delivered, the purchase can't be refunded, except where the law requires it.",
+    'a monthly or annual charge can be refunded until you receive your first manual in that billing period',
+    "After that it can't be refunded, except where the law requires it.",
+    "You can cancel anytime and won't be billed again after the current period.",
+    'the credits and access from that purchase end.',
+    "access is suspended while a dispute is open, restored if it's decided in ManualOS's favor, and permanently revoked if ManualOS loses it.",
+  ];
+  for (const phrase of refundNeed) {
+    if (!html['terms.html'].includes(phrase)) throw new Error('terms missing refund phrase: ' + phrase);
+  }
+  if (!html['terms.html'].includes('refunds until the first manual is delivered')) throw new Error('terms meta description still describes the old refund window');
+  if (!html['terms.html'].includes('$249 per month or $2,490 per year')) throw new Error('terms missing Integrator price');
+  if (!html['terms.html'].includes('25 manuals per month, and unused manuals don\'t roll over')) throw new Error('terms missing Integrator manuals');
+  if (!html['terms.html'].includes('Each extra manual is $9')) throw new Error('terms missing extra-manual price');
+  if (!html['terms.html'].includes('white-label PDFs with the customer\'s own company name and logo')) throw new Error('terms missing white-label');
+  if (!html['terms.html'].includes('All prices are plus applicable taxes.')) throw new Error('terms missing tax note');
+  if (!html['terms.html'].includes('Integrator renews monthly or yearly')) throw new Error('terms missing Integrator renewal');
+  if (!html['privacy.html'].includes('for Integrator, the company name and logo you upload for white-label PDFs')) throw new Error('privacy missing white-label collection');
+  if (!html['privacy.html'].includes('for Integrator, monthly manual counts')) throw new Error('privacy missing Integrator counts');
+  if (!html['privacy.html'].includes('kept on our server while you have the Integrator plan')) throw new Error('privacy missing white-label retention');
+  if (/team seats/i.test(html['terms.html'] + html['privacy.html'])) throw new Error('team seats were invented');
   const reach = 'Billing and complaint calls and texts can reach the owner at any hour, including after hours.';
-  if (!html['support.html'].includes(reach)) throw new Error('support page missing after-hours reach');
   const termsReach = (html['terms.html'].match(/Billing and complaint calls and texts can reach the owner at any hour, including after hours\./g) || []).length;
-  if (termsReach < 1) throw new Error('terms missing after-hours reach');
+  const supportReach = (html['support.html'].match(/Billing and complaint calls and texts can reach the owner at any hour, including after hours\./g) || []).length;
+  if (termsReach !== 1) throw new Error('terms after-hours line count ' + termsReach);
+  if (supportReach !== 1) throw new Error('support after-hours line count ' + supportReach);
+  for (const name of ['index.html', 'upload.html', '404.html', 'privacy.html']) {
+    if (html[name].includes(reach)) throw new Error(name + ' repeats the after-hours line');
+  }
   if (/within \d+ (hour|business day)|response time|we will respond|promptly|immediately/i.test(html['support.html'] + html['terms.html'])) {
     throw new Error('support or terms promise a response time');
   }
   if (!/State of Illinois/.test(html['terms.html'])) throw new Error('terms missing Illinois law');
-  if (!/within 31 days of purchase/.test(html['terms.html'])) throw new Error('terms missing 31-day starter refund');
-  if (!/within 31 days of that charge/.test(html['terms.html'])) throw new Error('terms missing 31-day pro refund');
-  if (!html['terms.html'].includes('If a Starter purchase is fully refunded, access to Starter, including any unused manuals, is revoked. If a chargeback or payment dispute is opened, access is suspended while it is open. It is restored if the dispute is resolved in our favor and revoked if it is not.')) {
-    throw new Error('terms missing refund and chargeback access wording');
-  }
   const smsNeed = ['support replies', 'account alerts', 'manual-status alerts', 'Message frequency varies', 'Msg &amp; data rates may apply', 'Reply STOP to opt out', 'Reply HELP for help', 'support@manualos.com', 'Mobile numbers and SMS opt-in consent are not shared with or sold to third parties or affiliates for marketing'];
   for (const name of ['privacy.html', 'terms.html']) {
     for (const phrase of smsNeed) {
@@ -207,10 +236,14 @@ async function main() {
     const label = await page.$eval('label[for="sms-consent"]', (el) => el.textContent.trim());
     if (label !== CONSENT) throw new Error('checkbox label mismatch: ' + label);
 
-    await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 1 });
-    await page.screenshot({ path: path.join(shotDir, 'support_390.png'), fullPage: true });
-    await page.setViewport({ width: 1280, height: 1000, deviceScaleFactor: 1 });
-    await page.screenshot({ path: path.join(shotDir, 'support_1280.png'), fullPage: true });
+    for (const name of ['support.html', 'privacy.html', 'terms.html']) {
+      await page.goto(base + '/' + name, { waitUntil: 'networkidle0' });
+      const stem = name.replace('.html', '');
+      await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 1 });
+      await page.screenshot({ path: path.join(shotDir, stem + '_390.png'), fullPage: true });
+      await page.setViewport({ width: 1280, height: 1000, deviceScaleFactor: 1 });
+      await page.screenshot({ path: path.join(shotDir, stem + '_1280.png'), fullPage: true });
+    }
     for (const width of [390, 1280]) {
       await page.setViewport({ width, height: width === 390 ? 844 : 1100, deviceScaleFactor: 1 });
       await page.goto(base + '/privacy.html#sms', { waitUntil: 'networkidle0' });
@@ -243,7 +276,7 @@ async function main() {
     await page.waitForFunction(() => !document.getElementById('form-status').hidden);
     const posted = (await consentCount()).slice(before);
     if (posted.length !== 1 || posted[0].status !== 200) throw new Error('consent response ' + JSON.stringify(posted));
-    if (posted[0].phone !== '(217) 555-0199' || posted[0].consentTextVersion !== 'support-sms-v1' || posted[0].source !== 'website-support-form') {
+    if (posted[0].phone !== '(217) 555-0199' || posted[0].consentTextVersion !== 'support-sms-v2' || posted[0].source !== 'website-support-form') {
       throw new Error('consent body ' + JSON.stringify(posted[0]));
     }
     if (posted[0].fields.join(',') !== 'phone,consentTextVersion,source') throw new Error('consent keys ' + posted[0].fields.join(','));

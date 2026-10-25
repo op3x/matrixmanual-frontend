@@ -305,7 +305,7 @@ async function main() {
     const banner = await page.$eval('#access-message', (el) => el.textContent);
     if (!/Starter plan/.test(banner) || !/3 manuals remaining/.test(banner)) throw new Error('banner: ' + banner);
     const acceptPlc = await page.$eval('#file-input', (el) => el.getAttribute('accept'));
-    if (!acceptPlc.includes('.l5x') || !acceptPlc.includes('.acd') || acceptPlc.includes('.step')) {
+    if (!acceptPlc.includes('.l5x') || !acceptPlc.includes('.acd') || !acceptPlc.includes('.awl') || !acceptPlc.includes('.stl') || acceptPlc.includes('.step') || acceptPlc.includes('.dwg')) {
       throw new Error('plc accept ' + acceptPlc);
     }
     await shoot(page, 'selector', '#source-picker');
@@ -314,7 +314,7 @@ async function main() {
     await page.click('input[value="cad"]');
     const cadText = await page.$eval('#source-guidance', (el) => el.textContent);
     const acceptCad = await page.$eval('#file-input', (el) => el.getAttribute('accept'));
-    if (!/STEP/.test(cadText) || !acceptCad.includes('.step') || acceptCad.includes('.l5x')) throw new Error('cad selector');
+    if (!/STEP/.test(cadText) || !acceptCad.includes('.step') || !acceptCad.includes('.stl') || acceptCad.includes('.l5x') || acceptCad.includes('.dwg') || acceptCad.includes('.awl')) throw new Error('cad selector');
     await page.focus('input[value="cad"]');
     await page.keyboard.press('ArrowRight');
     const both = await page.$eval('input[name="source"]:checked', (el) => el.value);

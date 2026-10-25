@@ -15,7 +15,7 @@ The page prefers `POST /jobs` (several files, real progress, then `GET /jobs/:id
 
 On `localhost` / `127.0.0.1` the page calls the same origin, so the mock below can serve the site and the API together. A `?api=` override is honored only when it is also a localhost origin. On manualos.com the page calls the production host.
 
-Advertised formats: .L5X, .L5K, .scl, .st, .exp, PLCopen .xml, .TcPOU, tag lists .csv and .xlsx (a tag-table XML is tags only), CAD .step/.stp, .iges/.igs, ASCII .dxf, and a .zip of those. Up to 25 files, 50 MB each.
+Advertised formats: .L5X, .L5K, .scl, .st, .exp, .awl, .acd, PLCopen .xml, .TcPOU, tag lists .csv and .xlsx (a tag-table XML is tags only), CAD .step/.stp, .iges/.igs, .stl, ASCII .dxf, and a .zip of those. Up to 25 files, 50 MB each.
 
 ## Local check
 

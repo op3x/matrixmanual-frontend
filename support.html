@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Support — ManualOS</title>
-<meta name="description" content="Contact ManualOS support. Optional text messages cover support replies, account alerts, and manual status. Message frequency varies.">
+<meta name="description" content="Contact ManualOS support. Optional text messages cover support replies, account alerts, and manual-status alerts. Message frequency varies.">
 <meta name="robots" content="index, follow">
 <link rel="canonical" href="https://manualos.com/support.html">
 <link rel="icon" href="/favicon.ico" sizes="32x32">
@@ -136,7 +136,7 @@ a{color:var(--ink)}
       <div class="consent">
         <input id="sms-consent" name="sms-consent" type="checkbox" value="yes" aria-describedby="sms-links">
         <div>
-          <label for="sms-consent">I agree to receive support text messages from ManualOS at this number. Msg frequency varies. Msg &amp; data rates may apply. Reply STOP to opt out, HELP for help. Consent is not a condition of purchase.</label>
+          <label for="sms-consent">I agree to receive text messages from ManualOS at this number: support replies, account alerts, and manual-status alerts. Msg frequency varies. Msg &amp; data rates may apply. Reply STOP to opt out, HELP for help. Consent is not a condition of purchase.</label>
           <p id="sms-links"><a href="/terms.html#sms">Terms</a> and <a href="/privacy.html#sms">Privacy</a>.</p>
         </div>
       </div>
@@ -171,7 +171,7 @@ a{color:var(--ink)}
   // Published support number. Leave '' until the line is assigned. The line stays hidden while this is empty.
   var SUPPORT_PHONE_DISPLAY = '';
   // Bump if the checkbox sentence changes. Sent with the opt-in record.
-  var CONSENT_TEXT_VERSION = 'support-sms-v1';
+  var CONSENT_TEXT_VERSION = 'support-sms-v2';
   // Same production host as index.html. On localhost the API is this origin, matching upload.html.
   var API_BASE = 'https://manualforge-backend-production.up.railway.app';
   var host = location.hostname;

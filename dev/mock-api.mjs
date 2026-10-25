@@ -327,7 +327,7 @@ const server = http.createServer(async (req, res) => {
       const version = body && body.consentTextVersion;
       const source = body && body.source;
       const keys = body && typeof body === 'object' ? Object.keys(body) : [];
-      const valid = phone && version === 'support-sms-v1' && source === 'website-support-form' && keys.length === 3;
+      const valid = phone && version === 'support-sms-v2' && source === 'website-support-form' && keys.length === 3;
       requests.push({
         method: 'POST',
         path: '/api/support/sms-consent',
