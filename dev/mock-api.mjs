@@ -393,9 +393,7 @@ const server = http.createServer(async (req, res) => {
         termsAccepted: body.termsAccepted,
         termsVersion: body.termsVersion,
         disclosureVersion: body.disclosureVersion,
-        billingCountry: body.billingCountry,
-        caBusinessAttestation: body.caBusinessAttestation,
-        attestationVersion: body.attestationVersion,
+        buyingForBusiness: body.buyingForBusiness,
         interval: body.interval,
       });
       if (!ok) return sendJson(res, 400, { error: 'Consent required.' });

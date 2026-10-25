@@ -161,6 +161,9 @@
     .footer-nav{display:flex;flex-wrap:wrap;gap:.15rem .9rem}
     .footer-nav a{display:inline-flex;align-items:center;min-height:2.75rem;font-weight:600;text-underline-offset:.15em}
     .legal{margin:0;color:#d9d2c3;font-size:.95rem}
+    .street-line{margin:0;overflow-wrap:anywhere}
+    .street-line[hidden]{display:none}
+    .site-footer .street-line{color:#f3f0e6;font-size:.875rem;font-weight:400;line-height:1.45}
   </style>
   <script>
     document.documentElement.classList.add('has-session');
@@ -301,8 +304,10 @@
       <a href="mailto:support@manualos.com">support@manualos.com</a>
     </nav>
     <p class="legal">© 2026 Op3x LLC. ManualOS is operated by Op3x LLC.</p>
+    <p class="street-line" data-street-address hidden></p>
   </div>
 </footer>
+<script src="/effective-date.js"></script>
 <script>
 (function () {
   // POST /jobs is the preferred upload (async progress, up to 25 files). It is not
