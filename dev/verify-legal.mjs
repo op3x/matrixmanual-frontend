@@ -155,7 +155,7 @@ async function main() {
     '<strong>Pro:</strong> each monthly charge can be refunded until that billing period ends, as long as no manual has been delivered in that period. Ask before your plan renews.',
     "Once a manual is delivered, that purchase or charge can't be refunded, except where required by law.",
     'from the email address you used at checkout.',
-    "If a run fails with an error, we give the credit back; if anything goes wrong on our side, email support and we'll restore it.",
+    "On Starter, if a run fails with an error, we give the credit back; if anything goes wrong on our side, email support and we'll restore it.",
     "and we'll help.",
   ];
   for (const phrase of refundRule) {
@@ -170,7 +170,7 @@ async function main() {
   }
   if (html['refunds.html'].includes('backup copies are deleted within 28 days')) throw new Error('refunds includes the backup clause');
   if (/A run that fails|failed run never/.test(Object.values(html).join('\n'))) throw new Error('a page still says every failed run returns a credit');
-  const creditLine = "If a run fails with an error, we give the credit back; if anything goes wrong on our side, email support and we'll restore it.";
+  const creditLine = "On Starter, if a run fails with an error, we give the credit back; if anything goes wrong on our side, email support and we'll restore it.";
   const pagesHtml = Object.values(html).join('\n');
   if (pagesHtml.includes("If we can't read your files, or the run ends in an error, it doesn't use a credit.")) throw new Error('old interim credit line remains');
   if (/never uses a credit|doesn['\u2019]t use a credit/i.test(pagesHtml)) throw new Error('a page still makes an absolute credit claim');
@@ -385,6 +385,11 @@ async function main() {
     if (/\$39|\$79/.test(html[name]) && !/tax/i.test(html[name])) throw new Error(name + ' states a price without tax');
   }
   if (/\$249|\$2,490|Start Integrator|integrator-consent/.test(html['index.html'])) throw new Error('homepage still sells Integrator');
+  if (/integrators/i.test(html['index.html'])) throw new Error('homepage still mentions integrators');
+  if (/are not kept/.test(html['privacy.html'])) throw new Error('privacy still says uploaded files are not kept');
+  if (!html['upload.html'].includes('On Starter, a file we reject')) throw new Error('rejected-file credit note is not scoped to Starter');
+  if (!/80 files and 200 MB/.test(html['index.html'] + html['upload.html'] + html['terms.html'])) throw new Error('zip limits are not stated where uploads are described');
+  if (/\bDXF\b/.test(html['index.html'])) throw new Error('homepage still writes DXF without the dot');
   for (const name of ['terms.html', 'refunds.html']) {
     if (!html[name].includes('<p data-direct-section>' + directSeller + '</p>')) throw new Error(name + ' missing direct seller section');
     if (!html[name].includes('<p data-mp-section hidden>' + mpSeller)) throw new Error(name + ' missing hidden merchant-of-record section');
@@ -508,13 +513,42 @@ async function main() {
     if (early.length) throw new Error('consent posted before a phone number was entered');
     await runAxe(page, 'support validation errors');
 
-    await page.type('#support-phone', '(217) 555-0199');
+    async function phoneRejected(value) {
+      await page.$eval('#support-phone', (el) => { el.value = ''; });
+      await page.type('#support-phone', value);
+      const beforeBad = (await consentCount()).length;
+      await page.click('#support-submit');
+      await page.waitForFunction(() => {
+        const err = document.getElementById('support-phone-error');
+        return !err.hidden && /valid US mobile number/.test(err.textContent);
+      });
+      const state = await page.evaluate(() => {
+        const input = document.getElementById('support-phone');
+        const err = document.getElementById('support-phone-error');
+        return {
+          invalid: input.getAttribute('aria-invalid'),
+          described: (input.getAttribute('aria-describedby') || '').includes('support-phone-error'),
+          role: err.getAttribute('role'),
+          focus: document.activeElement === input,
+        };
+      });
+      if (state.invalid !== 'true' || !state.described || state.role !== 'alert' || !state.focus) {
+        throw new Error('phone error a11y ' + value + ' ' + JSON.stringify(state));
+      }
+      if ((await consentCount()).length !== beforeBad) throw new Error('invalid phone posted ' + value);
+    }
+    await phoneRejected('0000000000');
+    await phoneRejected('(217) 555-0199');
+    await phoneRejected('(017) 555-1212');
+    await runAxe(page, 'support invalid phone');
+    await page.$eval('#support-phone', (el) => { el.value = ''; });
+    await page.type('#support-phone', '(217) 555-1212');
     const before = (await consentCount()).length;
     await page.click('#support-submit');
     await page.waitForFunction(() => !document.getElementById('form-status').hidden);
     const posted = (await consentCount()).slice(before);
     if (posted.length !== 1 || posted[0].status !== 200) throw new Error('consent response ' + JSON.stringify(posted));
-    if (posted[0].phone !== '(217) 555-0199' || posted[0].consentTextVersion !== 'support-sms-v3' || posted[0].consentText !== CONSENT || posted[0].source !== 'website-support-form') {
+    if (posted[0].phone !== '(217) 555-1212' || posted[0].consentTextVersion !== 'support-sms-v3' || posted[0].consentText !== CONSENT || posted[0].source !== 'website-support-form') {
       throw new Error('consent body ' + JSON.stringify(posted[0]));
     }
     if (posted[0].fields.join(',') !== 'phone,consentTextVersion,consentText,source') throw new Error('consent keys ' + posted[0].fields.join(','));
@@ -529,6 +563,7 @@ async function main() {
     await page.goto(base + '/support.html', { waitUntil: 'networkidle0' });
     await page.type('#support-name', 'Grace Hopper');
     await page.type('#support-email', 'grace@example.com');
+    await page.type('#support-phone', '0000000000');
     await page.type('#support-message', 'Please cancel Pro.');
     const beforePlain = (await consentCount()).length;
     await page.click('#support-submit');
@@ -549,7 +584,7 @@ async function main() {
     await page.goto(base + '/support.html', { waitUntil: 'networkidle0' });
     await page.type('#support-name', 'Grace Hopper');
     await page.type('#support-email', 'grace@example.com');
-    await page.type('#support-phone', '2175550199');
+    await page.type('#support-phone', '2175551212');
     await page.type('#support-message', 'Need the PDF again.');
     await page.click('#sms-consent');
     await page.click('#support-submit');
