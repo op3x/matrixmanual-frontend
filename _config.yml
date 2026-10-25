@@ -2,3 +2,4 @@
 # dev/ is the local mock and checks. It must not be part of the site.
 exclude:
   - dev
+  - README.md
