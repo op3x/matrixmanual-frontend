@@ -236,9 +236,11 @@ async function main() {
   if (!html['terms.html'].includes('You accept them when you check the box at checkout')) throw new Error('terms assent sentence missing');
   if (/doing business as/i.test(html['terms.html'])) throw new Error('terms still says doing business as');
   const footerLine = '© 2026 Op3x LLC. ManualOS is a product of Op3x LLC.';
-  for (const name of ['index.html', 'privacy.html', 'terms.html', 'refunds.html', 'support.html', 'cancel/index.html']) {
+  for (const name of ['index.html', 'upload.html', '404.html', 'privacy.html', 'terms.html', 'refunds.html', 'support.html', 'cancel/index.html']) {
     if (!html[name].includes('<p class="legal">' + footerLine + '</p>')) throw new Error(name + ' footer is not the Op3x product line');
   }
+  if (/\btrain\b|24 hours|\bAI\b/i.test(html['index.html'])) throw new Error('homepage still mentions training, AI, or a 24-hour PDF');
+  if (!html['index.html'].includes('Full details are in our <a href="/privacy.html">Privacy Policy</a>.')) throw new Error('homepage privacy link missing');
   if (!html['terms.html'].includes('ManualOS is a product of Op3x LLC ("ManualOS," "we," "us")')) throw new Error('terms product sentence missing');
   const indexMarkup = html['index.html'].slice(0, html['index.html'].lastIndexOf('<script>'));
   const configJs = await read('checkout-config.js');
