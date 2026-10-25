@@ -128,10 +128,10 @@ async function main() {
   if (/31-day|31 days|within 31 days/.test(Object.values(html).join('\n') + sitemap)) throw new Error('a page still states a 31-day refund window');
   if (/unused credits from the refunded purchase/.test(html['terms.html'] + html['refunds.html'])) throw new Error('old unused-credits refund bullet is still present');
   const refundRule = [
-    'A purchase can be refunded until its first manual is delivered.',
-    '<strong>Starter:</strong> you can get a full refund until your first manual is delivered.',
-    '<strong>Pro:</strong> each monthly charge can be refunded until the first manual in that billing period is delivered.',
-    "After that, payments aren't refundable, except where required by law.",
+    'A purchase can be refunded until its first manual is delivered, within these limits:',
+    '<strong>Starter:</strong> you can get a full refund within 30 days of purchase, as long as no manual from that purchase has been delivered.',
+    '<strong>Pro:</strong> each monthly charge can be refunded until that billing period ends, as long as no manual has been delivered in that period. Ask before your plan renews.',
+    "Once a manual is delivered, that purchase or charge can't be refunded, except where required by law.",
     'from the email address you used at checkout.',
     "A run that fails, or a file ManualOS can't read, doesn't use a credit.",
     "and we'll help.",
@@ -147,12 +147,12 @@ async function main() {
   }
   if (/chargeback|Integrator|at any hour|tel:/i.test(html['refunds.html'])) throw new Error('refunds page includes chargebacks, Integrator, a phone line, or after-hours wording');
   if (!html['refunds.html'].includes('<title>Refunds and cancellation | ManualOS</title>')) throw new Error('refunds title');
-  if (!html['refunds.html'].includes('content="Refunds until your first manual is delivered, how to cancel Pro, and why a rejected file never uses a credit."')) throw new Error('refunds meta description');
+  if (!html['refunds.html'].includes('content="Refunds until your first manual is delivered (Starter within 30 days, Pro within the billing period), how to cancel Pro, and why a rejected file never uses a credit."')) throw new Error('refunds meta description');
   if (!html['refunds.html'].includes('href="https://manualos.com/refunds.html"')) throw new Error('refunds canonical');
   if (!html['refunds.html'].includes('Prices are in USD, plus applicable taxes.')) throw new Error('refunds missing price note');
   if (!html['terms.html'].includes('refunds until the first manual is delivered')) throw new Error('terms meta description still describes the old refund window');
   if (!html['terms.html'].includes('All prices are plus applicable taxes.')) throw new Error('terms missing tax note');
-  if (!html['terms.html'].includes('each monthly charge can be refunded until the first manual in that billing period is delivered.')) throw new Error('terms missing Pro billing-period refund');
+  if (!html['terms.html'].includes('each monthly charge can be refunded until that billing period ends, as long as no manual has been delivered in that period.')) throw new Error('terms missing Pro billing-period refund');
   for (const name of ['terms.html', 'privacy.html', 'refunds.html']) {
     if (/Integrator|\$249|\$2,490|white-label/i.test(html[name])) throw new Error(name + ' still mentions Integrator');
   }
