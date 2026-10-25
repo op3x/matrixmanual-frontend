@@ -1,0 +1,4 @@
+# GitHub Pages builds this repository with Jekyll and publishes the result.
+# dev/ is the local mock and checks. It must not be part of the site.
+exclude:
+  - dev

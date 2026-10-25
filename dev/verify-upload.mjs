@@ -7,6 +7,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { assertNoBrandNames } from './check-brands.mjs';
+import { assertHeroFilm } from './check-hero-film.mjs';
 
 const require = createRequire(import.meta.url);
 function loadPuppeteer() {
@@ -223,6 +224,8 @@ async function main() {
   note('headline surfaces do not say export, and each plan has one checkout button', true);
   await assertNoBrandNames(root);
   note('shipped HTML and JS do not name vendors', true);
+  await assertHeroFilm(root);
+  note('built site has no youtube string, the v3 original files match and keep c2pa, and the footer credit is exact', true);
 
   const { child, base } = await startMock();
   const browser = await puppeteer.launch({
@@ -764,6 +767,109 @@ async function main() {
     await runAxe(page, 'ready mobile');
     await assertButtonContrast(page, 'upload ready mobile');
 
+    async function heroState(page) {
+      return page.evaluate(() => {
+        function channel(c) {
+          const m = String(c).match(/rgba?\(([^)]+)\)/);
+          if (!m) return null;
+          const p = m[1].split(',').map((x) => parseFloat(x.trim()));
+          return { r: p[0], g: p[1], b: p[2], a: p.length > 3 ? p[3] : 1 };
+        }
+        function linear(v) {
+          const s = v / 255;
+          return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;
+        }
+        function contrast(fg, bg) {
+          const L = (c) => 0.2126 * linear(c.r) + 0.7152 * linear(c.g) + 0.0722 * linear(c.b);
+          const a = L(fg);
+          const b = L(bg);
+          return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
+        }
+        const frame = document.querySelector('.hero-film-frame');
+        const box = frame ? frame.getBoundingClientRect() : null;
+        const video = document.querySelector('.hero-film-video');
+        const button = document.querySelector('.hero-film-toggle');
+        const credit = document.querySelector('.hero-video-credit');
+        const tagline = document.querySelector('.footer-inner > p:not(.hero-video-credit):not(.footer-brand)');
+        const creditStyle = credit ? getComputedStyle(credit) : null;
+        const tagStyle = tagline ? getComputedStyle(tagline) : null;
+        const footerStyle = getComputedStyle(document.querySelector('.site-footer'));
+        const fg = creditStyle ? channel(creditStyle.color) : null;
+        const bg = channel(footerStyle.backgroundColor);
+        const creditBox = credit ? credit.getBoundingClientRect() : null;
+        return {
+          youtube: document.documentElement.outerHTML.toLowerCase().includes('youtube'),
+          oldPoster: document.documentElement.outerHTML.includes('mechanical-intelligence'),
+          filmLink: [...document.querySelectorAll('a')].some((a) => /play the short film/i.test(a.textContent || '')),
+          iframes: document.querySelectorAll('iframe').length,
+          beside: !!document.querySelector('.hero-film')?.textContent.includes('Grok'),
+          width: box ? box.width : 0,
+          height: box ? box.height : 0,
+          ratio: box && box.height ? box.width / box.height : 0,
+          poster: !!document.querySelector('.hero-film-poster')?.naturalWidth,
+          src: video && video.currentSrc ? video.currentSrc : '',
+          controls: !!(video && video.hasAttribute('controls')),
+          videoHidden: !video || video.hidden,
+          buttonHidden: !button || button.hidden,
+          buttonText: button ? button.textContent : '',
+          paused: video ? video.paused : true,
+          mp4: performance.getEntriesByType('resource').map((entry) => entry.name).filter((name) => name.includes('.mp4')),
+          credit: credit ? credit.textContent : '',
+          creditLink: credit ? !!credit.querySelector('a') : false,
+          creditInDetails: credit ? !!credit.closest('details') : false,
+          creditVisible: !!(credit && creditBox && creditBox.height > 12 && creditStyle.display !== 'none' && creditStyle.visibility !== 'hidden' && Number(creditStyle.opacity) === 1),
+          creditSize: creditStyle ? parseFloat(creditStyle.fontSize) : 0,
+          tagSize: tagStyle ? parseFloat(tagStyle.fontSize) : 0,
+          sameColor: !!(fg && tagStyle && creditStyle.color === tagStyle.color),
+          contrast: fg && bg ? contrast(fg, bg) : 0,
+          cls: window.__cls || 0,
+        };
+      });
+    }
+
+    function assertCredit(state, label) {
+      if (state.credit !== 'Hero video created with Grok.' || state.creditLink || state.creditInDetails || !state.creditVisible) {
+        throw new Error(label + ' footer credit ' + JSON.stringify(state));
+      }
+      if (state.beside) throw new Error(label + ' credit is next to the video');
+      if (state.creditSize + 0.5 < state.tagSize || state.contrast < 4.5 || !state.sameColor) {
+        throw new Error(label + ' credit contrast ' + JSON.stringify({ size: state.creditSize, tag: state.tagSize, contrast: state.contrast, same: state.sameColor }));
+      }
+    }
+
+    async function assertHeroFrame(page, label, expectVideo) {
+      const state = await heroState(page);
+      if (state.youtube || state.oldPoster || state.iframes || state.filmLink) {
+        throw new Error(label + ' third-party film leaked ' + JSON.stringify(state));
+      }
+      if (!state.poster || state.width < 200 || Math.abs(state.ratio - (16 / 9)) > 0.08) {
+        throw new Error(label + ' hero frame ' + JSON.stringify(state));
+      }
+      assertCredit(state, label);
+      if (expectVideo) {
+        if (state.videoHidden || state.buttonHidden || state.controls || !/manualos-hero-draft-v3-original\.mp4/.test(state.src) || state.mp4.length < 1) {
+          throw new Error(label + ' video did not attach ' + JSON.stringify(state));
+        }
+        if (state.buttonText !== 'Pause' && state.buttonText !== 'Play') throw new Error(label + ' button ' + state.buttonText);
+      } else if (!state.videoHidden || !state.buttonHidden || state.src || state.mp4.length) {
+        throw new Error(label + ' phone or still hero loaded video ' + JSON.stringify(state));
+      }
+      const before = await page.evaluate(() => {
+        const r = document.querySelector('.hero-film-frame').getBoundingClientRect();
+        return { width: r.width, height: r.height };
+      });
+      await new Promise((resolve) => setTimeout(resolve, 400));
+      const after = await page.evaluate(() => {
+        const r = document.querySelector('.hero-film-frame').getBoundingClientRect();
+        return { width: r.width, height: r.height };
+      });
+      if (Math.abs(before.width - after.width) > 1 || Math.abs(before.height - after.height) > 1) {
+        throw new Error(label + ' hero frame shifted ' + JSON.stringify({ before, after }));
+      }
+      const cls = await page.evaluate(() => window.__cls || 0);
+      if (cls >= 0.1) throw new Error(label + ' CLS ' + cls.toFixed(3));
+    }
+
     await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 1 });
     await page.goto(base + '/', { waitUntil: 'networkidle0' });
     const homeMobile = await page.evaluate(() => {
@@ -790,6 +896,11 @@ async function main() {
     }
     await assertButtonContrast(page, 'home 390');
     await runAxe(page, 'home 390');
+    await page.evaluate(() => document.getElementById('hero-film').scrollIntoView({ block: 'center' }));
+    await assertHeroFrame(page, 'home 390', false);
+    await page.screenshot({ path: path.join(shotDir, 'home_hero_390.png') });
+    await page.evaluate(() => document.querySelector('.hero-video-credit').scrollIntoView({ block: 'center' }));
+    await page.screenshot({ path: path.join(shotDir, 'home_footer_credit_390.png') });
     note('home at 390 keeps one header row, copy before the image, stacked pricing, and two previews', true);
 
     await page.setViewport({ width: 1280, height: 1000, deviceScaleFactor: 1 });
@@ -800,22 +911,73 @@ async function main() {
       const row = figs.filter((el) => Math.abs(el.getBoundingClientRect().top - last.top) < 4);
       const title = document.getElementById('hero-title').getBoundingClientRect();
       const lede = document.querySelector('.lede').getBoundingClientRect();
-      const price = document.querySelector('.hero-price').getBoundingClientRect();
+      const trust = document.querySelector('.trust-strip').getBoundingClientRect();
       const cta = document.querySelector('.hero-cta').getBoundingClientRect();
       return {
         overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
         lastRow: row.length,
-        gap: Math.round(lede.top - title.bottom),
-        priceUnderButtons: price.top >= cta.bottom - 2,
+        ledeBelowTitle: lede.top >= title.bottom - 2,
+        trustUnderButtons: trust.top >= cta.bottom - 2,
       };
     });
     if (homeDesktop.overflow > 1) throw new Error('home overflow 1280 ' + homeDesktop.overflow);
-    if (homeDesktop.lastRow < 2 || homeDesktop.gap > 40 || !homeDesktop.priceUnderButtons) {
+    if (homeDesktop.lastRow < 2 || !homeDesktop.ledeBelowTitle || !homeDesktop.trustUnderButtons) {
       throw new Error('home desktop layout ' + JSON.stringify(homeDesktop));
     }
     await assertButtonContrast(page, 'home 1280');
     await runAxe(page, 'home 1280');
+    await page.evaluate(() => document.getElementById('hero-film').scrollIntoView({ block: 'center' }));
+    await page.waitForFunction(() => {
+      const video = document.querySelector('.hero-film-video');
+      return video && video.currentSrc.includes('manualos-hero-draft-v3-original.mp4') && !video.paused && !video.hasAttribute('controls');
+    }, { timeout: 8000 });
+    await assertHeroFrame(page, 'home 1280', true);
+    await page.screenshot({ path: path.join(shotDir, 'home_hero_1280.png') });
+    await page.evaluate(() => {
+      const film = document.getElementById('hero-film');
+      window.scrollTo(0, film.getBoundingClientRect().bottom + window.scrollY + 40);
+    });
+    await page.waitForFunction(() => {
+      const film = document.getElementById('hero-film').getBoundingClientRect();
+      return film.bottom <= 0 && document.querySelector('.hero-film-video').paused;
+    }, { timeout: 4000 });
+    await page.evaluate(() => document.getElementById('hero-film').scrollIntoView({ block: 'center' }));
+    await page.waitForFunction(() => !document.querySelector('.hero-film-video').paused, { timeout: 4000 });
+    const toggle = await page.$('.hero-film-toggle');
+    await toggle.focus();
+    const focused = await page.evaluate(() => document.activeElement === document.querySelector('.hero-film-toggle'));
+    if (!focused) throw new Error('pause button is not keyboard focusable');
+    await page.click('.hero-film-toggle');
+    const paused = await page.$eval('.hero-film-video', (video) => video.paused);
+    const label = await page.$eval('.hero-film-toggle', (el) => el.textContent);
+    if (!paused || label !== 'Play') throw new Error('pause control did not pause ' + label);
+    await page.screenshot({ path: path.join(shotDir, 'home_hero_paused_1280.png') });
+    await page.evaluate(() => document.querySelector('.hero-video-credit').scrollIntoView({ block: 'center' }));
+    await page.screenshot({ path: path.join(shotDir, 'home_footer_credit_1280.png') });
     note('home at 1280 top-aligns the hero, puts prices under the buttons, and does not leave the last preview alone', true);
+
+    async function assertStill(label, setup) {
+      const still = await browser.newPage();
+      const leaks = [];
+      still.on('request', (req) => {
+        try {
+          const host = new URL(req.url()).hostname;
+          if (host && host !== '127.0.0.1' && host !== 'localhost') leaks.push(req.url());
+        } catch (err) { /* ignore unparseable urls */ }
+      });
+      if (setup) await setup(still);
+      await still.setViewport({ width: 1280, height: 1000, deviceScaleFactor: 1 });
+      await still.goto(base + '/', { waitUntil: 'networkidle0' });
+      await assertHeroFrame(still, label, false);
+      if (leaks.length) throw new Error(label + ' external ' + leaks.join(', '));
+      await still.close();
+      note(label + ' shows the poster only', true);
+    }
+    await assertStill('reduced motion', (still) => still.emulateMediaFeatures([{ name: 'prefers-reduced-motion', value: 'reduce' }]));
+    await assertStill('save-data', (still) => still.evaluateOnNewDocument(() => {
+      const connection = { saveData: true, addEventListener() {}, removeEventListener() {} };
+      Object.defineProperty(Navigator.prototype, 'connection', { configurable: true, get() { return connection; } });
+    }));
 
     if (external.length) throw new Error('external requests: ' + external.join(', '));
     note('no production or Stripe requests', true);

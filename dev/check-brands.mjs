@@ -1,5 +1,8 @@
 // Fails when shipped HTML or JS names a real vendor or product,
 // or the retired sample names CP-200, CP200, and Acme.
+// YouTube anywhere in shipped HTML or JS is a vendor name, including
+// text, alt, aria-label, and title. youtube.com and youtube-nocookie.com
+// inside src or href are allowed.
 // Grok is a vendor name. The only allowed occurrence is the exact footer
 // line "Hero video created with Grok." in <p class="hero-video-credit">
 // inside <footer>. Any other Grok text, including alt, title, aria-label,
@@ -48,6 +51,49 @@ function brandPattern(name) {
 
 const PATTERNS = BRAND_NAMES.map((name) => ({ name, re: brandPattern(name) }));
 
+const VIDEO_HOSTS = new Set(['youtube.com', 'youtube-nocookie.com']);
+
+const VIDEO_URL_PATTERNS = [
+  /\b(?:src|href)\s*=\s*(["'])([\s\S]*?)\1/gi,
+  /\.(?:src|href)\s*=\s*(['"`])([\s\S]*?)\1/gi,
+  /setAttribute\(\s*(['"])(?:src|href)\1\s*,\s*(['"`])([\s\S]*?)\2/gi,
+];
+
+function isVideoHostUrl(value) {
+  try {
+    const host = new URL(value.trim(), 'https://local.invalid').hostname.replace(/^www\./i, '').toLowerCase();
+    return VIDEO_HOSTS.has(host);
+  } catch {
+    return false;
+  }
+}
+
+function allowedVideoUrlRanges(text) {
+  const ranges = [];
+  for (const pattern of VIDEO_URL_PATTERNS) {
+    for (const match of text.matchAll(pattern)) {
+      const value = match[match.length - 1];
+      const stop = match.index + match[0].length - 1;
+      const start = stop - value.length;
+      if (text.slice(start, stop) !== value || !isVideoHostUrl(value)) continue;
+      ranges.push([start, stop]);
+    }
+  }
+  return ranges;
+}
+
+function findYoutubeHits(text) {
+  const allowed = allowedVideoUrlRanges(text);
+  const hits = [];
+  for (const match of text.matchAll(/\bYouTube\b/gi)) {
+    const start = match.index;
+    const stop = start + match[0].length;
+    if (allowed.some(([from, to]) => start >= from && stop <= to)) continue;
+    hits.push(start);
+  }
+  return hits;
+}
+
 export const HERO_CREDIT_TEXT = 'Hero video created with Grok.';
 
 const HERO_CREDIT_RE = /<p\b[^>]*\bclass\s*=\s*["'][^"']*\bhero-video-credit\b[^"']*["'][^>]*>\s*Hero video created with Grok\.\s*<\/p>/gi;
@@ -89,6 +135,13 @@ export function findBrandHitsInText(file, text) {
         excerpt: excerpt(masked, match.index),
       });
     }
+  }
+  for (const index of findYoutubeHits(masked)) {
+    hits.push({
+      file,
+      name: 'YouTube',
+      excerpt: excerpt(masked, index),
+    });
   }
   return hits;
 }

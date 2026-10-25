@@ -432,12 +432,107 @@ figcaption{padding:.75rem;border-top:1px solid var(--line);color:var(--paper)}
         </figcaption>
       </figure>
     </div>
-    <!-- Hero media slot for PR #8 (cursor/home-hero-video-303d). That PR drops
-         .hero-film-poster, .hero-film-video, and .hero-film-toggle into this frame.
-         Below 768px the video and its control stay hidden: poster only,
-         and this page does not request a video. No third-party player. -->
     <div class="hero-film" id="hero-film">
-      <div class="hero-film-frame"></div>
+      <div class="hero-film-frame">
+        <img class="hero-film-poster" src="/assets/hero/frame-v3a.jpg" width="1280" height="720" alt="" fetchpriority="high" decoding="async">
+        <video class="hero-film-video" muted loop playsinline autoplay preload="none" aria-hidden="true" tabindex="-1" hidden></video>
+        <button type="button" class="btn hero-film-toggle" hidden>Pause</button>
+      </div>
+      <script>
+      (function () {
+        var root = document.getElementById('hero-film');
+        if (!root) return;
+        var poster = root.querySelector('.hero-film-poster');
+        var video = root.querySelector('.hero-film-video');
+        var button = root.querySelector('.hero-film-toggle');
+        if (!poster || !video || !button) return;
+        var SRC = '/assets/hero/manualos-hero-draft-v3-original.mp4';
+        var userPaused = false;
+        var attached = false;
+        var onScreen = true;
+        var painted = false;
+
+        function saveData() {
+          return !!(navigator.connection && navigator.connection.saveData);
+        }
+        function allowed() {
+          return window.matchMedia('(min-width: 768px)').matches && !window.matchMedia('(prefers-reduced-motion: reduce)').matches && !saveData();
+        }
+        function setButton(playing) {
+          button.textContent = playing ? 'Pause' : 'Play';
+          button.setAttribute('aria-pressed', playing ? 'true' : 'false');
+        }
+        function detach() {
+          if (attached) {
+            video.pause();
+            video.removeAttribute('src');
+            video.load();
+            attached = false;
+          }
+          video.hidden = true;
+          button.hidden = true;
+        }
+        function sync() {
+          if (!painted || !allowed()) {
+            detach();
+            return;
+          }
+          if (!attached) {
+            video.muted = true;
+            video.src = SRC;
+            attached = true;
+          }
+          video.hidden = false;
+          button.hidden = false;
+          if (onScreen && !userPaused) {
+            var pending = video.play();
+            if (pending && pending.then) pending.then(function () { setButton(true); }).catch(function () { setButton(false); });
+            else setButton(!video.paused);
+          } else {
+            video.pause();
+            setButton(false);
+          }
+        }
+        button.addEventListener('click', function () {
+          if (!attached) return;
+          if (video.paused || userPaused) {
+            userPaused = false;
+            var pending = video.play();
+            if (pending && pending.catch) pending.catch(function () { setButton(false); });
+            setButton(true);
+          } else {
+            userPaused = true;
+            video.pause();
+            setButton(false);
+          }
+        });
+        if ('IntersectionObserver' in window) {
+          onScreen = false;
+          new IntersectionObserver(function (entries) {
+            onScreen = entries.some(function (entry) { return entry.isIntersecting; });
+            if (painted) sync();
+          }, { threshold: 0 }).observe(root);
+        }
+        function onMediaChange() { if (painted) sync(); }
+        var wide = window.matchMedia('(min-width: 768px)');
+        var reduce = window.matchMedia('(prefers-reduced-motion: reduce)');
+        if (wide.addEventListener) {
+          wide.addEventListener('change', onMediaChange);
+          reduce.addEventListener('change', onMediaChange);
+        }
+        function markPainted() {
+          if (painted) return;
+          requestAnimationFrame(function () {
+            requestAnimationFrame(function () {
+              painted = true;
+              sync();
+            });
+          });
+        }
+        if (poster.complete && poster.naturalWidth > 0) markPainted();
+        else poster.addEventListener('load', markPainted, { once: true });
+      })();
+      </script>
     </div>
   </section>
   <div class="story-band">
