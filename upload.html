@@ -86,6 +86,9 @@
     .credit-note{margin:1rem 0 0;color:var(--muted);font-size:.95rem}
     .generate-btn-wrap{margin-top:1rem}
     .generate-hint{margin:.55rem 0 0;color:var(--muted);font-size:.95rem;font-weight:600}
+    .duplicate-panel{margin-top:1rem;padding:.75rem .85rem;border:1px solid var(--ink);background:var(--sheet);display:grid;gap:.65rem;justify-items:start}
+    .duplicate-panel p{margin:0;font-weight:600}
+    .duplicate-panel a{font-weight:600;color:var(--ink)}
     .progress-wrap{margin-top:1rem}
     .progress-row{display:flex;justify-content:space-between;gap:1rem;align-items:baseline}
     .progress-label{font-size:.95rem;color:var(--ink);font-weight:600}
@@ -211,7 +214,7 @@
           <label class="choice"><input type="radio" name="source" value="cad"> <span>CAD model</span></label>
           <label class="choice"><input type="radio" name="source" value="both"> <span>Both</span></label>
         </div>
-        <p class="hint" id="source-guidance" aria-live="polite">Add a PLC program: .L5X, .L5K, .scl, .st, .exp, PLCopen .xml, .TcPOU, or a .csv or .xlsx tag list, or a zip of those. A tag-table XML is tags only, not the program. Up to 25 files, 50 MB each.</p>
+        <p class="hint" id="source-guidance" aria-live="polite">Add a PLC program: .L5X, .L5K, .scl, .st, .exp, PLCopen .xml, .TcPOU, or a .csv or .xlsx tag list, or a zip of those. A tag-table XML is tags only, not the program. Up to 25 files, 25 MB each. A zip must be 100 MB or smaller once unzipped.</p>
       </fieldset>
       <fieldset id="equipment-fields">
         <legend>Equipment details, optional</legend>
@@ -238,6 +241,11 @@
       <div class="generate-btn-wrap">
         <button class="btn-primary" id="generate-btn" type="submit" disabled aria-describedby="generate-hint">Generate my manual</button>
         <p class="generate-hint" id="generate-hint">Add a file first</p>
+      </div>
+      <div class="duplicate-panel" id="duplicate-panel" hidden>
+        <p id="duplicate-message">You already generated a manual from these files</p>
+        <p><a id="existing-job-link" href="#"></a></p>
+        <button type="button" class="btn-outline" id="generate-again">Generate again (uses a credit)</button>
       </div>
     </form>
     <div class="progress-wrap" id="progress-wrap" hidden>
@@ -327,7 +335,8 @@
   var CHECKOUT_STORAGE_KEY = 'manualos_checkout_session';
   var TOKEN_STORAGE_KEY = 'manualos_access_token';
   var MAX_FILES = 25;
-  var MAX_BYTES = 50 * 1024 * 1024;
+  var MAX_BYTES = 25 * 1024 * 1024;
+  var MAX_UNZIPPED_BYTES = 100 * 1024 * 1024;
   var PLC_EXT = ['l5x', 'l5k', 'xml', 'tcpou', 'st', 'scl', 'exp', 'csv', 'xlsx', 'acd', 'zip'];
   var CAD_EXT = ['step', 'stp', 'iges', 'igs', 'dxf', 'zip'];
   var BLOCKED = {
@@ -345,9 +354,9 @@
     failed: 'Generation failed'
   };
   var GUIDANCE = {
-    plc: 'Add a PLC program: .L5X, .L5K, .scl, .st, .exp, PLCopen .xml, .TcPOU, or a .csv or .xlsx tag list, or a zip of those. A tag-table XML is tags only, not the program. Up to 25 files, 50 MB each.',
-    cad: 'Add a CAD model: STEP (.step or .stp), IGES (.iges or .igs), or ASCII DXF (.dxf), or a zip of those. Up to 25 files, 50 MB each.',
-    both: 'Add the PLC program and the CAD model together. They are written up as one manual. You can mix the PLC types above with STEP, IGES, or DXF, including a zip. Up to 25 files, 50 MB each.'
+    plc: 'Add a PLC program: .L5X, .L5K, .scl, .st, .exp, PLCopen .xml, .TcPOU, or a .csv or .xlsx tag list, or a zip of those. A tag-table XML is tags only, not the program. Up to 25 files, 25 MB each. A zip must be 100 MB or smaller once unzipped.',
+    cad: 'Add a CAD model: STEP (.step or .stp), IGES (.iges or .igs), or ASCII DXF (.dxf), or a zip of those. Up to 25 files, 25 MB each. A zip must be 100 MB or smaller once unzipped.',
+    both: 'Add the PLC program and the CAD model together. They are written up as one manual. You can mix the PLC types above with STEP, IGES, or DXF, including a zip. Up to 25 files, 25 MB each. A zip must be 100 MB or smaller once unzipped.'
   };
   var DROP_HELP = {
     plc: 'Drop files here, or choose them.',
@@ -367,6 +376,7 @@
   var runToken = 0;
   var fileSeq = 0;
   var selectedFiles = [];
+  var confirmDuplicate = false;
   var downloadUrl = '';
 
   var dropZone = document.getElementById('drop-zone');
@@ -395,6 +405,10 @@
   var downloadLink = document.getElementById('download-link');
   var dropTitle = document.getElementById('drop-title');
   var generateHint = document.getElementById('generate-hint');
+  var duplicatePanel = document.getElementById('duplicate-panel');
+  var duplicateMessage = document.getElementById('duplicate-message');
+  var existingJobLink = document.getElementById('existing-job-link');
+  var generateAgainBtn = document.getElementById('generate-again');
 
   function resolveApiBase() {
     var host = location.hostname;
@@ -431,6 +445,46 @@
     if (bytes < 1024) return bytes + ' B';
     if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
     return (bytes / 1048576).toFixed(1) + ' MB';
+  }
+
+  function formatOverLimit(bytes) {
+    var mb = Number(bytes) / 1048576;
+    if (!Number.isFinite(mb) || mb < 0) mb = 0;
+    var shown = Math.ceil(mb * 10 - 1e-9) / 10;
+    if (bytes > MAX_BYTES && shown <= 25) shown = 25.1;
+    return shown.toFixed(1) + ' MB';
+  }
+
+  function oversizeMessage(name, bytes) {
+    return name + ' is ' + formatOverLimit(bytes) + '; each file must be 25 MB or smaller.';
+  }
+
+  function fileCountMessage(count) {
+    return count + ' files are picked; the limit is ' + MAX_FILES + '.';
+  }
+
+  function uniqueLines(lines) {
+    var seen = {};
+    var out = [];
+    (lines || []).forEach(function (line) {
+      var text = String(line || '').trim();
+      if (!text || seen[text]) return;
+      seen[text] = true;
+      out.push(text);
+    });
+    return out;
+  }
+
+  function chosenName(name) {
+    var raw = String(name || '').trim();
+    if (!raw) return '';
+    var base = raw.split(/[/\\]/).pop();
+    var found = '';
+    selectedFiles.forEach(function (item) {
+      var picked = item.file.name;
+      if (picked.toLowerCase() === raw.toLowerCase() || picked.toLowerCase() === base.toLowerCase()) found = picked;
+    });
+    return found;
   }
 
   function extensionOf(name) {
@@ -880,15 +934,13 @@
     guidance.textContent = GUIDANCE[source] || GUIDANCE.plc;
     dropHelp.textContent = DROP_HELP[source] || DROP_HELP.plc;
     fileInput.setAttribute('accept', acceptAttribute(source));
-    clearUploadError();
-    renderFiles();
-    updateGenerateButton();
+    presentSelection();
   }
 
   function rejectReason(file, source) {
     if (!file) return 'Choose a file.';
     if (file.size <= 0) return file.name + ' is empty.';
-    if (file.size > MAX_BYTES) return file.name + ' is ' + formatSize(file.size) + '. Each file must be 50 MB or smaller. This did not use a credit.';
+    if (file.size > MAX_BYTES) return oversizeMessage(file.name, file.size);
     var ext = extensionOf(file.name);
     if (BLOCKED[ext]) return BLOCKED[ext] + ' This did not use a credit.';
     if (!ext || extensionsFor(source).indexOf(ext) === -1) {
@@ -897,38 +949,125 @@
     return '';
   }
 
-  function addFiles(fileListLike) {
+  function selectionNotices(extra) {
+    var messages = extra ? extra.slice() : [];
+    selectedFiles.forEach(function (item) {
+      if (item.empty) messages.push(item.file.name + ' is empty.');
+    });
+    if (selectedFiles.length > MAX_FILES) messages.push(fileCountMessage(selectedFiles.length));
+    return uniqueLines(messages);
+  }
+
+  function presentSelection(extra) {
+    hideDuplicate();
+    renderFiles();
+    updateGenerateButton();
+    var messages = selectionNotices(extra);
+    if (messages.length) showUploadError(messages, { keepPhase: true });
+    else clearUploadError();
+  }
+
+  async function hashFile(file) {
+    if (!window.crypto || !crypto.subtle || !crypto.subtle.digest) {
+      return String(file.size) + ':' + String(file.lastModified);
+    }
+    var digest = await crypto.subtle.digest('SHA-256', await file.arrayBuffer());
+    var bytes = new Uint8Array(digest);
+    var hex = '';
+    for (var i = 0; i < bytes.length; i += 1) hex += (bytes[i] < 16 ? '0' : '') + bytes[i].toString(16);
+    return hex;
+  }
+
+  async function unzippedBytes(file) {
+    if (extensionOf(file.name) !== 'zip' || file.size < 22) return 0;
+    var tailLen = Math.min(file.size, 65557);
+    var tailBuf = await file.slice(file.size - tailLen, file.size).arrayBuffer();
+    var tail = new Uint8Array(tailBuf);
+    var eocd = -1;
+    var i;
+    for (i = tail.length - 22; i >= 0; i -= 1) {
+      if (tail[i] === 0x50 && tail[i + 1] === 0x4b && tail[i + 2] === 0x05 && tail[i + 3] === 0x06) {
+        eocd = i;
+        break;
+      }
+    }
+    if (eocd < 0) return 0;
+    var view = new DataView(tailBuf);
+    var cdSize = view.getUint32(eocd + 12, true);
+    var cdOffset = view.getUint32(eocd + 16, true);
+    if (cdOffset + cdSize > file.size) return 0;
+    var cdBuf = await file.slice(cdOffset, cdOffset + cdSize).arrayBuffer();
+    var cd = new DataView(cdBuf);
+    var total = 0;
+    var p = 0;
+    while (p + 46 <= cdBuf.byteLength) {
+      if (cd.getUint32(p, true) !== 0x02014b50) break;
+      var uncomp = cd.getUint32(p + 24, true);
+      if (uncomp === 0xffffffff) return MAX_UNZIPPED_BYTES + 1;
+      total += uncomp;
+      if (total > MAX_UNZIPPED_BYTES) return total;
+      p += 46 + cd.getUint16(p + 28, true) + cd.getUint16(p + 30, true) + cd.getUint16(p + 32, true);
+    }
+    return total;
+  }
+
+  async function addFiles(fileListLike) {
     if (!uploadEnabled || busy) return;
     var incoming = Array.prototype.slice.call(fileListLike || []);
     if (!incoming.length) return;
-    var errors = [];
-    var limitHit = false;
+    var extras = [];
     var source = currentSource();
-    incoming.forEach(function (file) {
+    var index;
+    for (index = 0; index < incoming.length; index += 1) {
+      var file = incoming[index];
+      if (file && file.size <= 0) {
+        fileSeq += 1;
+        selectedFiles.push({ id: String(fileSeq), file: file, empty: true, hash: '' });
+        continue;
+      }
       var reason = rejectReason(file, source);
       if (reason) {
-        errors.push(reason);
-        return;
+        extras.push(reason);
+        continue;
       }
-      if (selectedFiles.length >= MAX_FILES) {
-        limitHit = true;
-        return;
+      if (extensionOf(file.name) === 'zip') {
+        var expanded = 0;
+        try { expanded = await unzippedBytes(file); } catch (err) { expanded = 0; }
+        if (expanded > MAX_UNZIPPED_BYTES) {
+          extras.push(file.name + ' is over 100 MB unzipped. A zip must be 100 MB or smaller once unzipped.');
+          continue;
+        }
       }
-      var duplicate = selectedFiles.some(function (item) {
-        return item.file.name === file.name && item.file.size === file.size && item.file.lastModified === file.lastModified;
+      var hash = '';
+      try { hash = await hashFile(file); } catch (err) { hash = String(file.size) + ':' + String(file.lastModified); }
+      var match = null;
+      selectedFiles.forEach(function (item) {
+        if (!match && item.hash && item.hash === hash) match = item;
       });
-      if (duplicate) {
-        errors.push(file.name + ' is already in the list.');
-        return;
+      if (match) {
+        extras.push(file.name + ' is ignored. It matches ' + match.file.name + '.');
+        continue;
       }
       fileSeq += 1;
-      selectedFiles.push({ id: String(fileSeq), file: file });
+      selectedFiles.push({ id: String(fileSeq), file: file, empty: false, hash: hash });
+    }
+    presentSelection(extras);
+  }
+
+  var fileQueue = Promise.resolve();
+  var pendingAdds = 0;
+  function queueFiles(list) {
+    var files = Array.prototype.slice.call(list || []);
+    if (!files.length) return;
+    pendingAdds += 1;
+    fileInput.dataset.pending = '1';
+    fileQueue = fileQueue.then(function () { return addFiles(files); }).then(function () {
+      pendingAdds -= 1;
+      if (!pendingAdds) delete fileInput.dataset.pending;
+    }, function () {
+      pendingAdds -= 1;
+      if (!pendingAdds) delete fileInput.dataset.pending;
     });
-    if (limitHit) errors.push(FILE_LIMIT_MESSAGE);
-    renderFiles();
-    updateGenerateButton();
-    if (errors.length) showUploadError(errors, { keepPhase: true });
-    else clearUploadError();
   }
 
   function renderFiles() {
@@ -957,7 +1096,13 @@
       li.appendChild(name);
       li.appendChild(size);
       li.appendChild(remove);
-      if (!fitsSource(item.file, source)) {
+      if (item.empty) {
+        li.classList.add('is-invalid');
+        var emptyHint = document.createElement('span');
+        emptyHint.className = 'file-hint';
+        emptyHint.textContent = 'This file is empty.';
+        li.appendChild(emptyHint);
+      } else if (!fitsSource(item.file, source)) {
         li.classList.add('is-invalid');
         var hint = document.createElement('span');
         hint.className = 'file-hint';
@@ -975,7 +1120,9 @@
 
   function filesAreAcceptable() {
     var source = currentSource();
-    return selectedFiles.length > 0 && selectedFiles.every(function (item) { return fitsSource(item.file, source); });
+    return selectedFiles.length > 0 && selectedFiles.length <= MAX_FILES && selectedFiles.every(function (item) {
+      return !item.empty && item.file.size > 0 && item.file.size <= MAX_BYTES && fitsSource(item.file, source);
+    });
   }
 
   function updateGenerateButton() {
@@ -1001,7 +1148,7 @@
   }
 
   function canGenerate() {
-    return uploadEnabled && !busy && !!sessionId && filesAreAcceptable();
+    return uploadEnabled && !busy && !!(sessionId || accessToken) && filesAreAcceptable();
   }
 
   function setBusy(next) {
@@ -1046,12 +1193,112 @@
     return text;
   }
 
+  function tooManyMessage(data) {
+    var picked = Number(data && (data.picked != null ? data.picked : data.count));
+    var limit = Number(data && data.limit);
+    if (!Number.isFinite(limit) || limit <= 0) limit = MAX_FILES;
+    if (Number.isFinite(picked) && picked > limit) return picked + ' files are picked; the limit is ' + limit + '.';
+    return FILE_LIMIT_MESSAGE;
+  }
+
+  function serverEntries(data) {
+    var list = [];
+    if (data && Array.isArray(data.files)) list = data.files.slice();
+    else if (data && (data.name || data.filename)) list = [data];
+    return list.map(function (item) {
+      if (typeof item === 'string') return { name: item, size: NaN, limit: NaN };
+      return {
+        name: item && (item.name || item.filename) || '',
+        size: Number(item && item.size),
+        limit: Number(item && item.limit)
+      };
+    });
+  }
+
+  function ignoredLines(data) {
+    var list = data && Array.isArray(data.ignored) ? data.ignored : [];
+    return uniqueLines(list.map(function (item) {
+      var raw = typeof item === 'string' ? item : (item && (item.name || item.filename)) || '';
+      var name = chosenName(raw);
+      if (!name) return '';
+      var otherRaw = item && typeof item === 'object' ? (item.duplicateOf || item.matches || item.duplicate_of || '') : '';
+      var other = chosenName(otherRaw);
+      if (other && other !== name) return name + ' is ignored. It matches ' + other + '.';
+      return name + ' is ignored.';
+    }));
+  }
+
+  function duplicateJobId(data) {
+    if (!data || typeof data !== 'object') return '';
+    var id = data.jobId || data.job_id || data.existingJobId || data.existing_job_id || '';
+    return typeof id === 'string' ? id.trim() : '';
+  }
+
+  function serverMessages(status, data) {
+    var code = data && typeof data.code === 'string' ? data.code : '';
+    var ignored = ignoredLines(data);
+    if (code === 'duplicate_upload') return { duplicate: true, jobId: duplicateJobId(data), messages: [] };
+    if (code === 'file_too_large') {
+      var large = uniqueLines(serverEntries(data).map(function (item) {
+        var name = chosenName(item.name);
+        if (!name || !Number.isFinite(item.size)) return '';
+        return oversizeMessage(name, item.size);
+      }));
+      if (!large.length && !ignored.length) large = ['Each file must be 25 MB or smaller.'];
+      return { messages: uniqueLines(large.concat(ignored)) };
+    }
+    if (code === 'empty_file') {
+      var empty = uniqueLines(serverEntries(data).map(function (item) {
+        var name = chosenName(item.name);
+        return name ? name + ' is empty.' : '';
+      }));
+      if (!empty.length && !ignored.length) empty = ['One of the files is empty.'];
+      return { messages: uniqueLines(empty.concat(ignored)) };
+    }
+    if (code === 'unzipped_too_large') {
+      var zips = uniqueLines(serverEntries(data).map(function (item) {
+        var name = chosenName(item.name);
+        return name ? name + ' is over 100 MB unzipped. A zip must be 100 MB or smaller once unzipped.' : '';
+      }));
+      if (!zips.length && !ignored.length) zips = ['A zip must be 100 MB or smaller once unzipped.'];
+      return { messages: uniqueLines(zips.concat(ignored)) };
+    }
+    if (code === 'too_many_files') return { messages: uniqueLines([tooManyMessage(data)].concat(ignored)) };
+    var mapped = friendlyHttpError(status, data);
+    return { messages: uniqueLines([mapped.message].concat(ignored)), server: mapped.server, pricing: mapped.pricing };
+  }
+
+  function hideDuplicate() {
+    if (!duplicatePanel) return;
+    duplicatePanel.hidden = true;
+    if (existingJobLink) {
+      existingJobLink.textContent = '';
+      existingJobLink.href = '#';
+      delete existingJobLink.dataset.jobId;
+    }
+  }
+
+  function showDuplicate(jobId) {
+    clearUploadError();
+    if (duplicateMessage) duplicateMessage.textContent = 'You already generated a manual from these files';
+    if (existingJobLink) {
+      existingJobLink.textContent = jobId;
+      existingJobLink.href = '#job-' + jobId;
+      existingJobLink.dataset.jobId = jobId;
+    }
+    if (duplicatePanel) duplicatePanel.hidden = false;
+    setPhase('ready');
+  }
+
   function friendlyHttpError(status, data) {
     if (status === 429) return { message: RATE_LIMIT_MESSAGE, server: '' };
     var server = safeServerMessage(data);
     var code = data && typeof data.code === 'string' ? data.code : '';
     if (code === 'too_many_files' || server === 'Upload failed.' || /too many files/i.test(server) || /up to 25 files/i.test(server)) {
-      return { message: FILE_LIMIT_MESSAGE, server: '' };
+      return { message: code === 'too_many_files' ? tooManyMessage(data) : FILE_LIMIT_MESSAGE, server: '' };
+    }
+    if (code === 'unzipped_too_large') {
+      return { message: 'A zip must be 100 MB or smaller once unzipped.', server: '' };
     }
     if (code === 'field_too_long') {
       return { message: server || 'One of those fields is too long. Shorten it and try again. This did not use a credit.', server: '' };
@@ -1365,8 +1612,12 @@
       resetProgress();
       setBusy(false);
       if (res.status === 402) await verifySession();
-      var mapped = friendlyHttpError(res.status, data);
-      showUploadError(mapped.message, { server: mapped.server, pricing: mapped.pricing });
+      var mapped = serverMessages(res.status, data);
+      if (mapped.duplicate) {
+        showDuplicate(mapped.jobId || '');
+        return;
+      }
+      showUploadError(mapped.messages, { server: mapped.server, pricing: mapped.pricing });
       return;
     }
     var buffer = await res.arrayBuffer();
@@ -1383,14 +1634,34 @@
     await finishSuccess({ legacy: true });
   }
 
+  async function openExistingJob(id) {
+    if (!id || busy) return;
+    hideDuplicate();
+    var token = ++runToken;
+    setBusy(true);
+    setPhase('progress');
+    showProgress('Opening the existing manual…', null);
+    var ready = await fetchJobPdf(id, token);
+    if (token !== runToken) return;
+    generateBtn.textContent = 'Generate my manual';
+    if (!ready) {
+      setBusy(false);
+      return;
+    }
+    await finishSuccess({ warnings: [], coverage: null, legacy: false });
+  }
+
   async function handleGenerate() {
     if (busy) return;
+    var forceDuplicate = confirmDuplicate;
+    confirmDuplicate = false;
+    hideDuplicate();
     if (!uploadEnabled || (!sessionId && !accessToken)) {
       lockUpload('No purchase found on this browser. Choose a plan to generate manuals.');
       return;
     }
     if (selectedFiles.length > MAX_FILES) {
-      showUploadError(FILE_LIMIT_MESSAGE, { keepPhase: true });
+      showUploadError(fileCountMessage(selectedFiles.length), { keepPhase: true });
       return;
     }
     if (!selectedFiles.length) {
@@ -1418,6 +1689,7 @@
     var formData = new FormData();
     payloadFiles.forEach(function (file) { formData.append('files', file, file.name); });
     appendCredential(formData);
+    if (forceDuplicate) formData.append('confirmDuplicate', 'true');
     appendEquipment(formData);
     var res;
     try {
@@ -1465,11 +1737,17 @@
       setBusy(false);
       generateBtn.textContent = 'Generate my manual';
       if (res.status === 402) await verifySession();
-      var mapped = friendlyHttpError(res.status, data);
-      showUploadError(mapped.message, { server: mapped.server, pricing: mapped.pricing });
+      var mapped = serverMessages(res.status, data);
+      if (mapped.duplicate) {
+        showDuplicate(mapped.jobId || '');
+        return;
+      }
+      showUploadError(mapped.messages, { server: mapped.server, pricing: mapped.pricing });
       return;
     }
     document.body.dataset.api = 'jobs';
+    var ignored = ignoredLines(data);
+    if (ignored.length) showModeNote(ignored.join(' '));
     generateBtn.textContent = 'Generating\u2026';
     paintJob(data);
     var job = await pollJob(data.id, token);
@@ -1508,6 +1786,7 @@
     successSection.hidden = true;
     uploadSection.hidden = false;
     generateBtn.textContent = 'Generate my manual';
+    hideDuplicate();
     setBusy(false);
     setPhase(uploadEnabled ? 'ready' : 'locked');
     var firstRadio = document.querySelector('input[name="source"]');
@@ -1515,7 +1794,7 @@
   }
 
   fileInput.addEventListener('change', function () {
-    addFiles(fileInput.files);
+    queueFiles(fileInput.files);
     fileInput.value = '';
   });
 
@@ -1524,9 +1803,7 @@
     if (!button || busy) return;
     var id = button.getAttribute('data-remove');
     selectedFiles = selectedFiles.filter(function (item) { return item.id !== id; });
-    renderFiles();
-    updateGenerateButton();
-    clearUploadError();
+    presentSelection();
   });
 
   uploadForm.addEventListener('submit', function (event) {
@@ -1553,7 +1830,7 @@
     event.preventDefault();
     dropZone.classList.remove('drag-over');
     if (!uploadEnabled || busy) return;
-    addFiles(event.dataTransfer && event.dataTransfer.files);
+    queueFiles(event.dataTransfer && event.dataTransfer.files);
   });
 
   document.getElementById('another-btn').addEventListener('click', function () {
@@ -1564,6 +1841,19 @@
   document.getElementById('sign-out').addEventListener('click', function () {
     signOut();
   });
+
+  if (generateAgainBtn) {
+    generateAgainBtn.addEventListener('click', function () {
+      confirmDuplicate = true;
+      handleGenerate();
+    });
+  }
+  if (existingJobLink) {
+    existingJobLink.addEventListener('click', function (event) {
+      event.preventDefault();
+      openExistingJob(existingJobLink.dataset.jobId || '');
+    });
+  }
 
   window.addEventListener('pageshow', function (event) {
     if (!event.persisted) return;

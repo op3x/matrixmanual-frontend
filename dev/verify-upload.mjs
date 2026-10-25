@@ -95,6 +95,7 @@ async function addFile(page, filePath) {
     const input = document.getElementById('file-input');
     input.dispatchEvent(new Event('change', { bubbles: true }));
   });
+  await page.waitForFunction(() => !document.getElementById('file-input').dataset.pending);
 }
 
 async function waitPhase(page, phase) {
@@ -159,6 +160,22 @@ async function assertButtonContrast(page, label) {
   note('button text colour differs from its background: ' + label, true);
 }
 
+function fakeZip(uncompressed) {
+  const name = Buffer.from('a.txt');
+  const cd = Buffer.alloc(46 + name.length);
+  cd.writeUInt32LE(0x02014b50, 0);
+  cd.writeUInt32LE(uncompressed >>> 0, 24);
+  cd.writeUInt16LE(name.length, 28);
+  name.copy(cd, 46);
+  const eocd = Buffer.alloc(22);
+  eocd.writeUInt32LE(0x06054b50, 0);
+  eocd.writeUInt16LE(1, 8);
+  eocd.writeUInt16LE(1, 10);
+  eocd.writeUInt32LE(cd.length, 12);
+  eocd.writeUInt32LE(0, 16);
+  return Buffer.concat([cd, eocd]);
+}
+
 async function main() {
   await mkdir(shotDir, { recursive: true });
   const fixtureDir = await mkdtemp(path.join(tmpdir(), 'manualos-files-'));
@@ -183,6 +200,14 @@ async function main() {
     long: path.join(fixtureDir, 'VeryLongProgramNameForTheMobileFileListCheck.L5X'),
     over: path.join(fixtureDir, 'overlimit.L5X'),
     limit: path.join(fixtureDir, 'limit.L5X'),
+    copy: path.join(fixtureDir, 'copy.L5X'),
+    zero: path.join(fixtureDir, 'zero.L5X'),
+    fat: path.join(fixtureDir, 'fat.zip'),
+    huge: path.join(fixtureDir, 'huge.L5X'),
+    blank: path.join(fixtureDir, 'blank.L5X'),
+    many: path.join(fixtureDir, 'many.L5X'),
+    twin: path.join(fixtureDir, 'twin.L5X'),
+    again: path.join(fixtureDir, 'again.L5X'),
   };
   await writeFile(fixtures.line, '<RSLogix5000Content></RSLogix5000Content>');
   await writeFile(fixtures.step, 'ISO-10303-21;\n');
@@ -190,7 +215,7 @@ async function main() {
   await writeFile(fixtures.gx3, 'gx');
   await writeFile(fixtures.cxp, 'cx');
   await writeFile(fixtures.zap, 'zap');
-  await writeFile(fixtures.big, Buffer.alloc(50 * 1024 * 1024 + 1, 1));
+  await writeFile(fixtures.big, Buffer.alloc(25 * 1024 * 1024 + 1, 1));
   await writeFile(fixtures.empty, '<RSLogix5000Content></RSLogix5000Content>');
   await writeFile(fixtures.unknown, '<RSLogix5000Content></RSLogix5000Content>');
   await writeFile(fixtures.down, '<RSLogix5000Content></RSLogix5000Content>');
@@ -204,10 +229,18 @@ async function main() {
   await writeFile(fixtures.long, '<RSLogix5000Content></RSLogix5000Content>');
   await writeFile(fixtures.over, '<RSLogix5000Content></RSLogix5000Content>');
   await writeFile(fixtures.limit, '<RSLogix5000Content></RSLogix5000Content>');
+  await writeFile(fixtures.copy, '<RSLogix5000Content></RSLogix5000Content>');
+  await writeFile(fixtures.zero, Buffer.alloc(0));
+  await writeFile(fixtures.fat, fakeZip(100 * 1024 * 1024 + 1));
+  await writeFile(fixtures.huge, '<RSLogix5000Content></RSLogix5000Content>');
+  await writeFile(fixtures.blank, '<RSLogix5000Content></RSLogix5000Content>');
+  await writeFile(fixtures.many, '<RSLogix5000Content></RSLogix5000Content>');
+  await writeFile(fixtures.twin, '<RSLogix5000Content></RSLogix5000Content>');
+  await writeFile(fixtures.again, '<RSLogix5000Content></RSLogix5000Content>');
   const manyFiles = [];
   for (let i = 0; i < 26; i += 1) {
     const file = path.join(fixtureDir, `batch-${i}.L5X`);
-    await writeFile(file, '<RSLogix5000Content></RSLogix5000Content>');
+    await writeFile(file, `<RSLogix5000Content>${i}</RSLogix5000Content>`);
     manyFiles.push(file);
   }
 
@@ -403,11 +436,13 @@ async function main() {
 
     await addFile(page, fixtures.big);
     let alertText = await page.$eval('#upload-error', (el) => el.innerText);
-    if (!/50 MB/.test(alertText) || !alertText.trim().endsWith('This did not use a credit.')) throw new Error('size message: ' + alertText);
+    if (alertText.trim() !== 'big.L5X is 25.1 MB; each file must be 25 MB or smaller.' || /25\.0 MB/.test(alertText)) {
+      throw new Error('size message: ' + alertText);
+    }
     const welcomeHiddenOnSize = await page.$eval('#payment-welcome', (el) => el.hidden);
     if (!welcomeHiddenOnSize) throw new Error('welcome stayed after the size error');
     await shoot(page, 'oversize', '#upload-error');
-    note('client rejects a file over 50 MB', true);
+    note('client rejects a file over 25 MB without rounding it down to the limit', true);
 
     await page.click('input[value="both"]');
     await page.$eval('#manufacturer_name', (el) => { el.value = 'Harbor Line Machinery'; });
@@ -692,15 +727,26 @@ async function main() {
     await page.evaluate(() => {
       document.getElementById('file-input').dispatchEvent(new Event('change', { bubbles: true }));
     });
+    await page.waitForFunction(() => !document.getElementById('file-input').dataset.pending);
     const limitText = await page.$eval('#upload-error', (el) => el.innerText);
     const listedCount = await page.$$eval('#file-list li', (nodes) => nodes.length);
-    if (!/up to 25 files/i.test(limitText) || /upload failed/i.test(limitText)) {
+    const generateBlocked = await page.$eval('#generate-btn', (el) => el.disabled);
+    if (limitText.trim() !== '26 files are picked; the limit is 25.' || /upload failed/i.test(limitText)) {
       throw new Error('25-file message: ' + limitText);
     }
-    if (listedCount !== 25) throw new Error('listed ' + listedCount + ' files');
+    if (listedCount !== 26 || !generateBlocked) throw new Error('listed ' + listedCount + ' blocked ' + generateBlocked);
     const afterLimit = (await requests(base)).filter((entry) => entry.path === '/jobs').length;
     if (afterLimit !== beforeLimit) throw new Error('selecting 26 files posted a job');
-    note('more than 25 files shows the limit and is not uploaded', true);
+    await page.click('.file-remove');
+    const afterOneRemoved = await page.evaluate(() => ({
+      listed: document.querySelectorAll('#file-list li').length,
+      error: document.getElementById('upload-error').hidden ? '' : document.getElementById('upload-error').innerText,
+      disabled: document.getElementById('generate-btn').disabled,
+    }));
+    if (afterOneRemoved.listed !== 25 || afterOneRemoved.error || afterOneRemoved.disabled) {
+      throw new Error('removing one file did not clear the limit ' + JSON.stringify(afterOneRemoved));
+    }
+    note('more than 25 files stays listed, blocks Generate, and is not uploaded', true);
 
     await openUpload(page, base);
     await addFile(page, fixtures.over);
@@ -828,7 +874,7 @@ async function main() {
     await openUpload(page, base);
     await addFile(page, fixtures.big);
     const staleStart = await page.$eval('#upload-error', (el) => el.hidden ? '' : el.innerText);
-    if (!staleStart.trim().endsWith('This did not use a credit.')) throw new Error('stale start: ' + staleStart);
+    if (staleStart.trim() !== 'big.L5X is 25.1 MB; each file must be 25 MB or smaller.') throw new Error('stale start: ' + staleStart);
     await addFile(page, fixtures.line);
     if (!(await page.$eval('#upload-error', (el) => el.hidden))) throw new Error('error stayed after a successful add');
     await addFile(page, fixtures.big);
@@ -1067,6 +1113,115 @@ async function main() {
     await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 1 });
     await runAxe(page, 'ready mobile');
     await assertButtonContrast(page, 'upload ready mobile');
+
+    await page.setViewport({ width: 1280, height: 1000, deviceScaleFactor: 1 });
+    await openUpload(page, base);
+    const signOutVisible = await page.$eval('#sign-out', (el) => !el.hidden && getComputedStyle(el).display !== 'none');
+    if (!signOutVisible) throw new Error('Sign out is missing on the upload page');
+    await addFile(page, fixtures.line);
+    await addFile(page, fixtures.copy);
+    const ignoredCopy = await page.evaluate(() => ({
+      text: document.getElementById('upload-error').innerText,
+      names: [...document.querySelectorAll('#file-list .file-name')].map((el) => el.textContent),
+    }));
+    if (ignoredCopy.text.trim() !== 'copy.L5X is ignored. It matches line.L5X.' || ignoredCopy.names.join(',') !== 'line.L5X') {
+      throw new Error('identical files ' + JSON.stringify(ignoredCopy));
+    }
+    note('identical files are hashed in the browser and the extra one is ignored', true);
+
+    await openUpload(page, base);
+    const beforeEmpty = (await requests(base)).filter((entry) => entry.method === 'POST' && entry.path === '/jobs').length;
+    await addFile(page, fixtures.zero);
+    const emptyFile = await page.evaluate(() => ({
+      text: document.getElementById('upload-error').innerText.trim(),
+      hint: document.querySelector('#file-list .file-hint')?.textContent || '',
+      disabled: document.getElementById('generate-btn').disabled,
+    }));
+    const afterEmpty = (await requests(base)).filter((entry) => entry.method === 'POST' && entry.path === '/jobs').length;
+    if (emptyFile.text !== 'zero.L5X is empty.' || emptyFile.hint !== 'This file is empty.' || !emptyFile.disabled || afterEmpty !== beforeEmpty) {
+      throw new Error('empty file ' + JSON.stringify(emptyFile));
+    }
+    note('an empty file is flagged before upload', true);
+
+    await openUpload(page, base);
+    await addFile(page, fixtures.fat);
+    const fatText = await page.$eval('#upload-error', (el) => el.innerText.trim());
+    const fatListed = await page.$$eval('#file-list li', (nodes) => nodes.length);
+    if (fatText !== 'fat.zip is over 100 MB unzipped. A zip must be 100 MB or smaller once unzipped.' || fatListed !== 0) {
+      throw new Error('unzipped limit ' + fatText + ' listed ' + fatListed);
+    }
+    note('a zip over 100 MB unzipped is blocked before upload', true);
+
+    await openUpload(page, base);
+    await addFile(page, fixtures.huge);
+    await page.click('#generate-btn');
+    await waitPhase(page, 'error');
+    const hugeText = await page.$eval('#upload-error', (el) => el.innerText);
+    const hugeLines = hugeText.split('\n').map((line) => line.trim()).filter(Boolean);
+    if (hugeLines.length !== 1 || hugeLines[0] !== 'huge.L5X is 25.2 MB; each file must be 25 MB or smaller.' || /not-chosen/.test(hugeText)) {
+      throw new Error('file_too_large ' + hugeText);
+    }
+    note('file_too_large is shown once and only names the chosen file', true);
+
+    await openUpload(page, base);
+    await addFile(page, fixtures.blank);
+    await page.click('#generate-btn');
+    await waitPhase(page, 'error');
+    const blankText = await page.$eval('#upload-error', (el) => el.innerText);
+    const blankLines = blankText.split('\n').map((line) => line.trim()).filter(Boolean);
+    if (blankLines.length !== 1 || blankLines[0] !== 'blank.L5X is empty.' || /empty-inside/.test(blankText)) {
+      throw new Error('empty_file ' + blankText);
+    }
+    note('empty_file is shown once and only names the chosen file', true);
+
+    await openUpload(page, base);
+    await addFile(page, fixtures.many);
+    await page.click('#generate-btn');
+    await waitPhase(page, 'error');
+    const manyText = await page.$eval('#upload-error', (el) => el.innerText.trim());
+    if (manyText !== '30 files are picked; the limit is 25.' || /extra-one/.test(manyText)) {
+      throw new Error('too_many_files ' + manyText);
+    }
+    note('too_many_files says how many were picked and does not name files the user did not choose', true);
+
+    await openUpload(page, base);
+    await addFile(page, fixtures.twin);
+    await page.click('#generate-btn');
+    await waitPhase(page, 'success');
+    const twinNote = await page.$eval('#mode-note', (el) => el.hidden ? '' : el.textContent);
+    if (twinNote !== 'twin.L5X is ignored.' || /nested|other\.L5X/.test(twinNote)) {
+      throw new Error('ignored list ' + twinNote);
+    }
+    note('the server ignored list names only a file the user chose', true);
+
+    await openUpload(page, base);
+    await addFile(page, fixtures.again);
+    await page.click('#generate-btn');
+    await page.waitForFunction(() => !document.getElementById('duplicate-panel').hidden);
+    const duplicate = await page.evaluate(() => ({
+      message: document.getElementById('duplicate-message').textContent,
+      job: document.getElementById('existing-job-link').textContent,
+      href: document.getElementById('existing-job-link').getAttribute('href'),
+      again: document.getElementById('generate-again').textContent,
+      signOut: !document.getElementById('sign-out').hidden,
+    }));
+    if (duplicate.message !== 'You already generated a manual from these files' || duplicate.job !== 'job_existing' || duplicate.href !== '#job-job_existing' || duplicate.again !== 'Generate again (uses a credit)' || !duplicate.signOut) {
+      throw new Error('duplicate upload ' + JSON.stringify(duplicate));
+    }
+    await page.click('#existing-job-link');
+    await waitPhase(page, 'success');
+    await openUpload(page, base);
+    await addFile(page, fixtures.again);
+    await page.click('#generate-btn');
+    await page.waitForFunction(() => !document.getElementById('duplicate-panel').hidden);
+    const beforeAgain = (await requests(base)).length;
+    await page.click('#generate-again');
+    await waitPhase(page, 'success');
+    const againPost = (await requests(base)).slice(beforeAgain).find((entry) => entry.method === 'POST' && entry.path === '/jobs' && entry.files.includes('again.L5X'));
+    if (!againPost || againPost.status !== 202 || !againPost.fields.includes('confirmDuplicate') || againPost.fields.includes('session_id') || !/^Bearer \S+/.test(againPost.authorization || '')) {
+      throw new Error('confirm duplicate ' + JSON.stringify(againPost));
+    }
+    note('a duplicate upload links to the existing job and can be generated again with the portal token', true);
 
     await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 1 });
     await page.goto(base + '/', { waitUntil: 'networkidle0' });
