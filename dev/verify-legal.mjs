@@ -163,9 +163,12 @@ async function main() {
   const creditLine = "If we can't read your files, or the run ends in an error, it doesn't use a credit.";
   if ((html['index.html'].split(creditLine).length - 1) < 2) throw new Error('homepage credit line missing from the FAQ or JSON-LD');
   if (!html['terms.html'].includes('the credits and access from that purchase end.')) throw new Error('terms missing access-ends sentence');
-  const chargeback = "access is suspended while a dispute is open, restored if it's decided in ManualOS's favor, and permanently revoked if ManualOS loses it.";
-  if (!html['terms.html'].includes(chargeback)) throw new Error('terms missing chargeback rule');
-  if (!html['refunds.html'].includes(chargeback)) throw new Error('refunds missing chargeback rule');
+  const chargeback = "Chargebacks and payment disputes: access is suspended while a dispute is open, restored if it's decided in ManualOS's favor, and permanently revoked for the disputed purchase if ManualOS loses it. A dispute doesn't stop you from buying from us again, but we may decline a purchase if we reasonably suspect fraud or abuse.";
+  for (const name of ['terms.html', 'refunds.html']) {
+    const plain = html[name].replace(/<[^>]+>/g, '');
+    if (!plain.includes(chargeback)) throw new Error(name + ' missing chargeback rule');
+    if (!html[name].includes('<strong>Chargebacks and payment disputes:</strong>')) throw new Error(name + ' chargeback label changed');
+  }
   if (/Integrator|at any hour|tel:/i.test(html['refunds.html'])) throw new Error('refunds page includes Integrator, a phone line, or after-hours wording');
   if (!html['refunds.html'].includes('<title>Refunds and cancellation | ManualOS</title>')) throw new Error('refunds title');
   if (!html['refunds.html'].includes('content="Refunds until your first manual is delivered (Starter within 30 days, Pro within the billing period), how to cancel Pro, and why a rejected file never uses a credit."')) throw new Error('refunds meta description');
@@ -264,6 +267,9 @@ async function main() {
   const footerLine = '© 2026 Op3x LLC. ManualOS is a product of Op3x LLC.';
   for (const name of ['index.html', 'upload.html', '404.html', 'privacy.html', 'terms.html', 'refunds.html', 'support.html', 'cancel/index.html']) {
     if (!html[name].includes('<p class="legal">' + footerLine + '</p>')) throw new Error(name + ' footer is not the Op3x product line');
+    const outsideFooter = html[name].replace(/<footer\b[\s\S]*?<\/footer>/gi, '');
+    if (/a service of/i.test(outsideFooter)) throw new Error(name + ' says a service of outside the footer');
+    if (/a product of/i.test(outsideFooter)) throw new Error(name + ' says a product of outside the footer');
   }
   if (/never stored|after you leave the page|isn['\u2019]t kept|send your files/i.test(Object.values(html).join('\n'))) throw new Error('a page still says files are never stored, aren\'t kept, disappear after you leave, or that we send your files');
   const allowedRetention = new Set(['24 hour', '24 hours', '30 day', '30 days', '28 day', '28 days']);
@@ -316,7 +322,7 @@ async function main() {
   if (!html['index.html'].includes('Full details are in our <a href="/privacy.html">Privacy Policy</a>.')) throw new Error('homepage privacy link missing');
   if (html['index.html'].includes('at https://manualos.com/privacy.html')) throw new Error('JSON-LD still appends the privacy URL');
   if (html['index.html'].includes('Full details are in our Privacy Policy. You get the PDF when the job is done.')) throw new Error('JSON-LD FAQ answer appends the extra download sentence');
-  if (!html['terms.html'].includes('ManualOS is a product of Op3x LLC ("ManualOS," "we," "us")')) throw new Error('terms product sentence missing');
+  if (!html['terms.html'].includes('ManualOS is operated by Op3x LLC ("ManualOS," "we," "us")')) throw new Error('terms operator sentence missing');
   const indexMarkup = html['index.html'].slice(0, html['index.html'].lastIndexOf('<script>'));
   const configJs = await read('checkout-config.js');
   const resellerNote = 'Your purchase is processed by our authorized reseller, which is the merchant of record. ManualOS is provided by Op3x LLC.';
