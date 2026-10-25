@@ -306,13 +306,19 @@ async function main() {
   if (!/INTEGRATOR_CHECKOUT_PATH = '\/checkout'/.test(index)) throw new Error('integrator checkout path is not /checkout');
   const ld = JSON.parse(index.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/)[1]);
   const faq = ld['@graph'].find((node) => node['@type'] === 'FAQPage');
+  if (/team seats/i.test(index)) throw new Error('team seats are still mentioned');
   const integratorFaq = faq.mainEntity.find((item) => item.name === 'What does the Integrator plan include?');
   const faqText = integratorFaq && integratorFaq.acceptedAnswer && integratorFaq.acceptedAnswer.text;
-  if (!faqText || !/white-label PDFs/.test(faqText) || !/5 team seats/.test(faqText) || !/\$9/.test(faqText) || !/2,490/.test(faqText)) {
+  if (!faqText || !/white-label PDFs/.test(faqText) || !/same extra documents as Pro/.test(faqText) || !/\$9/.test(faqText) || !/2,490/.test(faqText) || /team seats/i.test(faqText)) {
     throw new Error('integrator faq json-ld');
   }
+  const docsFaq = faq.mainEntity.find((item) => item.name === 'What documents does each plan include?');
+  const docsText = docsFaq && docsFaq.acceptedAnswer && docsFaq.acceptedAnswer.text;
+  if (!docsText || !/operator and maintenance manual/.test(docsText) || !/preventive maintenance schedule/.test(docsText) || !/lockout\/tagout outline/.test(docsText) || !/other documents on request/.test(docsText) || !/white-label/.test(docsText)) {
+    throw new Error('documents faq json-ld');
+  }
   const faqHtml = index.slice(index.indexOf('id="faq"'), index.indexOf('<footer'));
-  if (!faqHtml.includes('What does the Integrator plan include?') || !faqHtml.includes('white-label PDFs with your own logo and company name') || !faqHtml.includes('up to 5 team seats') || !faqHtml.includes('$9')) {
+  if (!faqHtml.includes('What does the Integrator plan include?') || !faqHtml.includes('white-label PDFs with your own logo and company name') || !faqHtml.includes('same extra documents as Pro') || !faqHtml.includes('$9') || !faqHtml.includes('operator and maintenance manual') || !faqHtml.includes('lockout/tagout outline')) {
     throw new Error('integrator faq is missing from the page');
   }
   const offers = ld['@graph'].find((node) => node['@type'] === 'SoftwareApplication').offers;

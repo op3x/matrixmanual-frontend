@@ -230,7 +230,7 @@ figcaption{padding:.6rem .7rem .75rem;font-size:.92rem;border-top:1px solid var(
           "priceCurrency": "USD",
           "availability": "https://schema.org/InStock",
           "url": "https://manualos.com/#pricing",
-          "description": "One-time purchase of 3 manuals."
+          "description": "One-time purchase of 3 operator and maintenance manuals."
         },
         {
           "@type": "Offer",
@@ -239,7 +239,7 @@ figcaption{padding:.6rem .7rem .75rem;font-size:.92rem;border-top:1px solid var(
           "priceCurrency": "USD",
           "availability": "https://schema.org/InStock",
           "url": "https://manualos.com/#pricing",
-          "description": "Monthly subscription with unlimited manuals. Cancel anytime."
+          "description": "Monthly subscription with unlimited manuals, a preventive maintenance schedule, startup and shutdown procedures with a lockout/tagout outline, and other documents on request. Cancel anytime."
         },
         {
           "@type": "Offer",
@@ -248,7 +248,7 @@ figcaption{padding:.6rem .7rem .75rem;font-size:.92rem;border-top:1px solid var(
           "priceCurrency": "USD",
           "availability": "https://schema.org/InStock",
           "url": "https://manualos.com/#pricing",
-          "description": "Monthly plan for system integrators and machine builders who deliver manuals to their customers. 25 manuals per month, white-label PDFs with your own logo and company name, up to 5 team seats, and $9 per extra manual."
+          "description": "Monthly plan for system integrators and machine builders. 25 manuals per month, the same extra documents as Pro, white-label PDFs with your own logo and company name, and $9 per extra manual."
         },
         {
           "@type": "Offer",
@@ -257,7 +257,7 @@ figcaption{padding:.6rem .7rem .75rem;font-size:.92rem;border-top:1px solid var(
           "priceCurrency": "USD",
           "availability": "https://schema.org/InStock",
           "url": "https://manualos.com/#pricing",
-          "description": "Yearly Integrator plan, two months free. 25 manuals per month, white-label PDFs with your own logo and company name, up to 5 team seats, and $9 per extra manual."
+          "description": "Yearly Integrator plan, two months free. 25 manuals per month, the same extra documents as Pro, white-label PDFs with your own logo and company name, and $9 per extra manual."
         }
       ]
     },
@@ -307,10 +307,18 @@ figcaption{padding:.6rem .7rem .75rem;font-size:.92rem;border-top:1px solid var(
         },
         {
           "@type": "Question",
+          "name": "What documents does each plan include?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Every plan includes an operator and maintenance manual. Starter is that manual. Pro and Integrator also include a preventive maintenance schedule, startup and shutdown procedures with a lockout/tagout outline, and other documents on request. Integrator PDFs are white-label, with your own logo and company name."
+          }
+        },
+        {
+          "@type": "Question",
           "name": "What does the Integrator plan include?",
           "acceptedAnswer": {
             "@type": "Answer",
-            "text": "Integrator is for system integrators and machine builders who deliver manuals to their customers. It is $249 per month, or $2,490 per year, which is two months free. It includes 25 manuals per month, white-label PDFs with your own logo and company name, and up to 5 team seats. Each extra manual is $9. Email support@manualos.com to cancel or to get set up."
+            "text": "Integrator is for system integrators and machine builders who deliver manuals to their customers. It is $249 per month, or $2,490 per year, which is two months free. It includes 25 manuals per month, the same extra documents as Pro, and white-label PDFs with your own logo and company name. Each extra manual is $9. Email support@manualos.com to cancel or to get set up."
           }
         }
       ]
@@ -612,7 +620,7 @@ figcaption{padding:.6rem .7rem .75rem;font-size:.92rem;border-top:1px solid var(
   <section class="section" id="pricing" aria-labelledby="pricing-title">
     <p class="kicker"><span class="idx">07</span> Pricing</p>
     <h2 id="pricing-title">Pricing</h2>
-    <p class="section-intro">Starter is a one-time purchase of 3 manuals. Pro is a monthly plan you can cancel anytime. Integrator is for teams who deliver manuals to their customers.</p>
+    <p class="section-intro">Starter is $39 once for 3 operator and maintenance manuals. Pro is $79 a month for unlimited manuals and extra documents. Integrator is $249 a month, or $2,490 a year, for 25 manuals, those extra documents, and white-label PDFs.</p>
     <div class="plan-cards">
       <article class="plan-card">
         <h3 class="plan">Starter</h3>
@@ -630,6 +638,10 @@ figcaption{padding:.6rem .7rem .75rem;font-size:.92rem;border-top:1px solid var(
           <div>
             <dt>Manuals</dt>
             <dd>3 manuals. Pay once and generate them when you are ready.</dd>
+          </div>
+          <div>
+            <dt>Documents</dt>
+            <dd>Operator and maintenance manual.</dd>
           </div>
         </dl>
         <button type="button" class="btn btn-outline btn-price" data-checkout="starter">Buy Starter</button>
@@ -651,6 +663,10 @@ figcaption{padding:.6rem .7rem .75rem;font-size:.92rem;border-top:1px solid var(
             <dt>Manuals</dt>
             <dd>Unlimited manuals while the subscription is active. Cancel anytime.</dd>
           </div>
+          <div>
+            <dt>Documents</dt>
+            <dd>Preventive maintenance schedule, startup and shutdown procedures with a lockout/tagout outline, and other documents on request.</dd>
+          </div>
         </dl>
         <button type="button" class="btn btn-primary btn-price" data-checkout="pro">Start Pro</button>
       </article>
@@ -670,15 +686,15 @@ figcaption{padding:.6rem .7rem .75rem;font-size:.92rem;border-top:1px solid var(
           </div>
           <div>
             <dt>Best for</dt>
-            <dd>System integrators and machine builders who deliver manuals to their customers.</dd>
+            <dd>Handing manuals to your customers.</dd>
           </div>
           <div>
             <dt>Manuals</dt>
             <dd>25 manuals a month. $9 for each extra manual.</dd>
           </div>
           <div>
-            <dt>White-label</dt>
-            <dd>PDFs with your own logo and company name. Up to 5 team seats.</dd>
+            <dt>Documents</dt>
+            <dd>The same extra documents as Pro, plus white-label PDFs with your own logo and company name.</dd>
           </div>
         </dl>
         <button type="button" class="btn btn-outline btn-price" id="integrator-checkout" data-checkout="integrator" data-interval="month">Start Integrator</button>
@@ -715,8 +731,12 @@ figcaption{padding:.6rem .7rem .75rem;font-size:.92rem;border-top:1px solid var(
       <p>Pro is month to month. You can cancel anytime by emailing <a href="mailto:support@manualos.com">support@manualos.com</a>, and you will not be billed again after the current period. Starter is not a subscription. It is a one-time $39 purchase for 3 manuals. If a payment or a generated manual is wrong, email support@manualos.com and we will help.</p>
     </div>
     <div class="faq-item">
+      <h3>What documents does each plan include?</h3>
+      <p>Every plan includes an operator and maintenance manual. Starter is that manual. Pro and Integrator also include a preventive maintenance schedule, startup and shutdown procedures with a lockout/tagout outline, and other documents on request. Integrator PDFs are white-label, with your own logo and company name.</p>
+    </div>
+    <div class="faq-item">
       <h3>What does the Integrator plan include?</h3>
-      <p>Integrator is for system integrators and machine builders who deliver manuals to their customers. It is $249 per month, or $2,490 per year, which is two months free. It includes 25 manuals per month, white-label PDFs with your own logo and company name, and up to 5 team seats. Each extra manual is $9. Email <a href="mailto:support@manualos.com">support@manualos.com</a> to cancel or to get set up.</p>
+      <p>Integrator is for system integrators and machine builders who deliver manuals to their customers. It is $249 per month, or $2,490 per year, which is two months free. It includes 25 manuals per month, the same extra documents as Pro, and white-label PDFs with your own logo and company name. Each extra manual is $9. Email <a href="mailto:support@manualos.com">support@manualos.com</a> to cancel or to get set up.</p>
     </div>
   </section>
 </main>
