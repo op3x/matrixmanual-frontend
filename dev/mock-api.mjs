@@ -146,6 +146,7 @@ function scenarioOf(filenames) {
   if (name === 'down.l5x') return '503';
   if (name === 'legacy.l5x' || name === 'legacy.step') return '404';
   if (name === 'drop.l5x') return 'drop';
+  if (name === 'limit.l5x') return '429';
   return 'ok';
 }
 
@@ -290,6 +291,7 @@ function errorForScenario(scenario) {
   if (scenario === '422') return [422, { error: 'This file does not contain equipment data that can be read.' }];
   if (scenario === '503') return [503, { error: 'Manual generation is temporarily unavailable.' }];
   if (scenario === '404') return [404, { error: 'Not found' }];
+  if (scenario === '429') return [429, { error: 'Too many requests.' }];
   return null;
 }
 
@@ -502,6 +504,10 @@ const server = http.createServer(async (req, res) => {
         return sendJson(res, 400, { error: 'Invalid request body.' });
       }
       const sessionId = String(payload.session_id || '').trim();
+      if (sessionId === 'cs_test_limit') {
+        record(req, { method: 'POST', path: '/access-token', status: 429 });
+        return sendJson(res, 429, { error: 'Too many requests.' });
+      }
       if (sessionId === 'cs_test_drop') {
         record(req, { method: 'POST', path: '/access-token', status: 0 });
         req.socket.destroy();

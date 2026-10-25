@@ -87,6 +87,7 @@
     .file-remove:hover{background:var(--yellow)}
     .credit-note{margin:1rem 0 0;color:var(--muted);font-size:.95rem}
     .generate-btn-wrap{margin-top:1rem}
+    .generate-hint{margin:.55rem 0 0;color:var(--muted);font-size:.95rem;font-weight:600}
     .progress-wrap{margin-top:1rem}
     .progress-row{display:flex;justify-content:space-between;gap:1rem;align-items:baseline}
     .progress-label{font-size:.95rem;color:var(--ink);font-weight:600}
@@ -246,7 +247,8 @@
       <ul class="file-list" id="file-list" hidden></ul>
       <p class="credit-note" id="credit-note">A file we reject — wrong format, or no equipment data in the file — does not use a credit.</p>
       <div class="generate-btn-wrap">
-        <button class="btn-primary" id="generate-btn" type="submit" disabled>Generate my manual</button>
+        <button class="btn-primary" id="generate-btn" type="submit" disabled aria-describedby="generate-hint">Generate my manual</button>
+        <p class="generate-hint" id="generate-hint">Add a file first</p>
       </div>
     </form>
     <div class="progress-wrap" id="progress-wrap" hidden>
@@ -276,11 +278,7 @@
   </section>
   <section class="export-help" id="export-help" aria-labelledby="export-title">
     <h2 id="export-title">How to export your file</h2>
-<<<<<<< HEAD
     <p class="export-intro">PLC: .L5X, .L5K, .scl, .st, .exp, .awl, .acd, PLCopen .xml, and .TcPOU. Tag lists: .csv and .xlsx. A tag-table XML is tags only, not the program. CAD: .step and .stp, .iges and .igs, .stl, and ASCII .dxf. Archives: a .zip of those files.</p>
-=======
-    <p class="export-intro">Follow the steps for the format you have.</p>
->>>>>>> 6dd18d0 (Exchange checkout sessions for a bearer token and fix the mobile QA list.)
     <details class="export">
       <summary>.L5X and .L5K</summary>
       <p>Export the controller program as .L5X. That file is an XML export of the program, including ladder. The older .L5K text export is the same kind of save, with the .L5K type. Upload the .L5X or .L5K file.</p>
@@ -306,7 +304,6 @@
       <p>From the CAD tool, use Save As or Export. Choose STEP (.step or .stp), IGES (.iges or .igs), STL (.stl), or ASCII DXF (.dxf). STEP AP214 and AP242 are both fine. STEP, IGES, and STL are the 3D model. DXF is a 2D drawing. You can zip several of them.</p>
     </details>
   </section>
-<<<<<<< HEAD
   <section class="platforms" aria-labelledby="platforms-label">
     <h2 class="platforms-label" id="platforms-label">Accepted files</h2>
     <ul class="platform-tags">
@@ -321,13 +318,10 @@
       <li>.zip of these</li>
     </ul>
   </section>
-=======
->>>>>>> 6dd18d0 (Exchange checkout sessions for a bearer token and fix the mobile QA list.)
 </main>
 <footer class="site-footer">
   <div class="footer-inner">
     <p class="footer-brand">ManualOS</p>
-<<<<<<< HEAD
     <nav class="footer-nav" aria-label="Footer">
       <a href="/">Home</a>
       <a href="/support.html">Support</a>
@@ -337,21 +331,6 @@
       <a href="mailto:support@manualos.com">support@manualos.com</a>
     </nav>
     <p class="legal">© 2026 Op3x LLC. ManualOS is operated by Op3x LLC.</p>
-=======
-    <p>Plain-English equipment manuals. Upload your PLC or CAD files.</p>
-    <nav class="footer-nav" aria-label="Footer">
-      <a href="/#how">How it works</a>
-      <a href="/#sample">Sample</a>
-      <a href="/#pricing">Pricing</a>
-      <a href="/#faq">FAQ</a>
-      <a href="/upload.html">Upload</a>
-      <a href="mailto:support@manualos.com">support@manualos.com</a>
-      <a href="/terms.html">Terms</a>
-      <a href="/privacy.html">Privacy</a>
-      <a href="/refunds.html">Refunds</a>
-    </nav>
-    <p class="legal">© 2026 Op3x LLC. ManualOS is a product of Op3x LLC.</p>
->>>>>>> 6dd18d0 (Exchange checkout sessions for a bearer token and fix the mobile QA list.)
   </div>
 </footer>
 <script>
@@ -392,17 +371,12 @@
     both: 'Add the PLC program and the CAD model together. They are written up as one manual. You can mix the PLC types above with STEP, IGES, STL, or DXF, including a zip. Up to 25 files, 50 MB each.'
   };
   var DROP_HELP = {
-<<<<<<< HEAD
     plc: '.L5X, .L5K, .scl, .st, .exp, .awl, .acd, PLCopen .xml, .TcPOU, .csv, .xlsx, or a zip of those.',
     cad: 'STEP, IGES, STL, DXF, or a zip of those.',
     both: 'PLC program files and CAD files together, or a zip of both.'
-=======
-    plc: 'Drop files here, or choose them.',
-    cad: 'Drop files here, or choose them.',
-    both: 'Drop files here, or choose them.'
->>>>>>> 6dd18d0 (Exchange checkout sessions for a bearer token and fix the mobile QA list.)
   };
   var FILE_LIMIT_MESSAGE = 'You can add up to 25 files.';
+  var RATE_LIMIT_MESSAGE = 'Too many requests, please wait a minute and try again';
 
   var apiBase = resolveApiBase();
   var sessionId = '';
@@ -440,6 +414,8 @@
   var warningBlock = document.getElementById('warning-block');
   var warningsEl = document.getElementById('warnings');
   var downloadLink = document.getElementById('download-link');
+  var dropTitle = document.getElementById('drop-title');
+  var generateHint = document.getElementById('generate-hint');
 
   function resolveApiBase() {
     var host = location.hostname;
@@ -782,6 +758,12 @@
     }
     var data = {};
     try { data = await res.json(); } catch (err) { data = {}; }
+    if (res.status === 429) {
+      accessToken = '';
+      try { sessionStorage.removeItem(TOKEN_STORAGE_KEY); } catch (err) {}
+      lockUpload(RATE_LIMIT_MESSAGE);
+      return { error: true, limited: true };
+    }
     if (res.status === 503) {
       compatSession = true;
       accessToken = '';
@@ -821,6 +803,10 @@
     }
     var data = {};
     try { data = await res.json(); } catch (err) { data = {}; }
+    if (res.status === 429) {
+      if (!keepAccessOnError) lockUpload(RATE_LIMIT_MESSAGE);
+      return null;
+    }
     if (res.status === 401 && sessionId && accessToken) {
       var refreshed = await exchangeSession(sessionId);
       if (refreshed.ok) return refreshed.data;
@@ -846,6 +832,7 @@
     } catch (err) {
       return;
     }
+    if (res.status === 429) return;
     if (res.status === 401 && sessionId) {
       var refreshed = await exchangeSession(sessionId);
       if (!refreshed.ok) return;
@@ -1013,7 +1000,25 @@
   }
 
   function updateGenerateButton() {
+    var needsFile = selectedFiles.length === 0;
     generateBtn.disabled = busy || !uploadEnabled || !filesAreAcceptable();
+    if (!generateHint) return;
+    generateHint.hidden = !needsFile;
+    if (needsFile) generateBtn.setAttribute('aria-describedby', 'generate-hint');
+    else generateBtn.removeAttribute('aria-describedby');
+  }
+
+  function coarsePointer() {
+    try {
+      return window.matchMedia('(pointer: coarse)').matches || window.matchMedia('(hover: none)').matches;
+    } catch (err) {
+      return false;
+    }
+  }
+
+  function syncDropTitle() {
+    if (!dropTitle) return;
+    dropTitle.textContent = coarsePointer() ? 'Choose files' : 'Drag and drop files here';
   }
 
   function canGenerate() {
@@ -1063,6 +1068,7 @@
   }
 
   function friendlyHttpError(status, data) {
+    if (status === 429) return { message: RATE_LIMIT_MESSAGE, server: '' };
     var server = safeServerMessage(data);
     var code = data && typeof data.code === 'string' ? data.code : '';
     if (code === 'too_many_files' || server === 'Upload failed.' || /too many files/i.test(server) || /up to 25 files/i.test(server)) {
@@ -1201,6 +1207,12 @@
         continue;
       }
       if (token !== runToken) return null;
+      if (res.status === 429) {
+        resetProgress();
+        setBusy(false);
+        showUploadError(RATE_LIMIT_MESSAGE);
+        return null;
+      }
       if (res.status === 401 && !refreshed && sessionId) {
         refreshed = true;
         var again = await exchangeSession(sessionId);
@@ -1279,6 +1291,10 @@
         await sleep(600);
         continue;
       }
+      if (res.status === 429) {
+        if (!quiet) showUploadError(RATE_LIMIT_MESSAGE);
+        return false;
+      }
       if (res.status === 401 && !refreshed && sessionId) {
         refreshed = true;
         var again = await exchangeSession(sessionId);
@@ -1290,19 +1306,12 @@
         continue;
       }
       if (!res.ok) {
-<<<<<<< HEAD
-        var errBody = await readJson(res);
-        showUploadError(res.status === 404
-          ? "This manual isn't available. Manuals are deleted 24 hours after they're made. Generate it again from your files."
-          : (friendlyHttpError(res.status, errBody).message));
-=======
         if (!quiet) {
           var errBody = await readJson(res);
           showUploadError(res.status === 404
-            ? 'This manual isn’t available. It may have expired after 24 hours.'
+            ? "This manual isn't available. Manuals are deleted 24 hours after they're made. Generate it again from your files."
             : (friendlyHttpError(res.status, errBody).message));
         }
->>>>>>> 6dd18d0 (Exchange checkout sessions for a bearer token and fix the mobile QA list.)
         return false;
       }
       var buffer = await res.arrayBuffer();
@@ -1597,6 +1606,11 @@
   });
 
   syncSource();
+  syncDropTitle();
+  try {
+    window.matchMedia('(pointer: coarse)').addEventListener('change', syncDropTitle);
+    window.matchMedia('(hover: none)').addEventListener('change', syncDropTitle);
+  } catch (err) {}
   bootAccess();
 })();
 </script>
