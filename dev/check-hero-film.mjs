@@ -1,4 +1,4 @@
-// The home hero uses the v2 film only. The built site must not name the
+// The home hero uses the v3 original film only. The built site must not name the
 // third-party host or the old poster, and the footer credit is the exact
 // approved line.
 import { createHash } from 'node:crypto';

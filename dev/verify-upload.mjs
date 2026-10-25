@@ -54,6 +54,21 @@ function startMock() {
   });
 }
 
+async function scrollIntoViewNow(page, selector) {
+  await page.evaluate((sel) => {
+    window.__scrollStable = 0;
+    window.__scrollYSample = null;
+    document.querySelector(sel).scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'instant' });
+  }, selector);
+  await page.waitForFunction(() => {
+    const y = window.scrollY;
+    if (window.__scrollYSample !== null && Math.abs(window.__scrollYSample - y) < 0.5) window.__scrollStable += 1;
+    else window.__scrollStable = 0;
+    window.__scrollYSample = y;
+    return window.__scrollStable >= 2;
+  }, { polling: 50, timeout: 5000 });
+}
+
 async function shoot(page, name, scrollSelector) {
   for (const viewport of [
     { width: 1280, height: 1000 },
@@ -62,7 +77,7 @@ async function shoot(page, name, scrollSelector) {
     await page.setViewport({ ...viewport, deviceScaleFactor: 1 });
     const handle = await page.$(scrollSelector);
     if (!handle) throw new Error(`${name} missing ${scrollSelector}`);
-    await handle.evaluate((el) => el.scrollIntoView({ block: 'center', inline: 'nearest' }));
+    await scrollIntoViewNow(page, scrollSelector);
     await new Promise((resolve) => setTimeout(resolve, 200));
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
     if (overflow > 1) throw new Error(`${name} at ${viewport.width}px overflows by ${overflow}px`);
@@ -896,10 +911,10 @@ async function main() {
     }
     await assertButtonContrast(page, 'home 390');
     await runAxe(page, 'home 390');
-    await page.evaluate(() => document.getElementById('hero-film').scrollIntoView({ block: 'center' }));
+    await scrollIntoViewNow(page, '#hero-film');
     await assertHeroFrame(page, 'home 390', false);
     await page.screenshot({ path: path.join(shotDir, 'home_hero_390.png') });
-    await page.evaluate(() => document.querySelector('.hero-video-credit').scrollIntoView({ block: 'center' }));
+    await scrollIntoViewNow(page, '.hero-video-credit');
     await page.screenshot({ path: path.join(shotDir, 'home_footer_credit_390.png') });
     note('home at 390 keeps one header row, copy before the image, stacked pricing, and two previews', true);
 
@@ -926,7 +941,7 @@ async function main() {
     }
     await assertButtonContrast(page, 'home 1280');
     await runAxe(page, 'home 1280');
-    await page.evaluate(() => document.getElementById('hero-film').scrollIntoView({ block: 'center' }));
+    await scrollIntoViewNow(page, '#hero-film');
     await page.waitForFunction(() => {
       const video = document.querySelector('.hero-film-video');
       return video && video.currentSrc.includes('manualos-hero-draft-v3-original.mp4') && !video.paused && !video.hasAttribute('controls');
@@ -935,13 +950,13 @@ async function main() {
     await page.screenshot({ path: path.join(shotDir, 'home_hero_1280.png') });
     await page.evaluate(() => {
       const film = document.getElementById('hero-film');
-      window.scrollTo(0, film.getBoundingClientRect().bottom + window.scrollY + 40);
+      window.scrollTo({ top: film.getBoundingClientRect().bottom + window.scrollY + 40, left: 0, behavior: 'instant' });
     });
     await page.waitForFunction(() => {
       const film = document.getElementById('hero-film').getBoundingClientRect();
       return film.bottom <= 0 && document.querySelector('.hero-film-video').paused;
     }, { timeout: 4000 });
-    await page.evaluate(() => document.getElementById('hero-film').scrollIntoView({ block: 'center' }));
+    await scrollIntoViewNow(page, '#hero-film');
     await page.waitForFunction(() => !document.querySelector('.hero-film-video').paused, { timeout: 4000 });
     const toggle = await page.$('.hero-film-toggle');
     await toggle.focus();
@@ -952,7 +967,7 @@ async function main() {
     const label = await page.$eval('.hero-film-toggle', (el) => el.textContent);
     if (!paused || label !== 'Play') throw new Error('pause control did not pause ' + label);
     await page.screenshot({ path: path.join(shotDir, 'home_hero_paused_1280.png') });
-    await page.evaluate(() => document.querySelector('.hero-video-credit').scrollIntoView({ block: 'center' }));
+    await scrollIntoViewNow(page, '.hero-video-credit');
     await page.screenshot({ path: path.join(shotDir, 'home_footer_credit_1280.png') });
     note('home at 1280 top-aligns the hero, puts prices under the buttons, and does not leave the last preview alone', true);
 
