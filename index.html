@@ -708,14 +708,35 @@ figcaption{padding:.6rem .7rem .75rem;font-size:.92rem;border-top:1px solid var(
 <script src="/checkout-config.js"></script>
 <script>
 (function () {
-  // Same production host as upload.html. On localhost the API is this origin, matching support.html.
-  var API_BASE = 'https://manualforge-backend-production.up.railway.app';
-  var host = location.hostname;
-  if (host === 'localhost' || host === '127.0.0.1' || host === '[::1]') API_BASE = location.origin;
+  var PRODUCTION_API = 'https://manualforge-backend-production.up.railway.app';
   var TERMS_VERSION = 'terms-rev-a-m2';
   var checkoutError = document.getElementById('checkout-error');
   var buttons = document.querySelectorAll('[data-checkout]');
   var busy = false;
+  var GENERIC_CHECKOUT_ERROR = 'We couldn\u2019t start checkout. Please try again in a moment.';
+
+  function resolveApiBase() {
+    var host = location.hostname;
+    var local = host === 'localhost' || host === '127.0.0.1' || host === '[::1]';
+    if (!local) return PRODUCTION_API;
+    var override = (new URLSearchParams(location.search).get('api') || '').trim();
+    if (override) {
+      try {
+        var url = new URL(override, location.origin);
+        var localHost = url.hostname === 'localhost' || url.hostname === '127.0.0.1' || url.hostname === '[::1]';
+        if ((url.protocol === 'http:' || url.protocol === 'https:') && localHost) return url.origin;
+      } catch (err) {}
+    }
+    return location.origin;
+  }
+
+  function checkoutMessage(data) {
+    var raw = data && data.message;
+    if (typeof raw !== 'string') return '';
+    var text = raw.replace(/\s+/g, ' ').trim();
+    if (!text || text.length > 280 || /[<>]/.test(text)) return '';
+    return text;
+  }
 
   function boxFor(button) {
     var id = button.getAttribute('data-consent');
@@ -742,6 +763,15 @@ figcaption{padding:.6rem .7rem .75rem;font-size:.92rem;border-top:1px solid var(
       startCheckout(button.getAttribute('data-checkout'), button);
     });
   });
+
+  function stopCheckout(button, originalLabel, message) {
+    busy = false;
+    buttons.forEach(function (el) { el.removeAttribute('aria-busy'); });
+    button.textContent = originalLabel;
+    syncButtons();
+    checkoutError.textContent = message || GENERIC_CHECKOUT_ERROR;
+    checkoutError.focus();
+  }
 
   syncButtons();
   document.addEventListener('manualos-checkout-config', function (event) {
@@ -780,23 +810,22 @@ figcaption{padding:.6rem .7rem .75rem;font-size:.92rem;border-top:1px solid var(
     buttons.forEach(function (el) { el.disabled = true; });
     button.setAttribute('aria-busy', 'true');
     button.textContent = 'Starting checkout\u2026';
+    var data = {};
     try {
-      var res = await fetch(API_BASE + '/create-checkout-session', {
+      var res = await fetch(resolveApiBase() + '/create-checkout-session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
-      var data = await res.json().catch(function () { return {}; });
-      if (!res.ok || !data || !data.url) throw new Error('checkout failed');
-      window.location.href = data.url;
+      data = await res.json().catch(function () { return {}; });
+      if (res.ok && data && data.url) {
+        window.location.href = data.url;
+        return;
+      }
     } catch (err) {
-      busy = false;
-      button.removeAttribute('aria-busy');
-      button.textContent = originalLabel;
-      syncButtons();
-      checkoutError.textContent = 'We couldn\u2019t start checkout. Please try again in a moment.';
-      checkoutError.focus();
+      data = {};
     }
+    stopCheckout(button, originalLabel, checkoutMessage(data));
   }
 })();
 </script>

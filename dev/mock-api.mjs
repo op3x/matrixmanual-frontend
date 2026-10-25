@@ -16,7 +16,7 @@ const holds = new Map();
 const tokens = new Map();
 const requests = [];
 const configWaiters = [];
-const checkoutConfig = { managedPayments: true, fail: false, hold: false, portalFail: false, accessFail: false, portalStatus: 0, accessStatus: 0 };
+const checkoutConfig = { managedPayments: true, fail: false, hold: false, portalFail: false, accessFail: false, portalStatus: 0, accessStatus: 0, pauseCheckout: false };
 
 const REFUND_MESSAGE = 'This purchase was refunded, so it can no longer generate manuals. Contact support@manualos.com.';
 const SESSIONS = {
@@ -475,6 +475,45 @@ async function handleJobsPost(req, res) {
     });
     return;
   }
+  if (lower.includes('paused.l5x')) {
+    record(req, { method: 'POST', path: '/jobs', status: 503, files: filenames, fields });
+    sendJson(res, 503, {
+      code: 'generation_paused',
+      message: 'Generation is paused. Please try again later.',
+    });
+    return;
+  }
+  if (lower.includes('quietpause.l5x')) {
+    record(req, { method: 'POST', path: '/jobs', status: 503, files: filenames, fields });
+    sendJson(res, 503, { code: 'generation_paused' });
+    return;
+  }
+  if (lower.includes('badmsg.l5x')) {
+    record(req, { method: 'POST', path: '/jobs', status: 503, files: filenames, fields });
+    sendJson(res, 503, { code: 'generation_paused', message: '<b>paused</b>' });
+    return;
+  }
+  if (lower.includes('largejob.l5x')) {
+    record(req, { method: 'POST', path: '/jobs', status: 413, files: filenames, fields });
+    sendJson(res, 413, {
+      code: 'job_too_large',
+      message: 'This job is too large to generate.',
+    });
+    return;
+  }
+  if (lower.includes('noted.l5x')) {
+    record(req, { method: 'POST', path: '/jobs', status: 413, files: filenames, fields });
+    sendJson(res, 413, {
+      error: 'File is too large.',
+      code: 'file_too_large',
+      message: 'noted.L5X is larger than the upload limit.',
+      files: [
+        { name: 'noted.L5X', size: 30 * 1024 * 1024, limit: 25 * 1024 * 1024 },
+        { name: 'nested/not-chosen.L5X', size: 30 * 1024 * 1024, limit: 25 * 1024 * 1024 },
+      ],
+    });
+    return;
+  }
   const scenario = scenarioOf(filenames);
   if (scenario === 'drop') {
     record(req, { method: 'POST', path: '/jobs', status: 0, files: filenames, fields });
@@ -663,6 +702,7 @@ const server = http.createServer(async (req, res) => {
       if (typeof body.accessFail === 'boolean') checkoutConfig.accessFail = body.accessFail;
       if (typeof body.portalStatus === 'number') checkoutConfig.portalStatus = body.portalStatus;
       if (typeof body.accessStatus === 'number') checkoutConfig.accessStatus = body.accessStatus;
+      if (typeof body.pauseCheckout === 'boolean') checkoutConfig.pauseCheckout = body.pauseCheckout;
       if (body.release === true) {
         checkoutConfig.hold = false;
         const pending = configWaiters.splice(0, configWaiters.length);
@@ -700,6 +740,19 @@ const server = http.createServer(async (req, res) => {
       let body = {};
       try { body = JSON.parse(raw.toString('utf8') || '{}'); } catch { body = {}; }
       const plan = body && body.plan;
+      if (checkoutConfig.pauseCheckout) {
+        const paused = { code: 'checkout_paused' };
+        if (plan !== 'pro') paused.message = 'Checkout is paused. Please try again later.';
+        requests.push({
+          method: 'POST',
+          path: '/create-checkout-session',
+          status: 503,
+          files: [],
+          fields: body && typeof body === 'object' ? Object.keys(body) : [],
+          plan,
+        });
+        return sendJson(res, 503, paused);
+      }
       const known = plan === 'starter' || plan === 'pro' || plan === 'integrator';
       const ok = known && body.termsAccepted === true && !Object.prototype.hasOwnProperty.call(body, 'termsConsent') && typeof body.renewalConsent === 'boolean' && typeof body.termsVersion === 'string' && typeof body.disclosureVersion === 'string';
       requests.push({

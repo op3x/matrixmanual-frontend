@@ -208,6 +208,11 @@ async function main() {
     many: path.join(fixtureDir, 'many.L5X'),
     twin: path.join(fixtureDir, 'twin.L5X'),
     again: path.join(fixtureDir, 'again.L5X'),
+    paused: path.join(fixtureDir, 'paused.L5X'),
+    quietpause: path.join(fixtureDir, 'quietpause.L5X'),
+    badmsg: path.join(fixtureDir, 'badmsg.L5X'),
+    largejob: path.join(fixtureDir, 'largejob.L5X'),
+    noted: path.join(fixtureDir, 'noted.L5X'),
   };
   await writeFile(fixtures.line, '<RSLogix5000Content></RSLogix5000Content>');
   await writeFile(fixtures.step, 'ISO-10303-21;\n');
@@ -237,6 +242,11 @@ async function main() {
   await writeFile(fixtures.many, '<RSLogix5000Content></RSLogix5000Content>');
   await writeFile(fixtures.twin, '<RSLogix5000Content></RSLogix5000Content>');
   await writeFile(fixtures.again, '<RSLogix5000Content></RSLogix5000Content>');
+  await writeFile(fixtures.paused, '<RSLogix5000Content></RSLogix5000Content>');
+  await writeFile(fixtures.quietpause, '<RSLogix5000Content></RSLogix5000Content>');
+  await writeFile(fixtures.badmsg, '<RSLogix5000Content></RSLogix5000Content>');
+  await writeFile(fixtures.largejob, '<RSLogix5000Content></RSLogix5000Content>');
+  await writeFile(fixtures.noted, '<RSLogix5000Content></RSLogix5000Content>');
   const manyFiles = [];
   for (let i = 0; i < 26; i += 1) {
     const file = path.join(fixtureDir, `batch-${i}.L5X`);
@@ -1185,6 +1195,56 @@ async function main() {
     note('too_many_files says how many were picked and does not name files the user did not choose', true);
 
     await openUpload(page, base);
+    await addFile(page, fixtures.paused);
+    await page.click('#generate-btn');
+    await waitPhase(page, 'error');
+    const pausedText = await page.$eval('#upload-error', (el) => el.innerText.trim());
+    if (pausedText !== 'Generation is paused. Please try again later.') {
+      throw new Error('generation_paused ' + pausedText);
+    }
+    note('generation_paused shows the API message', true);
+
+    await openUpload(page, base);
+    await addFile(page, fixtures.quietpause);
+    await page.click('#generate-btn');
+    await waitPhase(page, 'error');
+    const quietText = await page.$eval('#upload-error', (el) => el.innerText.trim());
+    if (!/unavailable/i.test(quietText) || /Generation is paused/.test(quietText)) {
+      throw new Error('generation_paused without message ' + quietText);
+    }
+    note('generation_paused without a message uses the generic unavailable text', true);
+
+    await openUpload(page, base);
+    await addFile(page, fixtures.badmsg);
+    await page.click('#generate-btn');
+    await waitPhase(page, 'error');
+    const badText = await page.$eval('#upload-error', (el) => el.innerText);
+    if (!/unavailable/i.test(badText) || /[<>]/.test(badText) || /paused/.test(badText)) {
+      throw new Error('unsafe message ' + badText);
+    }
+    note('an unsafe API message falls back to the generic text', true);
+
+    await openUpload(page, base);
+    await addFile(page, fixtures.largejob);
+    await page.click('#generate-btn');
+    await waitPhase(page, 'error');
+    const largeJobText = await page.$eval('#upload-error', (el) => el.innerText.trim());
+    if (largeJobText !== 'This job is too large to generate.') {
+      throw new Error('job_too_large ' + largeJobText);
+    }
+    note('job_too_large shows the API message', true);
+
+    await openUpload(page, base);
+    await addFile(page, fixtures.noted);
+    await page.click('#generate-btn');
+    await waitPhase(page, 'error');
+    const notedText = await page.$eval('#upload-error', (el) => el.innerText.trim());
+    if (notedText !== 'noted.L5X is larger than the upload limit.' || /not-chosen|25\.0 MB|File is too large/.test(notedText)) {
+      throw new Error('upload code message ' + notedText);
+    }
+    note('an upload code with a message shows that message instead of the generic size line', true);
+
+    await openUpload(page, base);
     await addFile(page, fixtures.twin);
     await page.click('#generate-btn');
     await waitPhase(page, 'success');
@@ -1368,6 +1428,36 @@ async function main() {
     await assertButtonContrast(page, 'home 1280');
     await runAxe(page, 'home 1280');
     note('home at 1280 top-aligns the hero, keeps the price on the primary button, and does not leave the last preview alone', true);
+
+    await page.goto(base + '/', { waitUntil: 'networkidle0' });
+    await page.click('[data-checkout="starter"]');
+    await page.waitForFunction(() => document.getElementById('checkout-error').textContent.includes('Checkout is paused'));
+    const checkoutPaused = await page.evaluate(() => ({
+      text: document.getElementById('checkout-error').textContent,
+      focused: document.activeElement && document.activeElement.id,
+      label: document.querySelector('[data-checkout="starter"]').textContent,
+      disabled: document.querySelector('[data-checkout="starter"]').disabled,
+    }));
+    if (checkoutPaused.text !== 'Checkout is paused. Please try again later.' || checkoutPaused.focused !== 'checkout-error' || checkoutPaused.label !== 'Buy Starter' || checkoutPaused.disabled) {
+      throw new Error('checkout_paused ' + JSON.stringify(checkoutPaused));
+    }
+    await page.click('[data-checkout="pro"]');
+    await page.waitForFunction(() => /couldn.t start checkout/i.test(document.getElementById('checkout-error').textContent));
+    const checkoutGeneric = await page.evaluate(() => ({
+      text: document.getElementById('checkout-error').textContent,
+      label: document.querySelector('[data-checkout="pro"]').textContent,
+      disabled: document.querySelector('[data-checkout="pro"]').disabled,
+    }));
+    if (checkoutGeneric.text !== 'We couldn\u2019t start checkout. Please try again in a moment.' || checkoutGeneric.label !== 'Start Pro' || checkoutGeneric.disabled) {
+      throw new Error('checkout without message ' + JSON.stringify(checkoutGeneric));
+    }
+    const checkoutLog = (await requests(base)).filter((entry) => entry.path === '/create-checkout-session');
+    const checkoutPlans = checkoutLog.map((entry) => (entry.fields || []).join(','));
+    if (checkoutLog.length !== 2 || checkoutPlans[0] !== 'starter' || checkoutPlans[1] !== 'pro' || checkoutLog.some((entry) => entry.status !== 503)) {
+      throw new Error('checkout log ' + JSON.stringify(checkoutLog));
+    }
+    await shoot(page, 'checkout_paused', '#checkout-error');
+    note('checkout_paused shows the API message, and a pause without a message stays generic', true);
 
     if (external.length) throw new Error('external requests: ' + external.join(', '));
     note('no production or Stripe requests', true);
