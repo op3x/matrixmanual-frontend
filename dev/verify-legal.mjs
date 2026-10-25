@@ -352,6 +352,13 @@ async function main() {
   if (!html['terms.html'].includes('src="/checkout-config.js"') || !html['refunds.html'].includes('src="/checkout-config.js"') || !html['privacy.html'].includes('src="/checkout-config.js"')) throw new Error('legal pages do not load checkout config');
   if (!configJs.includes('3000')) throw new Error('checkout config has no 3 second fallback');
   if (!html['index.html'].includes('termsAccepted: true') || /termsConsent/.test(html['index.html'])) throw new Error('checkout payload must send termsAccepted and not termsConsent');
+  const siteConfig = await read('config.js');
+  if (siteConfig.split('var CHECKOUT_ENABLED = false').length - 1 !== 1) throw new Error('CHECKOUT_ENABLED does not default to false');
+  if ((siteConfig.match(/CHECKOUT_ENABLED/g) || []).length !== 1) throw new Error('checkout switch is not a single constant');
+  if (!html['index.html'].includes('src="/config.js"') || !html['upload.html'].includes('src="/config.js"')) throw new Error('config.js is not loaded');
+  if (!html['index.html'].includes('Checkout opens soon. Questions: <a href="mailto:support@manualos.com">email support@manualos.com</a>')) throw new Error('checkout closed copy missing');
+  if (!html['index.html'].includes('window.CHECKOUT_ENABLED === true') || !html['upload.html'].includes('window.CHECKOUT_ENABLED === true')) throw new Error('checkout switch is not honored');
+  if (!html['upload.html'].includes('window.CHECKOUT_ENABLED !== true')) throw new Error('upload purchase link is not gated');
   if (!html['index.html'].includes("getAttribute('data-checkout-config')")) throw new Error('Pay stays enabled before checkout config settles');
   if (/while managed payments are on/.test(html['terms.html'] + html['refunds.html'])) throw new Error('managed-payments jargon remains');
   if (!html['terms.html'].includes('Changes apply to purchases made after the effective date.')) throw new Error('terms missing purchases-after-effective-date sentence');
@@ -426,6 +433,7 @@ async function main() {
   });
   try {
     const page = await browser.newPage();
+    await page.setCacheEnabled(false);
     const pageErrors = [];
     page.on('pageerror', (err) => pageErrors.push(String(err)));
     page.on('console', (msg) => {
@@ -538,10 +546,64 @@ async function main() {
     const plainMail = await page.$eval('#email-opener', (el) => decodeURIComponent(el.getAttribute('href')));
     if (!plainMail.includes('Please cancel Pro.') || plainMail.includes('Text opt-in: yes')) throw new Error('plain mailto ' + plainMail);
 
+    await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 1 });
+    await page.goto(base + '/index.html#pricing', { waitUntil: 'networkidle0' });
+    const closed = await page.evaluate(() => {
+      const note = document.getElementById('checkout-closed');
+      const link = note.querySelector('a');
+      return {
+        hidden: note.hidden,
+        text: note.innerText.replace(/\s+/g, ' ').trim(),
+        href: link.getAttribute('href'),
+        starterPrice: document.body.innerText.includes('$39'),
+        proPrice: document.body.innerText.includes('$79'),
+        privacy: !!document.querySelector('footer a[href="/privacy.html"]'),
+        terms: !!document.querySelector('footer a[href="/terms.html"]'),
+        refunds: !!document.querySelector('footer a[href="/refunds.html"]'),
+        buttons: [...document.querySelectorAll('[data-checkout]')].map((el) => el.disabled),
+      };
+    });
+    if (closed.hidden || closed.text !== 'Checkout opens soon. Questions: email support@manualos.com' || closed.href !== 'mailto:support@manualos.com' || !closed.starterPrice || !closed.proPrice || !closed.privacy || !closed.terms || !closed.refunds || closed.buttons.some((disabled) => !disabled)) {
+      throw new Error('checkout off state ' + JSON.stringify(closed));
+    }
+    await page.click('#pro-consent');
+    await page.click('#starter-consent');
+    const stillClosed = await page.evaluate(() => [...document.querySelectorAll('[data-checkout]')].every((el) => el.disabled));
+    if (!stillClosed) throw new Error('consent enabled a Buy button while checkout is off');
+    const beforeClosed = (await fetch(base + '/__mock/requests').then((res) => res.json())).filter((item) => item.path === '/create-checkout-session').length;
+    await page.evaluate(() => {
+      document.querySelectorAll('[data-checkout]').forEach((button) => {
+        button.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+      });
+    });
+    const afterClosed = (await fetch(base + '/__mock/requests').then((res) => res.json())).filter((item) => item.path === '/create-checkout-session').length;
+    if (afterClosed !== beforeClosed) throw new Error('checkout off posted a session');
+    const closedOverflow = await overflow(page);
+    if (closedOverflow > 1) throw new Error('closed checkout overflows by ' + closedOverflow + 'px at 390');
+    await runAxe(page, 'checkout off 390');
+    await page.goto(base + '/upload.html', { waitUntil: 'domcontentloaded' });
+    await page.waitForFunction(() => document.body.dataset.phase && document.body.dataset.phase !== 'checking', { timeout: 8000 });
+    const uploadClosed = await page.evaluate(() => {
+      const link = document.getElementById('access-pricing-link');
+      return {
+        hidden: link.hidden,
+        display: getComputedStyle(link).display,
+        purchaseLink: !!document.querySelector('#upload-error a[href="/#pricing"]'),
+      };
+    });
+    if (!uploadClosed.hidden || uploadClosed.display !== 'none' || uploadClosed.purchaseLink) {
+      throw new Error('upload purchase path stayed open ' + JSON.stringify(uploadClosed));
+    }
+    await page.setViewport({ width: 1280, height: 1000, deviceScaleFactor: 1 });
+
     await page.setRequestInterception(true);
     page.on('request', (req) => {
       if (req.url().includes('/api/support/sms-consent')) {
         req.respond({ status: 500, contentType: 'application/json', body: '{"error":"no"}' });
+        return;
+      }
+      if (new URL(req.url()).pathname === '/config.js') {
+        req.respond({ status: 200, contentType: 'text/javascript; charset=utf-8', body: 'var CHECKOUT_ENABLED = true;\n' });
         return;
       }
       req.continue();

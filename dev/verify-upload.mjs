@@ -232,12 +232,24 @@ async function main() {
   });
   try {
     const page = await browser.newPage();
+    await page.setCacheEnabled(false);
     const external = [];
+    let checkoutEnabled = true;
+    await page.setRequestInterception(true);
     page.on('request', (req) => {
       try {
         const host = new URL(req.url()).hostname;
         if (host && host !== '127.0.0.1' && host !== 'localhost') external.push(req.url());
       } catch (err) { /* ignore unparseable urls */ }
+      if (new URL(req.url()).pathname === '/config.js') {
+        req.respond({
+          status: 200,
+          contentType: 'text/javascript; charset=utf-8',
+          body: 'var CHECKOUT_ENABLED = ' + (checkoutEnabled ? 'true' : 'false') + ';\n',
+        });
+        return;
+      }
+      req.continue();
     });
     await page.evaluateOnNewDocument(() => {
       window.__cls = 0;
@@ -826,6 +838,45 @@ async function main() {
 
     if (external.length) throw new Error('external requests: ' + external.join(', '));
     note('no production or Stripe requests', true);
+
+    checkoutEnabled = false;
+    await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 1 });
+    const beforeOff = (await fetch(base + '/__mock/requests').then((res) => res.json())).filter((item) => item.path === '/create-checkout-session').length;
+    await page.goto(base + '/index.html#pricing', { waitUntil: 'networkidle0' });
+    await page.click('#starter-consent');
+    await page.click('#pro-consent');
+    const offHome = await page.evaluate(() => {
+      const note = document.getElementById('checkout-closed');
+      return {
+        hidden: note.hidden,
+        text: note.innerText.replace(/\s+/g, ' ').trim(),
+        href: note.querySelector('a').getAttribute('href'),
+        buttons: [...document.querySelectorAll('[data-checkout]')].every((el) => el.disabled),
+        prices: document.body.innerText.includes('$39') && document.body.innerText.includes('$79'),
+        privacy: !!document.querySelector('footer a[href="/privacy.html"]'),
+      };
+    });
+    if (offHome.hidden || !offHome.buttons || !offHome.prices || !offHome.privacy || offHome.text !== 'Checkout opens soon. Questions: email support@manualos.com' || offHome.href !== 'mailto:support@manualos.com') {
+      throw new Error('checkout off home ' + JSON.stringify(offHome));
+    }
+    await page.evaluate(() => {
+      document.querySelectorAll('[data-checkout]').forEach((button) => {
+        button.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+      });
+    });
+    await page.goto(base + '/upload.html', { waitUntil: 'domcontentloaded' });
+    await page.evaluate(() => localStorage.clear());
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await page.waitForFunction(() => document.body.dataset.phase && document.body.dataset.phase !== 'checking', { timeout: 8000 });
+    const uploadOff = await page.$eval('#access-pricing-link', (el) => el.hidden && getComputedStyle(el).display === 'none');
+    const afterOff = (await fetch(base + '/__mock/requests').then((res) => res.json())).filter((item) => item.path === '/create-checkout-session').length;
+    if (!uploadOff || afterOff !== beforeOff) throw new Error('checkout off still exposed a purchase path');
+    await runAxe(page, 'checkout off upload 390');
+    await page.goto(base + '/index.html#pricing', { waitUntil: 'networkidle0' });
+    const offOverflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+    if (offOverflow > 1) throw new Error('checkout off overflows by ' + offOverflow + 'px at 390');
+    await runAxe(page, 'checkout off home 390');
+    note('checkout off disables Buy and upload purchase paths', true);
 
     if (pageErrors.length) throw new Error('page errors: ' + pageErrors.join(' | '));
     note('no page errors', true);
