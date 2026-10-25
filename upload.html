@@ -392,6 +392,7 @@
   var sessionFromQuery = false;
   var accessToken = '';
   var compatSession = false;
+  var currentPlan = '';
   var uploadEnabled = false;
   var busy = false;
   var runToken = 0;
@@ -751,6 +752,7 @@
     sessionId = '';
     sessionFromQuery = false;
     compatSession = false;
+    currentPlan = '';
     clearStoredAccess();
     stripSessionFromUrl();
     syncSignOut();
@@ -773,6 +775,7 @@
   }
 
   function applySession(data) {
+    currentPlan = String(data && data.plan || '').toLowerCase();
     if (data.remaining === 0) {
       setUploadEnabled(false);
       showAccess('', { showPricing: true, ok: false, hideMessage: true });
@@ -1223,7 +1226,8 @@
   }
 
   function tooManyMessage(data) {
-    var picked = Number(data && (data.picked != null ? data.picked : data.count));
+    var pickedSource = data && data.picked != null ? data.picked : (data && data.received != null ? data.received : data && data.count);
+    var picked = Number(pickedSource);
     var limit = Number(data && data.limit);
     if (!Number.isFinite(limit) || limit <= 0) limit = MAX_FILES;
     if (Number.isFinite(picked) && picked > limit) return picked + ' files are picked; the limit is ' + limit + '.';
@@ -1794,7 +1798,11 @@
       setBusy(false);
       generateBtn.textContent = 'Generate my manual';
       var reason = safeServerMessage({ error: job.error }) || 'Please try again.';
-      showUploadError('The manual couldn’t be finished. ' + reason + ' The credit for this attempt is returned.');
+      var finished = 'The manual couldn\u2019t be finished. ' + reason;
+      if (currentPlan === 'starter') {
+        finished += " If a run fails with an error, we give the credit back; if anything goes wrong on our side, email support and we'll restore it.";
+      }
+      showUploadError(finished);
       return;
     }
     var ready = await fetchJobPdf(job.id, token);

@@ -475,6 +475,16 @@ async function handleJobsPost(req, res) {
     });
     return;
   }
+  if (lower.includes('received.l5x')) {
+    record(req, { method: 'POST', path: '/jobs', status: 400, files: filenames, fields });
+    sendJson(res, 400, {
+      error: 'Too many files.',
+      code: 'too_many_files',
+      received: 28,
+      limit: 25,
+    });
+    return;
+  }
   if (lower.includes('paused.l5x')) {
     record(req, { method: 'POST', path: '/jobs', status: 503, files: filenames, fields });
     sendJson(res, 503, {

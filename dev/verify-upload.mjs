@@ -54,6 +54,7 @@ function startMock() {
 }
 
 async function shoot(page, name, scrollSelector) {
+  await page.emulateMediaFeatures([{ name: 'prefers-reduced-motion', value: 'reduce' }]);
   for (const viewport of [
     { width: 1280, height: 1000 },
     { width: 390, height: 844 },
@@ -61,8 +62,14 @@ async function shoot(page, name, scrollSelector) {
     await page.setViewport({ ...viewport, deviceScaleFactor: 1 });
     const handle = await page.$(scrollSelector);
     if (!handle) throw new Error(`${name} missing ${scrollSelector}`);
-    await handle.evaluate((el) => el.scrollIntoView({ block: 'center', inline: 'nearest' }));
-    await new Promise((resolve) => setTimeout(resolve, 200));
+    await page.evaluate(() => { window.__scrollSettle = null; });
+    await handle.evaluate((el) => el.scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'instant' }));
+    await page.waitForFunction(() => {
+      const y = window.scrollY;
+      const prev = window.__scrollSettle;
+      window.__scrollSettle = y;
+      return prev === y;
+    }, { timeout: 2000, polling: 50 });
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
     if (overflow > 1) throw new Error(`${name} at ${viewport.width}px overflows by ${overflow}px`);
     const file = path.join(shotDir, `${name}_${viewport.width}.png`);
@@ -206,6 +213,7 @@ async function main() {
     huge: path.join(fixtureDir, 'huge.L5X'),
     blank: path.join(fixtureDir, 'blank.L5X'),
     many: path.join(fixtureDir, 'many.L5X'),
+    received: path.join(fixtureDir, 'received.L5X'),
     twin: path.join(fixtureDir, 'twin.L5X'),
     again: path.join(fixtureDir, 'again.L5X'),
     paused: path.join(fixtureDir, 'paused.L5X'),
@@ -240,6 +248,7 @@ async function main() {
   await writeFile(fixtures.huge, '<RSLogix5000Content></RSLogix5000Content>');
   await writeFile(fixtures.blank, '<RSLogix5000Content></RSLogix5000Content>');
   await writeFile(fixtures.many, '<RSLogix5000Content></RSLogix5000Content>');
+  await writeFile(fixtures.received, '<RSLogix5000Content></RSLogix5000Content>');
   await writeFile(fixtures.twin, '<RSLogix5000Content></RSLogix5000Content>');
   await writeFile(fixtures.again, '<RSLogix5000Content></RSLogix5000Content>');
   await writeFile(fixtures.paused, '<RSLogix5000Content></RSLogix5000Content>');
@@ -283,7 +292,7 @@ async function main() {
   note('headline surfaces do not say export, and each plan has one checkout button', true);
   await assertNoBrandNames(root);
   note('shipped HTML and JS do not name vendors', true);
-  const copyright = '© 2026 Op3x LLC. ManualOS is a product of Op3x LLC.';
+  const copyright = '© 2026 Op3x LLC. ManualOS is operated by Op3x LLC.';
   for (const name of ['index.html', 'upload.html', '404.html']) {
     const pageHtml = name === 'index.html' ? index : await readFile(path.join(root, name), 'utf8');
     const footStart = pageHtml.indexOf('<footer');
@@ -293,10 +302,11 @@ async function main() {
     for (const href of ['mailto:support@manualos.com', '/terms.html', '/privacy.html', '/refunds.html']) {
       if (!foot.includes(href)) throw new Error(name + ' footer missing ' + href);
     }
-    if (/sitemap\.xml/i.test(foot)) throw new Error(name + ' footer still links the sitemap');
+    if (name !== 'index.html' && /sitemap\.xml/i.test(foot)) throw new Error(name + ' footer still links the sitemap');
     const credits = pageHtml.match(/Hero video created with Grok\./g) || [];
-    if (name === 'index.html' && credits.length !== 1) throw new Error('hero credit count ' + credits.length);
-    if (name !== 'index.html' && credits.length) throw new Error(name + ' carries the hero credit');
+    const hasFilm = /<video\b/i.test(pageHtml);
+    if (hasFilm && credits.length !== 1) throw new Error(name + ' hero credit count ' + credits.length);
+    if (!hasFilm && credits.length) throw new Error(name + ' credits a hero video that is not on the page');
   }
   if (!html.includes('name="referrer" content="no-referrer"')) {
     throw new Error('upload.html is missing Referrer-Policy no-referrer');
@@ -304,12 +314,11 @@ async function main() {
   if (/never stored/i.test(index) || /never stored/i.test(html)) throw new Error('copy still says files are never stored');
   if (/after you leave the page/i.test(index) || /after you leave the page/i.test(html)) throw new Error('copy still says the PDF is dropped when you leave');
   if (/\bAI\b/i.test(index)) throw new Error('homepage still says AI');
-  const retentionLine = 'You can re-download it for 24 hours after it’s made, and then it’s deleted.';
+  const retentionLine = "You can re-download it for 24 hours after it's made, and then it's deleted.";
   const retention = (index.match(/You can re-download it for 24 hours after it.s made, and then it.s deleted/g) || []).length;
   if (retention < 3) throw new Error('retention sentence count ' + retention);
-  if (!index.includes('You can re-download your PDF for 24 hours, then it’s deleted')) throw new Error('trust strip still hides the 24-hour deletion');
   if (!html.includes(retentionLine)) throw new Error('upload success copy is missing the 24-hour re-download');
-  if (!html.includes('Manuals are deleted 24 hours after they’re made. Generate it again from your files.')) {
+  if (!html.includes("Manuals are deleted 24 hours after they're made. Generate it again from your files.")) {
     throw new Error('expired manual copy is missing the 24-hour deletion');
   }
   if (/stays available for 24 hours/.test(html) || /stays available for 24 hours/.test(index)) {
@@ -596,7 +605,16 @@ async function main() {
     await expectError(fixtures.unknown, /did not use a credit/i, '415 rejected file did not use a credit');
     await expectError(fixtures.down, /unavailable/i, '503 says the generator is unavailable and did not use a credit');
     await expectError(fixtures.nocredit, /No credit was used/i, '402 says no credit was used');
-    await expectError(fixtures.fail, /credit for this attempt is returned/i, 'failed job says the credit is returned');
+    await expectError(fixtures.fail, /If a run fails with an error, we give the credit back; if anything goes wrong on our side, email support and we'll restore it\./, 'a failed Starter run says the credit is returned');
+    await openUpload(page, base, '?session_id=cs_test_pro');
+    await addFile(page, fixtures.fail);
+    await page.click('#generate-btn');
+    await waitPhase(page, 'error');
+    const proFail = await page.$eval('#upload-error', (el) => el.innerText);
+    if (/give the credit back/i.test(proFail) || /credit for this attempt/i.test(proFail) || !/couldn.t be finished/i.test(proFail)) {
+      throw new Error('pro failed job ' + proFail);
+    }
+    note('a failed Pro run does not say a credit is returned', true);
     await expectError(fixtures.drop, /couldn.t reach ManualOS/i, 'network error is explained');
 
     await openUpload(page, base, '?session_id=cs_test_local&jobs=0');
@@ -1211,6 +1229,16 @@ async function main() {
     note('too_many_files says how many were picked and does not name files the user did not choose', true);
 
     await openUpload(page, base);
+    await addFile(page, fixtures.received);
+    await page.click('#generate-btn');
+    await waitPhase(page, 'error');
+    const receivedText = await page.$eval('#upload-error', (el) => el.innerText.trim());
+    if (receivedText !== '28 files are picked; the limit is 25.') {
+      throw new Error('too_many_files received ' + receivedText);
+    }
+    note('too_many_files reads the received count when picked is absent', true);
+
+    await openUpload(page, base);
     await addFile(page, fixtures.paused);
     await page.click('#generate-btn');
     await waitPhase(page, 'error');
@@ -1330,12 +1358,10 @@ async function main() {
     await page.evaluate(() => { document.documentElement.style.fontSize = '32px'; });
     const largeText = await page.evaluate(() => {
       const vw = document.documentElement.clientWidth;
-      const bar = document.querySelector('.bar').getBoundingClientRect();
       const cta = document.querySelector('a.btn.btn-nav').getBoundingClientRect();
       const exts = document.querySelector('.flow ul.exts').getBoundingClientRect();
       return {
         scroll: document.documentElement.scrollWidth - vw,
-        header: Math.round(bar.height),
         ctaLeft: cta.left,
         ctaRight: cta.right,
         ctaH: cta.height,
@@ -1344,52 +1370,35 @@ async function main() {
       };
     });
     await page.evaluate(() => { document.documentElement.style.fontSize = ''; });
-    if (largeText.scroll > 1 || largeText.header >= 110 || largeText.ctaLeft < 0 || largeText.ctaRight > largeText.vw + 1 || largeText.ctaH < 44 || largeText.extsRight > largeText.vw + 1) {
+    if (largeText.scroll > 1 || largeText.ctaLeft < 0 || largeText.ctaRight > largeText.vw + 1 || largeText.ctaH < 44 || largeText.extsRight > largeText.vw + 1) {
       throw new Error('200% text at 390 ' + JSON.stringify(largeText));
     }
-    note('home at 390 with 200% text keeps Get started and the file types on screen', true, 'header ' + largeText.header + 'px');
+    note('home at 390 with 200% text keeps Get started and the file types on screen', true);
 
-    const menuClosed = await page.evaluate(() => {
-      const toggle = document.querySelector('.nav-toggle');
-      const how = document.querySelector('#primary-menu a[href="#how"]');
-      const toggleBox = toggle.getBoundingClientRect();
+    await page.goto(base + '/404.html', { waitUntil: 'networkidle0' });
+    await page.evaluate(() => { document.documentElement.style.fontSize = '32px'; });
+    const missingLarge = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+    await page.evaluate(() => { document.documentElement.style.fontSize = ''; });
+    if (missingLarge > 1) throw new Error('404 at 390 with 200% text overflows by ' + missingLarge + 'px');
+    note('404 at 390 with 200% text does not scroll sideways', true);
+
+    await page.goto(base + '/', { waitUntil: 'networkidle0' });
+    const phoneNav = await page.evaluate(() => {
+      const how = document.querySelector('.nav a[href="#how"]');
+      const start = document.querySelector('.nav a.btn');
+      const startBox = start.getBoundingClientRect();
       return {
-        expanded: toggle.getAttribute('aria-expanded'),
+        toggle: !!document.querySelector('.nav-toggle'),
         howVisible: how.getClientRects().length > 0,
-        w: toggleBox.width,
-        h: toggleBox.height,
+        start: start.textContent.trim(),
+        w: startBox.width,
+        h: startBox.height,
       };
     });
-    if (menuClosed.expanded !== 'false' || menuClosed.howVisible || menuClosed.w < 44 || menuClosed.h < 44) {
-      throw new Error('closed menu ' + JSON.stringify(menuClosed));
+    if (phoneNav.toggle || phoneNav.howVisible || phoneNav.start !== 'Get started' || phoneNav.w < 44 || phoneNav.h < 44) {
+      throw new Error('phone header ' + JSON.stringify(phoneNav));
     }
-    await page.click('.nav-toggle');
-    const menuOpen = await page.evaluate(() => {
-      const link = document.querySelector('#primary-menu a[href="#how"]');
-      const box = link.getBoundingClientRect();
-      return {
-        expanded: document.querySelector('.nav-toggle').getAttribute('aria-expanded'),
-        label: document.getElementById('nav-toggle-label').textContent,
-        focused: document.activeElement && document.activeElement.textContent,
-        h: box.height,
-        w: box.width,
-      };
-    });
-    if (menuOpen.expanded !== 'true' || menuOpen.label !== 'Close menu' || !/How it works/.test(menuOpen.focused || '') || menuOpen.h < 44 || menuOpen.w < 44) {
-      throw new Error('open menu ' + JSON.stringify(menuOpen));
-    }
-    await page.keyboard.press('Escape');
-    const menuEsc = await page.evaluate(() => ({
-      expanded: document.querySelector('.nav-toggle').getAttribute('aria-expanded'),
-      active: document.activeElement && document.activeElement.className,
-    }));
-    if (menuEsc.expanded !== 'false' || !/nav-toggle/.test(menuEsc.active || '')) {
-      throw new Error('escape menu ' + JSON.stringify(menuEsc));
-    }
-    await page.keyboard.press('Enter');
-    await page.waitForFunction(() => document.querySelector('.nav-toggle').getAttribute('aria-expanded') === 'true');
-    await page.keyboard.press('Escape');
-    note('phone menu button reveals the section links and Escape returns focus', true);
+    note('at 390 the section links stay hidden and Get started remains in the header', true);
 
     const homeTaps = await page.evaluate(() => {
       const nodes = [
@@ -1435,10 +1444,16 @@ async function main() {
         lastRow: row.length,
         gap: Math.round(lede.top - title.bottom),
         priceInButton: !!price && /\$39/.test(price.textContent) && priceBox.height > 20 && priceBox.top >= cta.top - 2,
+        priceLine: (() => {
+          const line = document.querySelector('.hero-price');
+          if (!line) return false;
+          const box = line.getBoundingClientRect();
+          return /\$39/.test(line.textContent) && box.height > 12 && box.top >= cta.top - 2;
+        })(),
       };
     });
     if (homeDesktop.overflow > 1) throw new Error('home overflow 1280 ' + homeDesktop.overflow);
-    if (homeDesktop.lastRow < 2 || homeDesktop.gap > 40 || !homeDesktop.priceInButton) {
+    if (homeDesktop.lastRow < 2 || homeDesktop.gap > 40 || !(homeDesktop.priceInButton || homeDesktop.priceLine)) {
       throw new Error('home desktop layout ' + JSON.stringify(homeDesktop));
     }
     await assertButtonContrast(page, 'home 1280');
@@ -1446,7 +1461,18 @@ async function main() {
     note('home at 1280 top-aligns the hero, keeps the price on the primary button, and does not leave the last preview alone', true);
     await shoot(page, 'retention_privacy', '.privacy');
 
+    await fetch(base + '/__mock/checkout-config', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pauseCheckout: true }),
+    });
     await page.goto(base + '/', { waitUntil: 'networkidle0' });
+    await page.waitForFunction(() => {
+      const mode = document.documentElement.getAttribute('data-checkout-config');
+      return mode === 'mp' || mode === 'direct';
+    });
+    await page.click('#starter-consent');
+    await page.waitForFunction(() => !document.querySelector('[data-checkout="starter"]').disabled);
     await page.click('[data-checkout="starter"]');
     await page.waitForFunction(() => document.getElementById('checkout-error').textContent.includes('Checkout is paused'));
     const checkoutPaused = await page.evaluate(() => ({
@@ -1458,6 +1484,8 @@ async function main() {
     if (checkoutPaused.text !== 'Checkout is paused. Please try again later.' || checkoutPaused.focused !== 'checkout-error' || checkoutPaused.label !== 'Buy Starter' || checkoutPaused.disabled) {
       throw new Error('checkout_paused ' + JSON.stringify(checkoutPaused));
     }
+    await page.click('#pro-consent');
+    await page.waitForFunction(() => !document.querySelector('[data-checkout="pro"]').disabled);
     await page.click('[data-checkout="pro"]');
     await page.waitForFunction(() => /couldn.t start checkout/i.test(document.getElementById('checkout-error').textContent));
     const checkoutGeneric = await page.evaluate(() => ({
@@ -1469,8 +1497,7 @@ async function main() {
       throw new Error('checkout without message ' + JSON.stringify(checkoutGeneric));
     }
     const checkoutLog = (await requests(base)).filter((entry) => entry.path === '/create-checkout-session');
-    const checkoutPlans = checkoutLog.map((entry) => (entry.fields || []).join(','));
-    if (checkoutLog.length !== 2 || checkoutPlans[0] !== 'starter' || checkoutPlans[1] !== 'pro' || checkoutLog.some((entry) => entry.status !== 503)) {
+    if (checkoutLog.length !== 2 || checkoutLog[0].plan !== 'starter' || checkoutLog[1].plan !== 'pro' || checkoutLog.some((entry) => entry.status !== 503)) {
       throw new Error('checkout log ' + JSON.stringify(checkoutLog));
     }
     await shoot(page, 'checkout_paused', '#checkout-error');

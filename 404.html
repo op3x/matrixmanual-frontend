@@ -40,11 +40,11 @@ a.btn{display:inline-flex;align-items:center;justify-content:center;min-height:2
 .site-footer a{color:#f3f0e6;text-decoration:none}
 .site-footer a:hover{color:var(--yellow)}
 .site-footer a:focus-visible{outline-color:#f3f0e6}
-.footer-inner{max-width:76rem;margin:0 auto;display:grid;gap:.8rem}
-.footer-brand{margin:0;font-size:1.15rem;font-weight:600;letter-spacing:-.02em}
-.footer-nav{display:flex;flex-wrap:wrap;gap:.15rem .9rem}
-.footer-nav a{display:inline-flex;align-items:center;min-height:2.75rem;font-weight:600;text-underline-offset:.15em}
-.legal{margin:0;color:#d9d2c3;font-size:.95rem}
+.footer-inner{max-width:76rem;margin:0 auto;display:grid;gap:.8rem;min-width:0}
+.footer-brand{margin:0;font-size:1.15rem;font-weight:600;letter-spacing:-.02em;overflow-wrap:anywhere}
+.footer-nav{display:flex;flex-wrap:wrap;gap:.15rem .9rem;min-width:0;max-width:100%}
+.footer-nav a{display:inline-flex;align-items:center;min-height:2.75rem;max-width:100%;min-width:0;font-weight:600;text-underline-offset:.15em;overflow-wrap:anywhere}
+.legal{margin:0;color:#d9d2c3;font-size:.95rem;overflow-wrap:anywhere}
 </style>
 </head>
 <body>
