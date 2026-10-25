@@ -107,7 +107,10 @@ async function main() {
       if (html[name].includes(word)) throw new Error(name + ' contains ' + word);
     }
   }
-  if (!html['privacy.html'].includes('[LOG RETENTION]')) throw new Error('privacy missing log retention placeholder');
+  if (/\[LOG RETENTION\]/.test(html['privacy.html'])) throw new Error('privacy still has the log retention placeholder');
+  if (!html['privacy.html'].includes('Hosting logs are kept for 30 days.') || !html['privacy.html'].includes('<strong>Hosting logs:</strong> 30 days.')) {
+    throw new Error('privacy missing 30-day hosting logs');
+  }
   for (const name of ['privacy.html', 'terms.html']) {
     const addressCount = (html[name].match(/\[\[OP3X_MAILING_ADDRESS\]\]/g) || []).length;
     const dateCount = (html[name].match(/\[\[EFFECTIVE_DATE\]\]/g) || []).length;
