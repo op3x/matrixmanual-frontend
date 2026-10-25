@@ -218,6 +218,65 @@ async function main() {
   const mailingConst = "var OP3X_MAILING_ADDRESS = '[OP3X MAILING ADDRESS]';";
   if (effectiveDateJs.split(mailingConst).length - 1 !== 1) throw new Error('mailing address is not one constant in effective-date.js');
   if (!effectiveDateJs.includes("OP3X_MAILING_ADDRESS.charAt(0) !== '['")) throw new Error('placeholder address is still written onto the page');
+  const streetJs = await read('street-address.js');
+  const streetConst = "var OP3X_STREET_ADDRESS = '[[OP3X_STREET_ADDRESS]]';";
+  const fakeStreet = '123 Example St, Springfield, ZZ 00000';
+  if (streetJs.split(streetConst).length - 1 !== 1) throw new Error('street address is not one constant in street-address.js');
+  if ((streetJs.match(/\[\[OP3X_STREET_ADDRESS\]\]/g) || []).length !== 1) throw new Error('street address token appears more than once');
+  if (effectiveDateJs.includes('OP3X_STREET_ADDRESS') || effectiveDateJs.includes('[[OP3X_STREET_ADDRESS]]')) {
+    throw new Error('effective-date.js still contains the street address');
+  }
+  const streetValue = (streetJs.match(/var OP3X_STREET_ADDRESS = '([^']*)';/) || [])[1];
+  const streetUnfilled = !streetValue || streetValue.charAt(0) === '[';
+  if (!streetUnfilled && !streetValue) throw new Error('street address is neither filled nor hidden');
+  if (streetJs.includes(fakeStreet) || effectiveDateJs.includes(fakeStreet) || Object.values(html).some((page) => page.includes(fakeStreet))) {
+    throw new Error('the fake street address is outside the test');
+  }
+  if (!html['index.html'].includes('src="/street-address.js"')) throw new Error('homepage does not load the street address script');
+  if (html['index.html'].includes('src="/effective-date.js"')) throw new Error('homepage loads the effective-date script');
+  const indexFooter = footerOf(html['index.html']);
+  if ((indexFooter.match(/data-street-address/g) || []).length !== 1) throw new Error('footer is not the only homepage street slot');
+  const pricing = html['index.html'].slice(html['index.html'].indexOf('id="pricing"'), html['index.html'].indexOf('id="faq"'));
+  if (pricing.includes('data-street-address')) throw new Error('pricing section still has a street address');
+  for (const name of pages) {
+    const slots = html[name].match(/data-street-address/g) || [];
+    if (name === 'index.html' && slots.length !== 1) throw new Error('homepage street line is not the single footer slot');
+    if (name !== 'index.html' && slots.length) throw new Error(name + ' includes a street address');
+    if (name !== 'index.html' && html[name].includes('street-address.js')) throw new Error(name + ' loads the street address script');
+    if (html[name].includes('[[OP3X_STREET_ADDRESS]]')) throw new Error(name + ' shows the street address token');
+    if (streetUnfilled) {
+      const tags = html[name].match(/<p[^>]*data-street-address[^>]*>/g) || [];
+      for (const tag of tags) {
+        if (!/\shidden\b/.test(tag)) throw new Error(name + ' shows an unfilled street address');
+      }
+    }
+  }
+  const businessLabel = "I'm buying for my business, not for personal or household use.";
+  const caHelp = 'For now, ManualOS sells to Canadian businesses only. Personal purchases from Canada are coming soon.';
+  const caBlock = "Personal (non-business) purchases from Canada are coming soon. If you're buying for a business, tick the box above.";
+  if ((html['index.html'].split(businessLabel).length - 1) !== 2) throw new Error('business checkbox label is not on both paid plans');
+  if ((html['index.html'].split(caHelp).length - 1) !== 2) throw new Error('Canada helper text is not under both business checkboxes');
+  if (html['index.html'].includes('LABEL PENDING LEGAL')) throw new Error('business checkbox still has a pending-legal comment');
+  if (html['index.html'].includes("I'm buying for my business (not personal use)")) throw new Error('old business checkbox label remains');
+  if (!html['index.html'].includes("var ATTESTATION_VERSION = 'ca-b2b-v1';")) throw new Error('attestation version is not ca-b2b-v1');
+  if (!html['index.html'].includes('billingCountry: country')) throw new Error('checkout does not send billingCountry');
+  if (!html['index.html'].includes("caBusinessAttestation: country === 'CA' && !!(business && business.checked)")) throw new Error('checkout does not send caBusinessAttestation as false outside Canada');
+  if (!html['index.html'].includes('attestationVersion: ATTESTATION_VERSION')) throw new Error('checkout does not send attestationVersion');
+  if (!html['index.html'].includes('caReady(button)')) throw new Error('Canada does not keep Buy disabled until the business box is ticked');
+  if (!html['index.html'].includes(caBlock)) throw new Error('Canada block message is missing');
+  if (!html['index.html'].includes("data.code === 'ca_business_required'")) throw new Error('checkout does not show the Canada block for ca_business_required');
+  if (html['index.html'].includes('buyingForBusiness')) throw new Error('checkout still sends buyingForBusiness');
+  const countryPairs = html['index.html'].match(/\['[A-Z]{2}', '/g) || [];
+  if (countryPairs.length !== 249) throw new Error('billing country list is not the full ISO list (' + countryPairs.length + ')');
+  if (!html['index.html'].includes("['US', 'United States of America'], ['CA', 'Canada']")) throw new Error('US and Canada are not first');
+  if (!html['index.html'].includes("['IS', 'Iceland']") || !html['index.html'].includes("['NG', 'Nigeria']")) throw new Error('Iceland or Nigeria is missing from billing countries');
+  for (const id of ['starter-business', 'pro-business']) {
+    const tag = (html['index.html'].match(new RegExp('<input[^>]*id="' + id + '"[^>]*>')) || [''])[0];
+    if (!tag) throw new Error('missing ' + id);
+    if (/\srequired\b/.test(tag) || /\schecked\b/.test(tag)) throw new Error(id + ' is pre-checked or uses the required attribute');
+    if (!html['index.html'].includes('for="' + id + '">' + businessLabel + '</label>')) throw new Error(id + ' label is not tied to the checkbox');
+    if (!html['index.html'].includes('id="' + id.replace('-business', '-ca-panel') + '" hidden')) throw new Error(id + ' panel is not hidden until Canada is selected');
+  }
   const dateCheck = await read('dev/check-effective-date.mjs');
   if (!dateCheck.includes('[[EFFECTIVE_DATE]]') || !dateCheck.includes('mailing address') || !dateCheck.includes('process.exit(1)')) {
     throw new Error('effective-date check does not fail while the token or a mailing address remains');
@@ -327,7 +386,7 @@ async function main() {
   for (const name of pages) {
     if (trainNearModel.test(html[name])) throw new Error(name + ' still says files are used to train models');
   }
-  const indexOutsideCredit = html['index.html'].replace(/<([a-z0-9]+)\b[^>]*\bclass="[^"]*\bcredit(?:-note)?\b[^"]*"[^>]*>[\s\S]*?<\/\1>/gi, '');
+  const indexOutsideCredit = html['index.html'].replace(/<([a-z0-9]+)\b[^>]*\bclass="[^"]*\bcredit(?:-note)?\b[^"]*"[^>]*>[\s\S]*?<\/\1>/gi, '').replace(/var COUNTRIES = \[[\s\S]*?\];/, '');
   if (/\bAI\b/i.test(indexOutsideCredit)) throw new Error('homepage mentions AI outside the credit');
   const homepageProvider = 'a third-party service provider that helps write the manual';
   if ((html['index.html'].match(new RegExp(homepageProvider.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g')) || []).length < 3) {
@@ -459,6 +518,75 @@ async function main() {
     }
 
     await page.setViewport({ width: 1280, height: 1000, deviceScaleFactor: 1 });
+    await page.goto(base + '/index.html#pricing', { waitUntil: 'networkidle0' });
+    const hiddenStreet = await page.evaluate(() => {
+      const nodes = [...document.querySelectorAll('[data-street-address]')];
+      const json = [...document.querySelectorAll('script[type="application/ld+json"]')].map((el) => el.textContent).join('\n');
+      return {
+        count: nodes.length,
+        footer: document.querySelectorAll('footer [data-street-address]').length,
+        pricing: !!document.querySelector('#pricing [data-street-address]'),
+        hidden: nodes.every((el) => el.hidden && getComputedStyle(el).display === 'none' && el.textContent === ''),
+        leaked: document.body.innerText.includes('[[OP3X_STREET_ADDRESS]]') || document.body.innerText.includes('123 Example St'),
+        jsonAddress: /PostalAddress|"address"\s*:/.test(json),
+      };
+    });
+    if (hiddenStreet.count !== 1 || hiddenStreet.footer !== 1 || hiddenStreet.pricing || !hiddenStreet.hidden || hiddenStreet.leaked || hiddenStreet.jsonAddress) {
+      throw new Error('unfilled street line is visible ' + JSON.stringify(hiddenStreet));
+    }
+    await page.goto(base + '/upload.html', { waitUntil: 'domcontentloaded' });
+    await page.waitForFunction(() => document.body.dataset.phase && document.body.dataset.phase !== 'checking', { timeout: 8000 });
+    const hiddenUploadStreet = await page.$$eval('[data-street-address]', (nodes) => nodes.length);
+    if (hiddenUploadStreet !== 0) throw new Error('upload has a street address slot');
+    const filledJs = (await read('street-address.js')).replace('[[OP3X_STREET_ADDRESS]]', fakeStreet);
+    const onFilledStreet = (req) => {
+      if (new URL(req.url()).pathname === '/street-address.js') {
+        req.respond({ status: 200, contentType: 'text/javascript; charset=utf-8', body: filledJs });
+        return;
+      }
+      req.continue();
+    };
+    await page.setRequestInterception(true);
+    page.on('request', onFilledStreet);
+    try {
+      await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 1 });
+      await page.goto(base + '/index.html#pricing', { waitUntil: 'networkidle0' });
+      const shown = await page.evaluate((expected) => {
+        const nodes = [...document.querySelectorAll('[data-street-address]')];
+        const json = [...document.querySelectorAll('script[type="application/ld+json"]')].map((el) => el.textContent).join('\n');
+        return {
+          texts: nodes.map((el) => ({ hidden: el.hidden, text: el.textContent, display: getComputedStyle(el).display })),
+          overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+          jsonAddress: /PostalAddress|"address"\s*:/.test(json),
+        };
+      }, fakeStreet);
+      const expectedLine = 'Op3x LLC, ' + fakeStreet;
+      if (shown.texts.length !== 1 || shown.texts.some((item) => item.hidden || item.display === 'none' || item.text !== expectedLine) || shown.overflow > 1 || shown.jsonAddress) {
+        throw new Error('filled street line ' + JSON.stringify(shown));
+      }
+      const footerLine = await page.$('footer [data-street-address]');
+      await footerLine.screenshot({ path: path.join(shotDir, 'street_address_footer_390.png') });
+      await runAxe(page, 'filled street address 390');
+      await page.goto(base + '/terms.html', { waitUntil: 'networkidle0' });
+      const termsStreet = await page.evaluate((sample) => ({
+        slots: document.querySelectorAll('[data-street-address]').length,
+        leaked: document.body.innerText.includes(sample) || document.body.innerText.includes('[[OP3X_STREET_ADDRESS]]'),
+      }), fakeStreet);
+      if (termsStreet.slots || termsStreet.leaked) throw new Error('terms shows a street address ' + JSON.stringify(termsStreet));
+      await page.goto(base + '/upload.html', { waitUntil: 'domcontentloaded' });
+      await page.waitForFunction(() => document.body.dataset.phase && document.body.dataset.phase !== 'checking', { timeout: 8000 });
+      const uploadStreet = await page.evaluate((sample) => ({
+        slots: document.querySelectorAll('[data-street-address]').length,
+        leaked: document.body.innerText.includes(sample),
+      }), fakeStreet);
+      if (uploadStreet.slots || uploadStreet.leaked) throw new Error('upload street ' + JSON.stringify(uploadStreet));
+      const uploadOverflow = await overflow(page);
+      if (uploadOverflow > 1) throw new Error('upload overflows by ' + uploadOverflow + 'px at 390');
+    } finally {
+      page.off('request', onFilledStreet);
+      await page.setRequestInterception(false);
+    }
+    await page.setViewport({ width: 1280, height: 1000, deviceScaleFactor: 1 });
     await page.goto(base + '/support.html', { waitUntil: 'networkidle0' });
     const phoneState = await page.$eval('#support-phone-line', (el) => ({
       hidden: el.hidden,
@@ -559,6 +687,7 @@ async function main() {
     await runAxe(page, 'support opt-in failure');
 
     await page.goto(base + '/index.html#pricing', { waitUntil: 'networkidle0' });
+    await page.select('#pro-billing-country', 'US');
     const proGate = await page.evaluate(() => {
       const input = document.getElementById('pro-consent');
       const label = document.querySelector('label[for="pro-consent"]');
@@ -601,19 +730,186 @@ async function main() {
     await page.waitForFunction(() => location.pathname.endsWith('/upload.html'));
     const checkout = (await fetch(base + '/__mock/requests').then((res) => res.json())).filter((item) => item.path === '/create-checkout-session').slice(beforeCheckout);
     if (checkout.length !== 1 || checkout[0].status !== 200) throw new Error('checkout response ' + JSON.stringify(checkout));
-    if (checkout[0].plan !== 'pro' || checkout[0].renewalConsent !== true || checkout[0].termsAccepted !== true || checkout[0].termsConsent !== undefined || checkout[0].termsVersion !== 'terms-rev-a-m2' || checkout[0].disclosureVersion !== 'pro-renew-b2-mp' || !checkout[0].fields.includes('termsAccepted') || checkout[0].fields.includes('termsConsent')) {
+    if (checkout[0].plan !== 'pro' || checkout[0].renewalConsent !== true || checkout[0].termsAccepted !== true || checkout[0].termsConsent !== undefined || checkout[0].termsVersion !== 'terms-rev-a-m2' || checkout[0].disclosureVersion !== 'pro-renew-b2-mp' || checkout[0].billingCountry !== 'US' || checkout[0].caBusinessAttestation !== false || checkout[0].attestationVersion !== 'ca-b2b-v1' || !checkout[0].fields.includes('termsAccepted') || !checkout[0].fields.includes('billingCountry') || !checkout[0].fields.includes('caBusinessAttestation') || !checkout[0].fields.includes('attestationVersion') || checkout[0].fields.includes('buyingForBusiness') || checkout[0].fields.includes('termsConsent')) {
       throw new Error('checkout body ' + JSON.stringify(checkout[0]));
     }
 
-    await page.goto(base + '/index.html#pricing', { waitUntil: 'networkidle0' });
+    await page.goto(base + '/index.html#pricing?seller=starter', { waitUntil: 'networkidle0' });
+    await page.select('#starter-billing-country', 'US');
     const starterDisabled = await page.$eval('[data-checkout="starter"]', (el) => el.disabled);
     if (!starterDisabled) throw new Error('starter button starts enabled');
     await page.click('#starter-consent');
     await page.click('[data-checkout="starter"]');
     await page.waitForFunction(() => location.pathname.endsWith('/upload.html'));
     const starter = (await fetch(base + '/__mock/requests').then((res) => res.json())).filter((item) => item.path === '/create-checkout-session').pop();
-    if (starter.plan !== 'starter' || starter.renewalConsent !== false || starter.termsAccepted !== true || starter.termsConsent !== undefined || starter.disclosureVersion !== 'starter-disclosure-b2-mp' || starter.fields.includes('termsConsent')) {
+    if (starter.plan !== 'starter' || starter.renewalConsent !== false || starter.termsAccepted !== true || starter.termsConsent !== undefined || starter.disclosureVersion !== 'starter-disclosure-b2-mp' || starter.billingCountry !== 'US' || starter.caBusinessAttestation !== false || starter.attestationVersion !== 'ca-b2b-v1' || starter.fields.includes('termsConsent')) {
       throw new Error('starter body ' + JSON.stringify(starter));
+    }
+
+    await page.goto(base + '/index.html#pricing?seller=iceland', { waitUntil: 'networkidle0' });
+    const isoList = await page.evaluate(() => {
+      const select = document.getElementById('starter-billing-country');
+      const values = [...select.options].map((option) => option.value);
+      return {
+        count: values.filter(Boolean).length,
+        first: values[1],
+        second: values[2],
+        hasIS: values.includes('IS'),
+        hasNG: values.includes('NG'),
+        blank: values[0] === '' && select.options[0].selected,
+        label: document.querySelector('label[for="starter-billing-country"]').textContent,
+      };
+    });
+    if (isoList.count !== 249 || isoList.first !== 'US' || isoList.second !== 'CA' || !isoList.hasIS || !isoList.hasNG || !isoList.blank || isoList.label !== 'Billing country') {
+      throw new Error('country list ' + JSON.stringify(isoList));
+    }
+    await page.select('#starter-billing-country', 'IS');
+    const icelandHidden = await page.$eval('#starter-ca-panel', (el) => el.hidden && getComputedStyle(el).display === 'none');
+    if (!icelandHidden) throw new Error('Iceland shows the Canada checkbox');
+    await page.click('#starter-consent');
+    const icelandEnabled = await page.$eval('[data-checkout="starter"]', (el) => !el.disabled);
+    if (!icelandEnabled) throw new Error('Iceland left Buy disabled');
+    await page.click('[data-checkout="starter"]');
+    await page.waitForFunction(() => location.pathname.endsWith('/upload.html'));
+    const iceland = (await fetch(base + '/__mock/requests').then((res) => res.json())).filter((item) => item.path === '/create-checkout-session').pop();
+    if (!iceland || iceland.status !== 200 || iceland.billingCountry !== 'IS' || iceland.caBusinessAttestation !== false || iceland.attestationVersion !== 'ca-b2b-v1') {
+      throw new Error('Iceland checkout ' + JSON.stringify(iceland));
+    }
+
+    await page.goto(base + '/index.html#pricing?seller=business', { waitUntil: 'networkidle0' });
+    await page.select('#pro-billing-country', 'US');
+    const usBusiness = await page.evaluate(() => {
+      const panel = document.getElementById('pro-ca-panel');
+      const input = document.getElementById('pro-business');
+      return {
+        hidden: panel.hidden,
+        display: getComputedStyle(panel).display,
+        checked: input.checked,
+      };
+    });
+    if (!usBusiness.hidden || usBusiness.display !== 'none' || usBusiness.checked) {
+      throw new Error('US shows the Canada checkbox ' + JSON.stringify(usBusiness));
+    }
+    await page.select('#pro-billing-country', 'CA');
+    const businessFocus = await page.evaluate(() => {
+      const input = document.getElementById('pro-business');
+      const label = document.querySelector('label[for="pro-business"]');
+      const help = document.getElementById('pro-ca-help');
+      const panel = document.getElementById('pro-ca-panel');
+      input.focus({ focusVisible: true });
+      const style = getComputedStyle(input);
+      return {
+        tied: !!(label && label.htmlFor === 'pro-business'),
+        label: label ? label.textContent : '',
+        help: help ? help.textContent : '',
+        required: input.required,
+        checked: input.checked,
+        panelHidden: panel.hidden,
+        outlineStyle: style.outlineStyle,
+        outlineWidth: parseFloat(style.outlineWidth),
+        beside: input.closest('.consent-row') === document.getElementById('pro-consent').closest('.consent-row'),
+      };
+    });
+    if (!businessFocus.tied || businessFocus.label !== businessLabel || businessFocus.help !== caHelp || businessFocus.required || businessFocus.checked || businessFocus.panelHidden || businessFocus.beside || businessFocus.outlineStyle === 'none' || !(businessFocus.outlineWidth > 0)) {
+      throw new Error('business checkbox ' + JSON.stringify(businessFocus));
+    }
+    await page.click('#pro-consent');
+    const canadaBlocked = await page.$eval('[data-checkout="pro"]', (el) => el.disabled);
+    if (!canadaBlocked) throw new Error('Canada enabled Buy before the business box was ticked');
+    await page.focus('#pro-business');
+    await page.keyboard.press('Space');
+    const canadaEnabled = await page.$eval('[data-checkout="pro"]', (el) => !el.disabled && document.getElementById('pro-business').checked);
+    if (!canadaEnabled) throw new Error('ticking the Canada box did not enable Buy');
+    await page.select('#pro-billing-country', 'US');
+    const switched = await page.evaluate(() => ({
+      hidden: document.getElementById('pro-ca-panel').hidden,
+      checked: document.getElementById('pro-business').checked,
+      enabled: !document.querySelector('[data-checkout="pro"]').disabled,
+    }));
+    if (!switched.hidden || switched.checked || !switched.enabled) {
+      throw new Error('leaving Canada still sends the business checkbox ' + JSON.stringify(switched));
+    }
+    await page.click('[data-checkout="pro"]');
+    await page.waitForFunction(() => location.pathname.endsWith('/upload.html'));
+    const businessCheckout = (await fetch(base + '/__mock/requests').then((res) => res.json())).filter((item) => item.path === '/create-checkout-session').pop();
+    if (!businessCheckout || businessCheckout.status !== 200 || businessCheckout.plan !== 'pro' || businessCheckout.billingCountry !== 'US' || businessCheckout.caBusinessAttestation !== false || businessCheckout.attestationVersion !== 'ca-b2b-v1' || businessCheckout.termsAccepted !== true) {
+      throw new Error('business checkout body ' + JSON.stringify(businessCheckout));
+    }
+
+    await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 1 });
+    await page.goto(base + '/index.html#pricing?seller=ca', { waitUntil: 'networkidle0' });
+    await page.select('#starter-billing-country', 'CA');
+    await page.click('#starter-consent');
+    const caGate = await page.evaluate(() => {
+      const button = document.querySelector('[data-checkout="starter"]');
+      const panel = document.getElementById('starter-ca-panel');
+      const box = document.getElementById('starter-business');
+      return {
+        disabled: button.disabled,
+        checked: box.checked,
+        panelHidden: panel.hidden,
+        display: getComputedStyle(panel).display,
+        label: document.querySelector('label[for="starter-business"]').textContent,
+        help: document.getElementById('starter-ca-help').textContent,
+        errorHidden: document.getElementById('starter-ca-error').hidden,
+      };
+    });
+    if (!caGate.disabled || caGate.checked || caGate.panelHidden || caGate.display === 'none' || caGate.label !== businessLabel || caGate.help !== caHelp || !caGate.errorHidden) {
+      throw new Error('Canada gate ' + JSON.stringify(caGate));
+    }
+    const beforeCa = (await fetch(base + '/__mock/requests').then((res) => res.json())).filter((item) => item.path === '/create-checkout-session').length;
+    await page.evaluate(() => {
+      window.__checkoutFetch = window.fetch;
+      window.fetch = function (url, opts) {
+        if (String(url).includes('/create-checkout-session') && opts && opts.body) {
+          const body = JSON.parse(opts.body);
+          body.caBusinessAttestation = false;
+          opts = Object.assign({}, opts, { body: JSON.stringify(body) });
+        }
+        return window.__checkoutFetch.call(this, url, opts);
+      };
+    });
+    await page.click('#starter-business');
+    const caEnabledForBackstop = await page.$eval('[data-checkout="starter"]', (el) => !el.disabled);
+    if (!caEnabledForBackstop) throw new Error('Canada with the box left Buy disabled');
+    await page.click('[data-checkout="starter"]');
+    const caMessage = "Personal (non-business) purchases from Canada are coming soon. If you're buying for a business, tick the box above.";
+    await page.waitForFunction((expected) => {
+      const err = document.getElementById('starter-ca-error');
+      return err && !err.hidden && err.textContent === expected;
+    }, {}, caMessage);
+    const caState = await page.evaluate(() => {
+      const err = document.getElementById('starter-ca-error');
+      const box = document.getElementById('starter-business');
+      return {
+        text: err.textContent,
+        invalid: box.getAttribute('aria-invalid'),
+        described: box.getAttribute('aria-describedby'),
+        focus: document.activeElement === box,
+        path: location.pathname,
+        generic: document.getElementById('checkout-error').textContent,
+      };
+    });
+    const caPosted = (await fetch(base + '/__mock/requests').then((res) => res.json())).filter((item) => item.path === '/create-checkout-session').slice(beforeCa);
+    if (caState.text !== caMessage || caState.invalid !== 'true' || caState.described !== 'starter-ca-error' || !caState.focus || caState.path.endsWith('/upload.html') || caState.generic) {
+      throw new Error('Canada block message ' + JSON.stringify(caState));
+    }
+    if (caPosted.length !== 1 || caPosted[0].status !== 400 || caPosted[0].code !== 'ca_business_required' || caPosted[0].billingCountry !== 'CA' || caPosted[0].caBusinessAttestation !== false || caPosted[0].attestationVersion !== 'ca-b2b-v1') {
+      throw new Error('Canada block payload ' + JSON.stringify(caPosted));
+    }
+    const caOverflow = await overflow(page);
+    if (caOverflow > 1) throw new Error('Canada block overflows by ' + caOverflow + 'px at 390');
+    const caPanel = await page.$('#starter-ca-panel');
+    await caPanel.screenshot({ path: path.join(shotDir, 'canada_business_checkbox_390.png') });
+    await runAxe(page, 'canada business block 390');
+    await page.evaluate(() => { window.fetch = window.__checkoutFetch; });
+    const caStillReady = await page.$eval('[data-checkout="starter"]', (el) => !el.disabled && document.getElementById('starter-business').checked);
+    if (!caStillReady) throw new Error('Canada Buy stayed disabled after the business box was ticked');
+    await page.click('[data-checkout="starter"]');
+    await page.waitForFunction(() => location.pathname.endsWith('/upload.html'));
+    const caAllowed = (await fetch(base + '/__mock/requests').then((res) => res.json())).filter((item) => item.path === '/create-checkout-session').pop();
+    if (!caAllowed || caAllowed.status !== 200 || caAllowed.billingCountry !== 'CA' || caAllowed.caBusinessAttestation !== true || caAllowed.attestationVersion !== 'ca-b2b-v1') {
+      throw new Error('Canada business payload ' + JSON.stringify(caAllowed));
     }
 
     await page.goto(base + '/cancel/', { waitUntil: 'networkidle0' });
@@ -849,12 +1145,13 @@ async function main() {
       await page.goto(base + '/' + name, { waitUntil: 'networkidle0' });
       expectSeller(await renderedSeller(page), 'direct', name.startsWith('index') ? 'index' : name);
     }
-    await page.goto(base + '/index.html#pricing', { waitUntil: 'networkidle0' });
+    await page.goto(base + '/index.html#pricing?seller=direct', { waitUntil: 'networkidle0' });
+    await page.select('#pro-billing-country', 'US');
     await page.click('#pro-consent');
     await page.click('[data-checkout="pro"]');
     await page.waitForFunction(() => location.pathname.endsWith('/upload.html'));
     const directCheckout = (await fetch(base + '/__mock/requests').then((res) => res.json())).filter((item) => item.path === '/create-checkout-session').pop();
-    if (!directCheckout || directCheckout.termsAccepted !== true || directCheckout.termsConsent !== undefined || directCheckout.disclosureVersion !== 'pro-renew-b2-direct') throw new Error('direct checkout ' + JSON.stringify(directCheckout));
+    if (!directCheckout || directCheckout.termsAccepted !== true || directCheckout.termsConsent !== undefined || directCheckout.disclosureVersion !== 'pro-renew-b2-direct' || directCheckout.billingCountry !== 'US' || directCheckout.caBusinessAttestation !== false || directCheckout.attestationVersion !== 'ca-b2b-v1') throw new Error('direct checkout ' + JSON.stringify(directCheckout));
 
     await setConfig({ managedPayments: true, fail: true, hold: false });
     for (const name of ['index.html#pricing', 'terms.html', 'refunds.html', 'privacy.html']) {
@@ -874,7 +1171,8 @@ async function main() {
     expectSeller(await renderedSeller(page), 'direct', 'terms.html');
     await page.goto(base + '/refunds.html', { waitUntil: 'domcontentloaded' });
     expectSeller(await renderedSeller(page), 'direct', 'refunds.html');
-    await page.goto(base + '/index.html#pricing', { waitUntil: 'domcontentloaded' });
+    await page.goto(base + '/index.html#pricing?seller=hold', { waitUntil: 'domcontentloaded' });
+    await page.select('#pro-billing-country', 'US');
     const pendingConfig = await page.evaluate(() => document.documentElement.getAttribute('data-checkout-config'));
     if (pendingConfig) throw new Error('checkout config settled before the request returned: ' + pendingConfig);
     expectSeller(await renderedSeller(page), 'direct', 'index');

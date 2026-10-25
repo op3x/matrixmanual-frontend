@@ -140,6 +140,19 @@ figcaption{padding:.6rem .7rem .75rem;font-size:.92rem;border-top:1px solid var(
 .consent-row input{width:1.5rem;height:1.5rem;margin:0;accent-color:var(--ink)}
 .consent-row input:focus-visible{outline:2px solid var(--ink);outline-offset:3px;box-shadow:0 0 0 4px var(--yellow)}
 .consent-row label{font-weight:600;cursor:pointer;overflow-wrap:anywhere}
+.billing-country{display:grid;gap:.4rem;min-width:0}
+.billing-country label{font-weight:600}
+.billing-country select{width:100%;max-width:100%;min-width:0;min-height:2.75rem;font:inherit;color:var(--ink);background:var(--paper);border:1px solid var(--ink);padding:.4rem .55rem}
+.ca-panel{display:grid;gap:.45rem;min-width:0}
+.ca-panel[hidden]{display:none !important}
+.ca-check{display:grid;grid-template-columns:1.5rem minmax(0,1fr);gap:.35rem .65rem;align-items:start}
+.ca-check input{width:1.5rem;height:1.5rem;margin:.15rem 0 0;accent-color:var(--ink)}
+.ca-check input:focus-visible{outline:2px solid var(--ink);outline-offset:3px;box-shadow:0 0 0 4px var(--yellow)}
+.ca-check label{font-weight:600;cursor:pointer;overflow-wrap:anywhere}
+.ca-help{margin:0;font-size:.95rem;line-height:1.45;color:var(--ink);overflow-wrap:anywhere}
+.field-error{margin:0;overflow-wrap:anywhere}
+.field-error[hidden]{display:none}
+.field-error:not([hidden]){padding:.65rem .75rem;border:1px solid var(--ink);border-left:4px solid #6b2a14;background:var(--sheet);color:var(--ink);font-weight:600}
 .btn-price{width:100%;margin-top:0;padding:.55rem .9rem;font-size:1rem;line-height:1.2}
 .checkout-error:empty{margin:0}
 .checkout-error:not(:empty){margin-top:1rem;padding:.75rem .85rem;border:1px solid var(--ink);border-left:4px solid #6b2a14;background:var(--sheet);color:var(--ink);font-weight:600}
@@ -155,6 +168,9 @@ figcaption{padding:.6rem .7rem .75rem;font-size:.92rem;border-top:1px solid var(
 .footer-nav{display:flex;flex-wrap:wrap;gap:.15rem .9rem}
 .footer-nav a{display:inline-flex;align-items:center;min-height:2.75rem;font-weight:600;text-underline-offset:.15em}
 .legal{color:#d9d2c3;font-size:.95rem}
+.street-line{margin:0;overflow-wrap:anywhere}
+.street-line[hidden]{display:none}
+.site-footer .street-line{color:#f3f0e6;font-size:.875rem;font-weight:400;line-height:1.45}
 @media(min-width:768px){
   html{scroll-padding-top:4.5rem}
   .hero-sheet{margin:1rem auto;max-width:76rem;padding:1rem 1.1rem 1.15rem}
@@ -613,11 +629,25 @@ figcaption{padding:.6rem .7rem .75rem;font-size:.92rem;border-top:1px solid var(
         <div class="plan-buy">
           <p class="renew-terms" id="starter-renew-terms">$39 one time for 3 manuals, plus applicable taxes. Refundable within 30 days if no manual has been delivered. By continuing you agree to the <a href="/terms.html">Terms</a> and <a href="/refunds.html">Refund policy</a>.</p>
           <p class="seller-note" id="starter-seller-note" data-seller-note hidden>Your purchase is processed by our authorized reseller, which is the merchant of record. ManualOS is provided by Op3x LLC.</p>
+          <div class="billing-country">
+            <label for="starter-billing-country">Billing country</label>
+            <select id="starter-billing-country" name="starter-billing-country" required autocomplete="billing country">
+              <option value="" selected>Select…</option>
+            </select>
+            <div class="ca-panel" id="starter-ca-panel" hidden>
+              <div class="ca-check">
+                <input id="starter-business" name="starter-business" type="checkbox" aria-describedby="starter-ca-help" data-ca-help="starter-ca-help">
+                <label for="starter-business">I'm buying for my business, not for personal or household use.</label>
+              </div>
+              <p class="ca-help" id="starter-ca-help">For now, ManualOS sells to Canadian businesses only. Personal purchases from Canada are coming soon.</p>
+              <p class="field-error" id="starter-ca-error" role="alert" hidden></p>
+            </div>
+          </div>
           <div class="consent-row">
             <input id="starter-consent" name="starter-consent" type="checkbox" required aria-describedby="starter-renew-terms starter-seller-note starter-statement">
             <label for="starter-consent">I agree to the <a href="/terms.html">Terms</a> and <a href="/refunds.html">Refund policy</a>.</label>
           </div>
-          <button type="button" class="btn btn-outline btn-price" data-checkout="starter" data-consent="starter-consent" data-disclosure="starter-disclosure-b2" disabled>Buy Starter</button>
+          <button type="button" class="btn btn-outline btn-price" data-checkout="starter" data-consent="starter-consent" data-disclosure="starter-disclosure-b2" data-business="starter-business" data-country="starter-billing-country" data-ca-error="starter-ca-error" disabled>Buy Starter</button>
           <p class="statement" id="starter-statement" data-statement hidden>Appears on your card statement as LINK.COM* MANUALOS</p>
         </div>
       </article>
@@ -642,12 +672,26 @@ figcaption{padding:.6rem .7rem .75rem;font-size:.92rem;border-top:1px solid var(
         <div class="plan-buy">
           <p class="renew-terms" id="pro-renew-terms">$79/month plus applicable taxes, charged today and every month until you cancel. Cancel online, self-serve, from <a href="/cancel">Manage plan</a>. Each month is refundable until it ends, if no manual was delivered that month.</p>
           <p class="seller-note" id="pro-seller-note" data-seller-note hidden>Your purchase is processed by our authorized reseller, which is the merchant of record. ManualOS is provided by Op3x LLC.</p>
+          <div class="billing-country">
+            <label for="pro-billing-country">Billing country</label>
+            <select id="pro-billing-country" name="pro-billing-country" required autocomplete="billing country">
+              <option value="" selected>Select…</option>
+            </select>
+            <div class="ca-panel" id="pro-ca-panel" hidden>
+              <div class="ca-check">
+                <input id="pro-business" name="pro-business" type="checkbox" aria-describedby="pro-ca-help" data-ca-help="pro-ca-help">
+                <label for="pro-business">I'm buying for my business, not for personal or household use.</label>
+              </div>
+              <p class="ca-help" id="pro-ca-help">For now, ManualOS sells to Canadian businesses only. Personal purchases from Canada are coming soon.</p>
+              <p class="field-error" id="pro-ca-error" role="alert" hidden></p>
+            </div>
+          </div>
           <div class="consent-row">
             <input id="pro-consent" name="pro-consent" type="checkbox" required aria-describedby="pro-renew-terms pro-auto-renew pro-seller-note pro-statement">
             <label for="pro-consent">I agree to the <a href="/terms.html">Terms</a> and authorize <span data-seller-direct>Op3x LLC to charge my card $79 plus applicable taxes</span><span data-seller-mp hidden>ManualOS's authorized reseller to charge my card $79 plus applicable taxes</span> each month until I cancel.</label>
           </div>
           <p class="renew-terms" id="pro-auto-renew">Renews automatically at $79 plus applicable taxes each month until you cancel at <a href="/cancel">manualos.com/cancel</a>.</p>
-          <button type="button" class="btn btn-primary btn-price" data-checkout="pro" data-consent="pro-consent" data-subscription="true" data-disclosure="pro-renew-b2" disabled>Start Pro</button>
+          <button type="button" class="btn btn-primary btn-price" data-checkout="pro" data-consent="pro-consent" data-subscription="true" data-disclosure="pro-renew-b2" data-business="pro-business" data-country="pro-billing-country" data-ca-error="pro-ca-error" disabled>Start Pro</button>
           <p class="statement" id="pro-statement" data-statement hidden>Appears on your card statement as LINK.COM* MANUALOS</p>
           <p data-mp-section hidden>You can manage or cancel your subscription online at the reseller's order-management site, <a href="https://app.link.com">app.link.com</a>. That is a full online alternative.</p>
         </div>
@@ -703,8 +747,10 @@ figcaption{padding:.6rem .7rem .75rem;font-size:.92rem;border-top:1px solid var(
       <a href="mailto:support@manualos.com">support@manualos.com</a>
     </nav>
     <p class="legal">© 2026 Op3x LLC. ManualOS is operated by Op3x LLC.</p>
+    <p class="street-line" data-street-address hidden></p>
   </div>
 </footer>
+<script src="/street-address.js"></script>
 <script src="/checkout-config.js"></script>
 <script>
 (function () {
@@ -713,6 +759,135 @@ figcaption{padding:.6rem .7rem .75rem;font-size:.92rem;border-top:1px solid var(
   var host = location.hostname;
   if (host === 'localhost' || host === '127.0.0.1' || host === '[::1]') API_BASE = location.origin;
   var TERMS_VERSION = 'terms-rev-a-m2';
+  var ATTESTATION_VERSION = 'ca-b2b-v1';
+  var CA_BLOCK = "Personal (non-business) purchases from Canada are coming soon. If you're buying for a business, tick the box above.";
+  var COUNTRIES = [
+    ['US', 'United States of America'], ['CA', 'Canada'],
+    ['AF', 'Afghanistan'], ['AX', 'Åland Islands'],
+    ['AL', 'Albania'], ['DZ', 'Algeria'],
+    ['AS', 'American Samoa'], ['AD', 'Andorra'],
+    ['AO', 'Angola'], ['AI', 'Anguilla'],
+    ['AQ', 'Antarctica'], ['AG', 'Antigua and Barbuda'],
+    ['AR', 'Argentina'], ['AM', 'Armenia'],
+    ['AW', 'Aruba'], ['AU', 'Australia'],
+    ['AT', 'Austria'], ['AZ', 'Azerbaijan'],
+    ['BS', 'Bahamas'], ['BH', 'Bahrain'],
+    ['BD', 'Bangladesh'], ['BB', 'Barbados'],
+    ['BY', 'Belarus'], ['BE', 'Belgium'],
+    ['BZ', 'Belize'], ['BJ', 'Benin'],
+    ['BM', 'Bermuda'], ['BT', 'Bhutan'],
+    ['BO', 'Bolivia, Plurinational State of'], ['BQ', 'Bonaire, Sint Eustatius and Saba'],
+    ['BA', 'Bosnia and Herzegovina'], ['BW', 'Botswana'],
+    ['BV', 'Bouvet Island'], ['BR', 'Brazil'],
+    ['IO', 'British Indian Ocean Territory'], ['BN', 'Brunei Darussalam'],
+    ['BG', 'Bulgaria'], ['BF', 'Burkina Faso'],
+    ['BI', 'Burundi'], ['CV', 'Cabo Verde'],
+    ['KH', 'Cambodia'], ['CM', 'Cameroon'],
+    ['KY', 'Cayman Islands'], ['CF', 'Central African Republic'],
+    ['TD', 'Chad'], ['CL', 'Chile'],
+    ['CN', 'China'], ['CX', 'Christmas Island'],
+    ['CC', 'Cocos (Keeling) Islands'], ['CO', 'Colombia'],
+    ['KM', 'Comoros'], ['CG', 'Congo'],
+    ['CD', 'Congo, Democratic Republic of the'], ['CK', 'Cook Islands'],
+    ['CR', 'Costa Rica'], ['CI', 'Côte d\'Ivoire'],
+    ['HR', 'Croatia'], ['CU', 'Cuba'],
+    ['CW', 'Curaçao'], ['CY', 'Cyprus'],
+    ['CZ', 'Czechia'], ['DK', 'Denmark'],
+    ['DJ', 'Djibouti'], ['DM', 'Dominica'],
+    ['DO', 'Dominican Republic'], ['EC', 'Ecuador'],
+    ['EG', 'Egypt'], ['SV', 'El Salvador'],
+    ['GQ', 'Equatorial Guinea'], ['ER', 'Eritrea'],
+    ['EE', 'Estonia'], ['SZ', 'Eswatini'],
+    ['ET', 'Ethiopia'], ['FK', 'Falkland Islands (Malvinas)'],
+    ['FO', 'Faroe Islands'], ['FJ', 'Fiji'],
+    ['FI', 'Finland'], ['FR', 'France'],
+    ['GF', 'French Guiana'], ['PF', 'French Polynesia'],
+    ['TF', 'French Southern Territories'], ['GA', 'Gabon'],
+    ['GM', 'Gambia'], ['GE', 'Georgia'],
+    ['DE', 'Germany'], ['GH', 'Ghana'],
+    ['GI', 'Gibraltar'], ['GR', 'Greece'],
+    ['GL', 'Greenland'], ['GD', 'Grenada'],
+    ['GP', 'Guadeloupe'], ['GU', 'Guam'],
+    ['GT', 'Guatemala'], ['GG', 'Guernsey'],
+    ['GN', 'Guinea'], ['GW', 'Guinea-Bissau'],
+    ['GY', 'Guyana'], ['HT', 'Haiti'],
+    ['HM', 'Heard Island and McDonald Islands'], ['VA', 'Holy See'],
+    ['HN', 'Honduras'], ['HK', 'Hong Kong'],
+    ['HU', 'Hungary'], ['IS', 'Iceland'],
+    ['IN', 'India'], ['ID', 'Indonesia'],
+    ['IR', 'Iran, Islamic Republic of'], ['IQ', 'Iraq'],
+    ['IE', 'Ireland'], ['IM', 'Isle of Man'],
+    ['IL', 'Israel'], ['IT', 'Italy'],
+    ['JM', 'Jamaica'], ['JP', 'Japan'],
+    ['JE', 'Jersey'], ['JO', 'Jordan'],
+    ['KZ', 'Kazakhstan'], ['KE', 'Kenya'],
+    ['KI', 'Kiribati'], ['KP', 'Korea, Democratic People\'s Republic of'],
+    ['KR', 'Korea, Republic of'], ['KW', 'Kuwait'],
+    ['KG', 'Kyrgyzstan'], ['LA', 'Lao People\'s Democratic Republic'],
+    ['LV', 'Latvia'], ['LB', 'Lebanon'],
+    ['LS', 'Lesotho'], ['LR', 'Liberia'],
+    ['LY', 'Libya'], ['LI', 'Liechtenstein'],
+    ['LT', 'Lithuania'], ['LU', 'Luxembourg'],
+    ['MO', 'Macao'], ['MG', 'Madagascar'],
+    ['MW', 'Malawi'], ['MY', 'Malaysia'],
+    ['MV', 'Maldives'], ['ML', 'Mali'],
+    ['MT', 'Malta'], ['MH', 'Marshall Islands'],
+    ['MQ', 'Martinique'], ['MR', 'Mauritania'],
+    ['MU', 'Mauritius'], ['YT', 'Mayotte'],
+    ['MX', 'Mexico'], ['FM', 'Micronesia, Federated States of'],
+    ['MD', 'Moldova, Republic of'], ['MC', 'Monaco'],
+    ['MN', 'Mongolia'], ['ME', 'Montenegro'],
+    ['MS', 'Montserrat'], ['MA', 'Morocco'],
+    ['MZ', 'Mozambique'], ['MM', 'Myanmar'],
+    ['NA', 'Namibia'], ['NR', 'Naoero'],
+    ['NP', 'Nepal'], ['NL', 'Netherlands, Kingdom of the'],
+    ['NC', 'New Caledonia'], ['NZ', 'New Zealand'],
+    ['NI', 'Nicaragua'], ['NE', 'Niger'],
+    ['NG', 'Nigeria'], ['NU', 'Niue'],
+    ['NF', 'Norfolk Island'], ['MK', 'North Macedonia'],
+    ['MP', 'Northern Mariana Islands'], ['NO', 'Norway'],
+    ['OM', 'Oman'], ['PK', 'Pakistan'],
+    ['PW', 'Palau'], ['PS', 'Palestine, State of'],
+    ['PA', 'Panama'], ['PG', 'Papua New Guinea'],
+    ['PY', 'Paraguay'], ['PE', 'Peru'],
+    ['PH', 'Philippines'], ['PN', 'Pitcairn'],
+    ['PL', 'Poland'], ['PT', 'Portugal'],
+    ['PR', 'Puerto Rico'], ['QA', 'Qatar'],
+    ['RE', 'Réunion'], ['RO', 'Romania'],
+    ['RU', 'Russian Federation'], ['RW', 'Rwanda'],
+    ['BL', 'Saint Barthélemy'], ['SH', 'Saint Helena, Ascension and Tristan da Cunha'],
+    ['KN', 'Saint Kitts and Nevis'], ['LC', 'Saint Lucia'],
+    ['MF', 'Saint Martin (French part)'], ['PM', 'Saint Pierre and Miquelon'],
+    ['VC', 'Saint Vincent and the Grenadines'], ['WS', 'Samoa'],
+    ['SM', 'San Marino'], ['ST', 'Sao Tome and Principe'],
+    ['SA', 'Saudi Arabia'], ['SN', 'Senegal'],
+    ['RS', 'Serbia'], ['SC', 'Seychelles'],
+    ['SL', 'Sierra Leone'], ['SG', 'Singapore'],
+    ['SX', 'Sint Maarten (Dutch part)'], ['SK', 'Slovakia'],
+    ['SI', 'Slovenia'], ['SB', 'Solomon Islands'],
+    ['SO', 'Somalia'], ['ZA', 'South Africa'],
+    ['GS', 'South Georgia and the South Sandwich Islands'], ['SS', 'South Sudan'],
+    ['ES', 'Spain'], ['LK', 'Sri Lanka'],
+    ['SD', 'Sudan'], ['SR', 'Suriname'],
+    ['SJ', 'Svalbard and Jan Mayen'], ['SE', 'Sweden'],
+    ['CH', 'Switzerland'], ['SY', 'Syrian Arab Republic'],
+    ['TW', 'Taiwan, Province of China'], ['TJ', 'Tajikistan'],
+    ['TZ', 'Tanzania, United Republic of'], ['TH', 'Thailand'],
+    ['TL', 'Timor-Leste'], ['TG', 'Togo'],
+    ['TK', 'Tokelau'], ['TO', 'Tonga'],
+    ['TT', 'Trinidad and Tobago'], ['TN', 'Tunisia'],
+    ['TR', 'Türkiye'], ['TM', 'Turkmenistan'],
+    ['TC', 'Turks and Caicos Islands'], ['TV', 'Tuvalu'],
+    ['UG', 'Uganda'], ['UA', 'Ukraine'],
+    ['AE', 'United Arab Emirates'], ['GB', 'United Kingdom of Great Britain and Northern Ireland'],
+    ['UM', 'United States Minor Outlying Islands'], ['UY', 'Uruguay'],
+    ['UZ', 'Uzbekistan'], ['VU', 'Vanuatu'],
+    ['VE', 'Venezuela, Bolivarian Republic of'], ['VN', 'Viet Nam'],
+    ['VG', 'Virgin Islands (British)'], ['VI', 'Virgin Islands (U.S.)'],
+    ['WF', 'Wallis and Futuna'], ['EH', 'Western Sahara'],
+    ['YE', 'Yemen'], ['ZM', 'Zambia'],
+    ['ZW', 'Zimbabwe']
+  ];
   var checkoutError = document.getElementById('checkout-error');
   var buttons = document.querySelectorAll('[data-checkout]');
   var busy = false;
@@ -722,22 +897,111 @@ figcaption{padding:.6rem .7rem .75rem;font-size:.92rem;border-top:1px solid var(
     return id ? document.getElementById(id) : null;
   }
 
+  function businessFor(button) {
+    var id = button.getAttribute('data-business');
+    return id ? document.getElementById(id) : null;
+  }
+
   function configReady() {
     var mode = document.documentElement.getAttribute('data-checkout-config');
     return mode === 'mp' || mode === 'direct';
+  }
+
+  function countrySelect(button) {
+    var id = button.getAttribute('data-country');
+    return id ? document.getElementById(id) : null;
+  }
+
+  function billingCountry(button) {
+    var select = countrySelect(button);
+    var value = select ? String(select.value || '').trim().toUpperCase() : '';
+    return /^[A-Z]{2}$/.test(value) ? value : '';
+  }
+
+  function clearCaBlock(button) {
+    var error = document.getElementById(button.getAttribute('data-ca-error'));
+    var business = businessFor(button);
+    if (error) {
+      error.hidden = true;
+      error.textContent = '';
+    }
+    if (business) {
+      business.removeAttribute('aria-invalid');
+      var help = business.getAttribute('data-ca-help');
+      if (help) business.setAttribute('aria-describedby', help);
+      else business.removeAttribute('aria-describedby');
+    }
+  }
+
+  function showCaBlock(button) {
+    var error = document.getElementById(button.getAttribute('data-ca-error'));
+    var business = businessFor(button);
+    if (checkoutError) checkoutError.textContent = '';
+    if (error) {
+      error.hidden = false;
+      error.textContent = CA_BLOCK;
+    }
+    if (business) {
+      business.setAttribute('aria-invalid', 'true');
+      if (error) business.setAttribute('aria-describedby', error.id);
+      business.focus();
+    }
+  }
+
+  function fillCountries(select) {
+    if (!select || select.options.length > 1) return;
+    COUNTRIES.forEach(function (pair) {
+      var option = document.createElement('option');
+      option.value = pair[0];
+      option.textContent = pair[1];
+      select.appendChild(option);
+    });
+  }
+
+  function caReady(button) {
+    if (billingCountry(button) !== 'CA') return true;
+    var business = businessFor(button);
+    return !!(business && business.checked);
+  }
+
+  function syncCaPanel(button) {
+    var business = businessFor(button);
+    var panel = business ? business.closest('.ca-panel') : null;
+    var isCa = billingCountry(button) === 'CA';
+    if (!isCa) {
+      if (business) business.checked = false;
+      clearCaBlock(button);
+    }
+    if (panel) panel.hidden = !isCa;
   }
 
   function syncButtons() {
     if (busy) return;
     buttons.forEach(function (button) {
       var box = boxFor(button);
-      button.disabled = !(configReady() && box && box.checked);
+      button.disabled = !(configReady() && box && box.checked && billingCountry(button) && caReady(button));
     });
   }
 
   buttons.forEach(function (button) {
     var box = boxFor(button);
+    var business = businessFor(button);
+    var select = countrySelect(button);
+    fillCountries(select);
+    syncCaPanel(button);
     if (box) box.addEventListener('change', syncButtons);
+    if (business) {
+      business.addEventListener('change', function () {
+        clearCaBlock(button);
+        syncButtons();
+      });
+    }
+    if (select) {
+      select.addEventListener('change', function () {
+        syncCaPanel(button);
+        syncButtons();
+      });
+    }
     button.addEventListener('click', function () {
       startCheckout(button.getAttribute('data-checkout'), button);
     });
@@ -754,14 +1018,22 @@ figcaption{padding:.6rem .7rem .75rem;font-size:.92rem;border-top:1px solid var(
     syncButtons();
   });
   window.addEventListener('pageshow', function () {
+    buttons.forEach(syncCaPanel);
     syncButtons();
   });
 
   async function startCheckout(plan, button) {
     if (busy) return;
     var box = boxFor(button);
-    if (!configReady() || !box || !box.checked) {
-      if (box) box.focus();
+    var country = billingCountry(button);
+    if (!configReady() || !box || !box.checked || !country || !caReady(button)) {
+      if (!country) {
+        var select = countrySelect(button);
+        if (select) select.focus();
+      } else if (country === 'CA' && !caReady(button)) {
+        var blocked = businessFor(button);
+        if (blocked) blocked.focus();
+      } else if (box) box.focus();
       return;
     }
     busy = true;
@@ -769,12 +1041,16 @@ figcaption{padding:.6rem .7rem .75rem;font-size:.92rem;border-top:1px solid var(
     var subscription = button.getAttribute('data-subscription') === 'true';
     var sellerMode = window.manualosManagedPayments === true ? 'mp' : 'direct';
     var disclosureVersion = (button.getAttribute('data-disclosure') || 'checkout-b2') + '-' + sellerMode;
+    var business = businessFor(button);
     var payload = {
       plan: plan,
       renewalConsent: subscription,
       termsAccepted: true,
       termsVersion: TERMS_VERSION,
-      disclosureVersion: disclosureVersion
+      disclosureVersion: disclosureVersion,
+      billingCountry: country,
+      caBusinessAttestation: country === 'CA' && !!(business && business.checked),
+      attestationVersion: ATTESTATION_VERSION
     };
     checkoutError.textContent = '';
     buttons.forEach(function (el) { el.disabled = true; });
@@ -787,6 +1063,14 @@ figcaption{padding:.6rem .7rem .75rem;font-size:.92rem;border-top:1px solid var(
         body: JSON.stringify(payload)
       });
       var data = await res.json().catch(function () { return {}; });
+      if (data && data.code === 'ca_business_required') {
+        busy = false;
+        button.removeAttribute('aria-busy');
+        button.textContent = originalLabel;
+        syncButtons();
+        showCaBlock(button);
+        return;
+      }
       if (!res.ok || !data || !data.url) throw new Error('checkout failed');
       window.location.href = data.url;
     } catch (err) {
