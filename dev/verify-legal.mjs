@@ -264,13 +264,11 @@ async function main() {
   if (/By buying a plan or uploading files, you agree to them/.test(html['terms.html'])) throw new Error('browsewrap sentence remains');
   if (!html['terms.html'].includes('You accept them when you check the box at checkout')) throw new Error('terms assent sentence missing');
   if (/doing business as/i.test(html['terms.html'])) throw new Error('terms still says doing business as');
-  const footerLine = '© 2026 Op3x LLC. ManualOS is a product of Op3x LLC.';
+  const footerLine = '© 2026 Op3x LLC. ManualOS is operated by Op3x LLC.';
   for (const name of ['index.html', 'upload.html', '404.html', 'privacy.html', 'terms.html', 'refunds.html', 'support.html', 'cancel/index.html']) {
-    if (!html[name].includes('<p class="legal">' + footerLine + '</p>')) throw new Error(name + ' footer is not the Op3x product line');
-    const outsideFooter = html[name].replace(/<footer\b[\s\S]*?<\/footer>/gi, '');
-    if (/a service of/i.test(outsideFooter)) throw new Error(name + ' says a service of outside the footer');
-    if (/a product of/i.test(outsideFooter)) throw new Error(name + ' says a product of outside the footer');
+    if (!html[name].includes('<p class="legal">' + footerLine + '</p>')) throw new Error(name + ' footer is not the Op3x operator line');
   }
+  if (/a service of|a product of/i.test(Object.values(html).join('\n'))) throw new Error('a page still says a service of or a product of');
   if (/never stored|after you leave the page|isn['\u2019]t kept|send your files/i.test(Object.values(html).join('\n'))) throw new Error('a page still says files are never stored, aren\'t kept, disappear after you leave, or that we send your files');
   const allowedRetention = new Set(['24 hour', '24 hours', '30 day', '30 days', '28 day', '28 days']);
   for (const name of pages) {
