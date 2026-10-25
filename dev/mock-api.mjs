@@ -381,7 +381,7 @@ const server = http.createServer(async (req, res) => {
       try { body = JSON.parse(raw.toString('utf8') || '{}'); } catch { body = {}; }
       const plan = body && body.plan;
       const known = plan === 'starter' || plan === 'pro' || plan === 'integrator';
-      const ok = known && body.termsAccepted === true && !Object.prototype.hasOwnProperty.call(body, 'termsConsent') && typeof body.renewalConsent === 'boolean' && typeof body.termsVersion === 'string' && typeof body.disclosureVersion === 'string';
+      const ok = known && body.termsAccepted === true && !Object.prototype.hasOwnProperty.call(body, 'termsConsent') && typeof body.renewalConsent === 'boolean' && typeof body.termsVersion === 'string' && body.disclosureVersion === 'checkout-tos-v2';
       requests.push({
         method: 'POST',
         path: '/create-checkout-session',

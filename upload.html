@@ -23,7 +23,7 @@
     :root { --paper:#f3f0e6;--sheet:#f7f4ec;--ink:#17181a;--muted:#3a3f44;--rule:#cfc6b6;--yellow:#e6b400;--amber:#17181a;--terra:#17181a;--charcoal:#17181a;--warm-gray:#3a3f44 }
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
     html{color-scheme:light}
-    body{font-family:"IBM Plex Sans",Arial,"Helvetica Neue",sans-serif;background:var(--paper);color:var(--ink);line-height:1.5;-webkit-font-smoothing:antialiased;min-height:100vh;display:flex;flex-direction:column;overflow-wrap:anywhere}
+    body{font-family:"IBM Plex Sans",Arial,"Helvetica Neue",sans-serif;background:var(--paper);color:var(--ink);line-height:1.5;-webkit-font-smoothing:antialiased;min-height:100vh;display:flex;flex-flow:column;overflow-wrap:anywhere}
     :focus-visible{outline:2px solid var(--ink);outline-offset:2px}
     [hidden]{display:none !important}
     .skip-link{position:absolute;left:.75rem;top:-3rem;background:var(--ink);color:var(--paper);padding:.7rem 1rem;z-index:20;text-decoration:none}
@@ -67,7 +67,7 @@
     .btn-primary:disabled{background:#3e444b;border-color:#3e444b;color:#f3f0e6;cursor:not-allowed}
     .btn-outline{background:var(--sheet);color:var(--ink);border:1px solid var(--ink)}
     .btn-outline:hover{background:var(--yellow);color:var(--ink)}
-    .file-list{list-style:none;display:flex;flex-direction:column;gap:.4rem;margin:1rem 0 0}
+    .file-list{list-style:none;display:flex;flex-flow:column;gap:.4rem;margin:1rem 0 0}
     .file-list li{display:flex;flex-wrap:wrap;align-items:center;gap:.45rem .7rem;background:var(--sheet);border:1px solid var(--ink);border-radius:0;padding:.4rem .45rem .4rem .7rem}
     .file-list li.is-invalid{background:var(--sheet);box-shadow:inset 4px 0 0 #6b2a14}
     .file-name{font-family:"IBM Plex Mono",ui-monospace,monospace;font-weight:500;flex:1 1 10rem;min-width:0}
@@ -144,7 +144,7 @@
     @media (max-width:480px){
       main{margin:1rem auto 2.5rem}
       .upload-box{padding:1.15rem .85rem}
-      .success-actions{flex-direction:column}
+      .success-actions{flex-flow:column}
       .success-actions .btn-primary,.success-actions .btn-outline{width:100%}
       .generate-btn-wrap .btn-primary{width:100%}
     }

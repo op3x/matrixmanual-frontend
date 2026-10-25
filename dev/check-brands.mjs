@@ -49,8 +49,6 @@ function excerpt(text, index) {
   return text.slice(start, end).replace(/\s+/g, ' ');
 }
 
-const LINK_STATEMENT = 'Appears on your card statement as LINK.COM* MANUALOS';
-
 function rangesOf(text, re) {
   const flags = re.flags.includes('g') ? re : new RegExp(re.source, re.flags + 'g');
   const ranges = [];
@@ -58,18 +56,6 @@ function rangesOf(text, re) {
   while ((match = flags.exec(text))) {
     ranges.push([match.index, match.index + match[0].length, match[0]]);
     if (match[0].length === 0) flags.lastIndex += 1;
-  }
-  return ranges;
-}
-
-function statementRanges(text) {
-  const ranges = [];
-  let from = 0;
-  while (from < text.length) {
-    const at = text.indexOf(LINK_STATEMENT, from);
-    if (at === -1) break;
-    ranges.push([at, at + LINK_STATEMENT.length]);
-    from = at + LINK_STATEMENT.length;
   }
   return ranges;
 }
@@ -88,16 +74,15 @@ function inside(ranges, index) {
 
 // "Link" is allowed only inside data-mp-section.
 // app.link.com is allowed only inside data-mp-section.
-// LINK.COM is allowed only inside the exact statement sentence.
+// LINK.COM is never allowed.
 export function disallowedLinkHits(text) {
   const sections = mpSectionRanges(text);
-  const statements = statementRanges(text);
   const hits = [];
   for (const [index, , raw] of rangesOf(text, /\bLink\b/g)) {
     if (!inside(sections, index)) hits.push({ index, raw, reason: 'Link outside a managed-payments section' });
   }
   for (const [index, , raw] of rangesOf(text, /LINK\.COM/g)) {
-    if (!inside(statements, index)) hits.push({ index, raw, reason: 'LINK.COM outside the statement sentence' });
+    hits.push({ index, raw, reason: 'LINK.COM is not allowed' });
   }
   for (const [index, , raw] of rangesOf(text, /link\.com/g)) {
     const appHost = text.slice(Math.max(0, index - 4), index) === 'app.';
@@ -109,7 +94,7 @@ export function disallowedLinkHits(text) {
 export function assertLinkExceptions() {
   const cases = [
     ['<p>Pay with Link.</p>', true],
-    ['<p data-statement hidden>Appears on your card statement as LINK.COM* MANUALOS</p>', false],
+    ['<p data-statement hidden>Appears on your card statement as LINK.COM* MANUALOS</p>', true],
     ['<p data-mp-section hidden>Link is the seller and the merchant of record.</p>', false],
     ['<p>Link is the seller.</p>', true],
     ['<p data-mp-section hidden>Card shows LINK.COM* MANUALOS</p>', true],

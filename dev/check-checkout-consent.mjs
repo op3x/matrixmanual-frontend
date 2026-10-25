@@ -1,4 +1,5 @@
-// Headless Playwright check: the Pro checkout consent shows exactly one seller variant.
+// Headless Playwright check: each plan checkbox uses the approved sentence,
+// and Buy stays disabled until that box is ticked.
 // Does not call production. Screenshots go to SCREENSHOT_DIR.
 import { spawn } from 'node:child_process';
 import { mkdir } from 'node:fs/promises';
@@ -42,40 +43,53 @@ function startMock() {
   });
 }
 
+const PRO_LABEL = 'I agree to the ManualOS Terms and authorize Op3x LLC to charge my card $79/month (USD, plus applicable taxes), renewing automatically each month until I cancel.';
+const STARTER_LABEL = "I agree to the ManualOS Terms and authorize Op3x LLC to make this one-time charge. This isn't a subscription.";
+const PRO_BESIDE = "Renews automatically at $79 plus applicable taxes each month until you cancel. Cancel anytime online: use the one-click cancel email at manualos.com/cancel. Cancelling stops future charges, and you keep Pro until the end of the period you've paid for. Each monthly charge is refundable until that billing period ends, as long as no manual has been delivered in that period, except where the law requires otherwise.";
+const STARTER_BESIDE = 'Full refund within 30 days of purchase, as long as no manual from that purchase has been delivered, except where the law requires otherwise.';
+
 async function readConsent(page) {
   return page.evaluate(() => {
     const label = document.querySelector('label[for="pro-consent"]');
-    const direct = label.querySelector('[data-seller-direct]');
-    const mp = label.querySelector('[data-seller-mp]');
-    function shown(el) {
-      if (!el || el.hidden || el.closest('[hidden]')) return false;
-      const style = getComputedStyle(el);
-      return style.display !== 'none' && style.visibility !== 'hidden';
-    }
+    const starter = document.querySelector('label[for="starter-consent"]');
+    const button = document.querySelector('[data-checkout="pro"]');
+    const box = document.getElementById('pro-consent');
+    const renewal = document.getElementById('pro-auto-renew');
+    const starterRefund = document.getElementById('starter-renew-terms');
+    const starterButton = document.querySelector('[data-checkout="starter"]');
     return {
-      direct: shown(direct),
-      mp: shown(mp),
       text: label.innerText.replace(/\s+/g, ' ').trim(),
-      mode: document.documentElement.getAttribute('data-checkout-config'),
+      starter: starter.innerText.replace(/\s+/g, ' ').trim(),
+      href: label.querySelector('a').href,
+      starterHref: starter.querySelector('a').href,
+      renewal: renewal.innerText.replace(/\s+/g, ' ').trim(),
+      starterRefund: starterRefund.innerText.replace(/\s+/g, ' ').trim(),
+      nextToBuy: renewal.nextElementSibling === button,
+      nextToConsent: renewal.previousElementSibling === box.closest('.consent-row'),
+      starterNextToBuy: starterRefund.nextElementSibling === starterButton,
+      variants: document.querySelectorAll('[data-seller-direct],[data-seller-mp],[data-statement]').length,
+      disabled: button.disabled,
+      checked: box.checked,
+      starterDisabled: starterButton.disabled,
     };
   });
 }
 
-function expectOne(state, mode) {
-  const shown = Number(state.direct) + Number(state.mp);
-  if (state.mode !== mode || shown !== 1) {
-    throw new Error(mode + ' consent did not render exactly one variant ' + JSON.stringify(state));
+function expectLabel(state) {
+  if (state.variants || state.checked || !state.disabled || !state.starterDisabled) {
+    throw new Error('consent gate ' + JSON.stringify(state));
   }
-  if (mode === 'mp') {
-    if (!state.mp || state.direct) throw new Error('mp variant hidden ' + JSON.stringify(state));
-    if (!state.text.includes("ManualOS's authorized reseller to charge my card $79 plus applicable taxes each month")) {
-      throw new Error('mp consent text ' + state.text);
-    }
-    if (state.text.includes('Op3x LLC to charge my card')) throw new Error('direct variant leaked into mp consent');
-  } else {
-    if (!state.direct || state.mp) throw new Error('direct variant hidden ' + JSON.stringify(state));
-    if (!state.text.includes('Op3x LLC to charge my card $79 plus applicable taxes each month')) throw new Error('direct consent text ' + state.text);
-    if (state.text.includes('authorized reseller') || /\bLink\b/.test(state.text)) throw new Error('reseller variant leaked into direct consent');
+  if (state.text !== PRO_LABEL || state.href !== 'https://manualos.com/terms.html') {
+    throw new Error('pro label ' + JSON.stringify(state));
+  }
+  if (state.starter !== STARTER_LABEL || state.starterHref !== 'https://manualos.com/terms.html') {
+    throw new Error('starter label ' + JSON.stringify(state));
+  }
+  if (state.renewal !== PRO_BESIDE || !state.nextToBuy || !state.nextToConsent || !state.starterRefund.includes(STARTER_BESIDE) || !state.starterNextToBuy) {
+    throw new Error('disclosure is not beside the checkbox and Buy ' + JSON.stringify(state));
+  }
+  if (/authorized reseller|LINK\.COM|merchant of record|app\.link\.com/i.test(state.text + state.starter + state.renewal + state.starterRefund)) {
+    throw new Error('retired copy ' + state.text);
   }
 }
 
@@ -88,23 +102,18 @@ const browser = await chromium.launch({
 try {
   await mkdir(shotDir, { recursive: true });
   const page = await browser.newPage({ viewport: { width: 1100, height: 900 } });
-  async function shot(mode) {
-    await page.goto(base + '/index.html?seller=' + mode + '#pricing', { waitUntil: 'networkidle' });
-    await page.waitForFunction((expected) => document.documentElement.getAttribute('data-checkout-config') === expected, mode);
-    const state = await readConsent(page);
-    expectOne(state, mode);
-    const card = page.locator('article.is-pro .plan-buy');
-    await card.screenshot({ path: path.join(shotDir, 'checkout-consent-' + mode + '.png') });
-    console.log('PASS ' + mode + ' consent shows one variant');
-  }
-  await shot('mp');
-  const posted = await fetch(base + '/__mock/checkout-config', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ managedPayments: false, fail: false, hold: false }),
-  });
-  if (!posted.ok) throw new Error('could not switch checkout config');
-  await shot('direct');
+  await page.goto(base + '/index.html#pricing', { waitUntil: 'domcontentloaded' });
+  const state = await readConsent(page);
+  expectLabel(state);
+  const card = page.locator('article.is-pro .plan-buy');
+  await card.screenshot({ path: path.join(shotDir, 'checkout-consent.png') });
+  await page.click('#pro-consent');
+  const enabled = await page.$eval('[data-checkout="pro"]', (el) => !el.disabled && document.getElementById('pro-consent').checked);
+  if (!enabled) throw new Error('ticking the box did not enable Buy');
+  await page.click('#pro-consent');
+  const disabledAgain = await page.$eval('[data-checkout="pro"]', (el) => el.disabled && !document.getElementById('pro-consent').checked);
+  if (!disabledAgain) throw new Error('clearing the box left Buy enabled');
+  console.log('PASS consent label, and Buy stays disabled until ticked');
 } finally {
   await browser.close();
   child.kill('SIGTERM');
