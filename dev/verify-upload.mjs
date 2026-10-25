@@ -433,7 +433,7 @@ async function main() {
     await expectError(fixtures.unknown, /did not use a credit/i, '415 rejected file did not use a credit');
     await expectError(fixtures.down, /unavailable/i, '503 says the generator is unavailable and did not use a credit');
     await expectError(fixtures.nocredit, /No credit was used/i, '402 says no credit was used');
-    await expectError(fixtures.fail, /If a run fails with an error, we give the credit back/i, 'starter failure gives the credit back');
+    await expectError(fixtures.fail, /This run didn't finish, so your credit has been returned/i, 'starter failure returns the credit');
     await openUpload(page, base, '?session_id=cs_test_pro');
     await addFile(page, fixtures.fail);
     await page.click('#generate-btn');
