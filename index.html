@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <!-- Headline lives in #hero-title. The title describes the page. -->
 <title>ManualOS | Operator and maintenance manuals from PLC and CAD files</title>
-<meta name="description" content="Upload your PLC or CAD files. PLC program files (.L5X, .L5K, .scl, .st and more) and CAD files (STEP, IGES, DXF). Starter is $39 once for 3 manuals. Pro is $79/month.">
+<meta name="description" content="ManualOS turns your PLC program and CAD files into a plain-English operating and maintenance manual: safety, theory of operation, alarms, troubleshooting and maintenance, in one PDF you can hand over. From $39, plus applicable taxes.">
 <meta name="robots" content="index, follow">
 <link rel="canonical" href="https://manualos.com/">
 <meta property="og:site_name" content="ManualOS">
@@ -13,172 +13,249 @@
 <meta property="og:locale" content="en_US">
 <meta property="og:url" content="https://manualos.com/">
 <meta property="og:title" content="ManualOS — Upload your PLC or CAD files">
-<meta property="og:description" content="Upload your PLC or CAD files. PLC program files (.L5X, .L5K, .scl, .st and more) and CAD files (STEP, IGES, DXF). Starter is $39 once for 3 manuals. Pro is $79/month.">
+<meta property="og:description" content="ManualOS turns your PLC program and CAD files into a plain-English operating and maintenance manual: safety, theory of operation, alarms, troubleshooting and maintenance, in one PDF you can hand over. From $39, plus applicable taxes.">
 <meta property="og:image" content="https://manualos.com/assets/og-image.jpg">
 <meta property="og:image:secure_url" content="https://manualos.com/assets/og-image.jpg">
 <meta property="og:image:type" content="image/jpeg">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
-<meta property="og:image:alt" content="ManualOS. Upload your PLC or CAD files. PLC program files (.L5X, .L5K, .scl, .st and more) and CAD files (STEP, IGES, DXF). Starter is $39 once. Pro is $79 per month. The cover of a 60-page sample for the SAMPLE-A Case Packer, Example Machinery Co. (fictional), document OM-SAMPLE-A-EN, sits beside the title.">
+<meta property="og:image:alt" content="ManualOS. Upload your PLC or CAD files. PLC program files (.L5X, .L5K, .scl, .st and more) and CAD files (STEP, IGES, DXF). Starter is $39 once, plus applicable taxes. Pro is $79 per month, plus applicable taxes. The cover of a 60-page sample for the SAMPLE-A Case Packer, Example Machinery Co. (fictional), document OM-SAMPLE-A-EN, sits beside the title.">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="ManualOS — Upload your PLC or CAD files">
-<meta name="twitter:description" content="Upload your PLC or CAD files. PLC program files (.L5X, .L5K, .scl, .st and more) and CAD files (STEP, IGES, DXF). Starter is $39 once for 3 manuals. Pro is $79/month.">
+<meta name="twitter:description" content="ManualOS turns your PLC program and CAD files into a plain-English operating and maintenance manual: safety, theory of operation, alarms, troubleshooting and maintenance, in one PDF you can hand over. From $39, plus applicable taxes.">
 <meta name="twitter:image" content="https://manualos.com/assets/og-image.jpg">
-<meta name="twitter:image:alt" content="ManualOS. Upload your PLC or CAD files. PLC program files (.L5X, .L5K, .scl, .st and more) and CAD files (STEP, IGES, DXF). Starter is $39 once. Pro is $79 per month. The cover of a 60-page sample for the SAMPLE-A Case Packer, Example Machinery Co. (fictional), document OM-SAMPLE-A-EN, sits beside the title.">
+<meta name="twitter:image:alt" content="ManualOS. Upload your PLC or CAD files. PLC program files (.L5X, .L5K, .scl, .st and more) and CAD files (STEP, IGES, DXF). Starter is $39 once, plus applicable taxes. Pro is $79 per month, plus applicable taxes. The cover of a 60-page sample for the SAMPLE-A Case Packer, Example Machinery Co. (fictional), document OM-SAMPLE-A-EN, sits beside the title.">
 <link rel="icon" href="/favicon.ico" sizes="32x32">
 <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
 <link rel="manifest" href="/site.webmanifest">
-<meta name="theme-color" content="#f3f0e6">
-<link rel="preload" href="/assets/fonts/ibm-plex-sans-600.woff2" as="font" type="font/woff2" crossorigin>
+<meta name="theme-color" content="#0B1622">
 <link rel="preload" href="/assets/fonts/ibm-plex-sans-400.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="/assets/sample/fan-01.webp" as="image" type="image/webp">
-<link rel="preconnect" href="https://manualforge-backend-production.up.railway.app" crossorigin>
 <style>
-@font-face{font-family:"IBM Plex Sans";font-style:normal;font-weight:400;font-display:swap;src:url("/assets/fonts/ibm-plex-sans-400.woff2") format("woff2");ascent-override:102%;descent-override:27%;line-gap-override:0%}
-@font-face{font-family:"IBM Plex Sans";font-style:normal;font-weight:600;font-display:swap;src:url("/assets/fonts/ibm-plex-sans-600.woff2") format("woff2");ascent-override:102%;descent-override:27%;line-gap-override:0%}
-@font-face{font-family:"IBM Plex Mono";font-style:normal;font-weight:400;font-display:swap;src:url("/assets/fonts/ibm-plex-mono-400.woff2") format("woff2");ascent-override:102%;descent-override:27%;line-gap-override:0%}
-@font-face{font-family:"IBM Plex Mono";font-style:normal;font-weight:500;font-display:swap;src:url("/assets/fonts/ibm-plex-mono-500.woff2") format("woff2");ascent-override:102%;descent-override:27%;line-gap-override:0%}
-:root{--paper:#f3f0e6;--sheet:#f7f4ec;--ink:#17181a;--muted:#3a3f44;--rule:#cfc6b6;--yellow:#e6b400;--focus:#17181a}
+@font-face{font-family:"IBM Plex Sans";font-style:normal;font-weight:400;font-display:swap;src:url("/assets/fonts/ibm-plex-sans-400.woff2") format("woff2")}
+@font-face{font-family:"IBM Plex Sans";font-style:normal;font-weight:600;font-display:swap;src:url("/assets/fonts/ibm-plex-sans-600.woff2") format("woff2")}
+@font-face{font-family:"IBM Plex Mono";font-style:normal;font-weight:400;font-display:swap;src:url("/assets/fonts/ibm-plex-mono-400.woff2") format("woff2")}
+/* Fallbacks are size-adjusted to the self-hosted faces so the swap does not reflow. */
+@font-face{font-family:"Plex Sans Fallback";src:local("Arial"),local("Arimo"),local("Liberation Sans");font-weight:400;size-adjust:101.33%;ascent-override:101.15%;descent-override:27.14%;line-gap-override:0%}
+@font-face{font-family:"Plex Sans Semibold Fallback";src:local("Arial"),local("Arimo"),local("Liberation Sans");font-weight:600;size-adjust:100.2%;ascent-override:102.3%;descent-override:27.45%;line-gap-override:0%}
+@font-face{font-family:"Plex Mono Fallback";src:local("Courier New"),local("Cousine"),local("Liberation Mono");font-weight:400;size-adjust:99.99%;ascent-override:102.51%;descent-override:27.5%;line-gap-override:0%}
+:root{
+  --night:#0B1622;
+  --steel:#16283D;
+  --graphite:#2A2F36;
+  --paper:#F4F6F8;
+  --mist:#B8C4D0;
+  --signal-blue:#5B9BD5;
+  --link-blue:#1F5A96;
+  --beacon-amber:#F2A33A;
+  --beacon-amber-hover:#D4891F;
+  --run-green:#34C77B;
+  --ink:#111820;
+  --beacon-amber-ink:#9A5B00;
+  --run-green-ink:#1B7A47;
+  --line:color-mix(in srgb,var(--mist) 32%,transparent);
+  --step-display:clamp(2.75rem,1.5rem + 3.5vw,4.5rem);
+  --step-h1:clamp(2.25rem,1.4rem + 2.4vw,3.5rem);
+  --step-h2:clamp(1.75rem,1.1rem + 1.6vw,2.5rem);
+  --step-h3:clamp(1.25rem,1.1rem + 0.4vw,1.5rem);
+  --step-body:clamp(1.0625rem,1rem + 0.2vw,1.125rem);
+  --step-small:clamp(0.8125rem,0.75rem + 0.15vw,0.875rem);
+  --measure:66ch;
+  --content-max:75rem;
+  --section-space:4rem;
+  --sheet-accent:var(--signal-blue);
+  --sans:"IBM Plex Sans","Plex Sans Fallback",Arial,"Helvetica Neue",sans-serif;
+  --sans-strong:"IBM Plex Sans","Plex Sans Semibold Fallback",Arial,"Helvetica Neue",sans-serif;
+  --mono:"IBM Plex Mono","Plex Mono Fallback",ui-monospace,monospace;
+}
 *,*::before,*::after{box-sizing:border-box}
-html{scroll-behavior:smooth;scroll-padding-top:7.5rem;color-scheme:light}
-body{margin:0;font-family:"IBM Plex Sans","Arial","Helvetica Neue",sans-serif;background:var(--paper);color:var(--ink);line-height:1.5;font-size:1rem}
+html{scroll-behavior:smooth;scroll-padding-top:4.25rem;color-scheme:dark;background:var(--night)}
+body{margin:0;font-family:var(--sans);font-weight:400;font-size:var(--step-body);line-height:1.6;background:var(--night);color:var(--paper);font-synthesis:none;-webkit-font-smoothing:antialiased}
 img{max-width:100%;height:auto}
-h1,h2,h3{font-family:"IBM Plex Sans",Arial,sans-serif;font-weight:600;color:var(--ink);line-height:1.15;letter-spacing:-0.02em}
-h1{font-size:clamp(1.85rem,6vw,3.05rem);margin:0}
-h2{font-size:clamp(1.45rem,3vw,2rem);margin:0 0 .45rem}
-h3{font-size:1.05rem;margin:0 0 .35rem;letter-spacing:0}
+h1,h2,h3{font-family:var(--sans-strong);font-weight:600;color:var(--paper);letter-spacing:-0.02em;text-wrap:balance}
+h1{font-size:var(--step-h1);line-height:1.12;margin:0}
+h2{font-size:var(--step-h2);line-height:1.15;margin:0 0 .5rem}
+h3{font-size:var(--step-h3);line-height:1.25;margin:0 0 .35rem;letter-spacing:0}
 p{margin:0}
-a{color:var(--ink)}
-:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
-.skip-link{position:absolute;left:.75rem;top:-3rem;background:var(--ink);color:var(--paper);padding:.7rem 1rem;z-index:30;text-decoration:none}
+a{color:var(--signal-blue)}
+:focus-visible{outline:2px solid var(--signal-blue);outline-offset:2px}
+::selection{background:var(--beacon-amber);color:var(--ink)}
+.skip-link{position:absolute;left:.75rem;top:-3rem;background:var(--paper);color:var(--ink);padding:.7rem 1rem;z-index:30;text-decoration:none;font-weight:600}
 .skip-link:focus{top:.5rem}
 .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
-.site-header{position:sticky;top:0;z-index:10;background:var(--paper);border-bottom:1px solid var(--ink)}
-.bar{max-width:76rem;margin:0 auto;padding:.35rem .75rem;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:.25rem .75rem}
-.logo{display:inline-flex;align-items:center;gap:.55rem;min-height:2.75rem;color:var(--ink);text-decoration:none;font-weight:600;font-size:1.05rem;letter-spacing:-0.02em}
-.logo-mark{width:1.7rem;height:1.7rem;background:var(--ink);color:var(--paper);display:grid;place-items:center;font-size:.95rem;border-bottom:3px solid var(--yellow)}
+.site-header{position:sticky;top:0;z-index:10;background:var(--night);border-bottom:1px solid var(--line)}
+.bar{max-width:var(--content-max);margin:0 auto;padding:.35rem 1rem;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:.25rem .75rem}
+.logo{display:inline-flex;align-items:center;gap:.55rem;min-height:2.75rem;color:var(--paper);text-decoration:none;font-weight:600;font-size:1.05rem;letter-spacing:-0.02em}
+.logo-mark{width:1.7rem;height:1.7rem;background:var(--steel);color:var(--paper);display:grid;place-items:center;font-size:.95rem;border-bottom:3px solid var(--beacon-amber)}
 .nav{display:flex;flex-wrap:wrap;align-items:center}
-.nav a{display:inline-flex;align-items:center;min-height:2.75rem;padding:.3rem .55rem;color:var(--ink);text-decoration:none;font-weight:600;font-size:.92rem}
+.nav a{display:inline-flex;align-items:center;min-height:2.75rem;padding:.3rem .55rem;color:var(--paper);text-decoration:none;font-weight:600;font-size:.92rem}
 .nav a:hover{text-decoration:underline;text-underline-offset:.18em}
-.btn{display:inline-flex;align-items:center;justify-content:center;min-height:2.75rem;padding:.55rem .9rem;font:inherit;font-weight:600;text-decoration:none;border:1px solid var(--ink);cursor:pointer;background:var(--ink);color:var(--paper);border-radius:0}
-.btn:hover{background:var(--yellow);color:var(--ink)}
-.nav a.btn{color:var(--paper)}
-.nav a.btn:hover{color:var(--ink);background:var(--yellow);text-decoration:none}
-.btn-ghost,.btn-outline{background:var(--sheet);color:var(--ink)}
-.btn-ghost:hover,.btn-outline:hover{background:var(--yellow);color:var(--ink)}
+.btn{display:inline-flex;align-items:center;justify-content:center;min-height:2.75rem;padding:.55rem 1rem;font-family:var(--sans-strong);font-weight:600;font-size:1rem;line-height:1.2;text-align:center;text-decoration:none;border:1px solid var(--beacon-amber);cursor:pointer;background:var(--beacon-amber);color:var(--ink);border-radius:0}
+.btn:hover{background:var(--beacon-amber-hover);border-color:var(--beacon-amber-hover);color:var(--ink)}
+.nav a.btn{color:var(--ink)}
+.nav a.btn:hover{color:var(--ink);background:var(--beacon-amber-hover);text-decoration:none}
+.btn-ghost,.btn-outline{background:transparent;color:var(--paper);border-color:color-mix(in srgb,var(--mist) 70%,transparent)}
+.btn-ghost:hover,.btn-outline:hover{background:var(--steel);color:var(--paper);border-color:var(--mist)}
 .btn-nav{margin-left:.25rem}
-.btn:disabled,.btn-price:disabled{background:#3e444b;border-color:#3e444b;color:#f3f0e6;cursor:wait}
-.hero-sheet{margin:.75rem;border:1px solid var(--ink);background:var(--sheet);padding:.85rem .85rem 1rem}
-.titleblock{display:grid;grid-template-columns:1.5fr .7fr .7fr;border:1px solid var(--ink);font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:.68rem;letter-spacing:.04em;text-transform:uppercase;margin:0 0 .9rem;background:var(--paper)}
-.titleblock span{padding:.32rem .45rem;border-left:1px solid var(--ink);min-width:0;overflow-wrap:anywhere}
+.btn:disabled,.btn-price:disabled{background:var(--graphite);border-color:var(--graphite);color:var(--mist);cursor:wait}
+.hero-sheet{max-width:var(--content-max);margin:0 auto;padding:1.5rem 1rem 0}
+.titleblock{display:grid;grid-template-columns:1.5fr .7fr .7fr;border:1px solid var(--line);font-family:var(--mono);font-size:var(--step-small);font-weight:400;letter-spacing:.04em;text-transform:uppercase;margin:0 0 1.5rem;background:var(--steel);color:var(--mist)}
+.titleblock span{padding:.5rem .75rem;border-left:1px solid var(--line);min-width:0;overflow-wrap:anywhere}
 .titleblock span:first-child{border-left:0}
-.hero-grid{display:grid;gap:1rem;align-items:start}
-.hero-copy{display:grid;gap:.7rem;align-content:start}
-.kicker{display:flex;align-items:center;gap:.45rem;margin:0 0 .45rem;font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--ink)}
-.hero-copy .kicker{margin:0}
-.idx{display:inline-grid;place-items:center;min-width:1.7rem;height:1.25rem;padding:0 .25rem;background:var(--yellow);color:var(--ink);letter-spacing:0;font-weight:500}
-.lede,.lede-next{max-width:40rem;margin:0;color:var(--ink);font-size:1.05rem}
-.hero-cta{display:flex;flex-wrap:wrap;gap:.6rem;margin:.15rem 0 0}
-.hero-price{margin:0;font-weight:600;max-width:40rem}
-.hero-note{margin:0;color:var(--muted);font-size:.95rem;max-width:40rem}
-.hero-note a,.pay-note a,.need-more a,.faq-item a,.privacy a{text-decoration:underline;text-underline-offset:.15em}
-.fan{margin:0}
-.fan-stage{position:relative;height:300px;margin:.15rem 0 .75rem;overflow:hidden;border:1px solid var(--ink);background-color:#e5dfd1;background-image:linear-gradient(to right,rgba(23,24,26,.07) 1px,transparent 1px),linear-gradient(to bottom,rgba(23,24,26,.07) 1px,transparent 1px);background-size:18px 18px}
-.sheet-page{position:absolute;top:18px;width:min(58%,230px);background:#fff;border:1px solid var(--ink);line-height:0}
+.hero-grid{display:grid;grid-template-columns:minmax(0,1fr);gap:1.5rem;align-items:start}
+.hero-copy{display:grid;gap:.75rem;align-content:start;min-width:0}
+.section-sheet{display:grid;grid-template-columns:1.25rem minmax(0,1fr);column-gap:.75rem;align-items:stretch;margin:0 0 1rem}
+.section-sheet>.status-rail{grid-column:1;grid-row:1/span 3;display:flex;justify-content:center;position:relative}
+.section-sheet>.status-rail::before{content:"";position:absolute;top:.35rem;bottom:.15rem;width:1px;background:color-mix(in srgb,var(--sheet-accent) 50%,transparent)}
+.section-sheet>.status-rail::after{content:"";width:.5625rem;height:.5625rem;margin-top:.4rem;border-radius:50%;background:var(--sheet-accent);box-shadow:0 0 0 .25rem color-mix(in srgb,var(--sheet-accent) 28%,transparent);position:relative;z-index:1}
+.act-stop{--sheet-accent:var(--beacon-amber)}
+.act-method,.act-commit{--sheet-accent:var(--signal-blue)}
+.act-turn{--sheet-accent:var(--signal-blue)}
+.act-turn>.status-rail::after{background:linear-gradient(180deg,var(--beacon-amber),var(--signal-blue))}
+.act-run{--sheet-accent:var(--run-green)}
+.section-sheet>.kicker,.section-sheet>h1,.section-sheet>h2{grid-column:2}
+.section-sheet>h1,.section-sheet>h2{margin:0}
+.kicker{display:flex;flex-wrap:wrap;align-items:center;gap:.45rem;margin:0 0 .5rem;font-family:var(--mono);font-size:var(--step-small);font-weight:400;letter-spacing:.04em;text-transform:uppercase;color:var(--mist)}
+.hero-copy .kicker{margin:0 0 .5rem}
+.idx{display:inline-grid;place-items:center;min-width:1.75rem;height:1.25rem;padding:0 .25rem;background:var(--beacon-amber);color:var(--ink);letter-spacing:0;font-weight:400;text-transform:none}
+.lede,.lede-next,.section-intro,.faq-item p,.pay-note,.hero-note,.hero-price,.privacy p,.need-more{max-width:var(--measure)}
+.lede,.lede-next{margin:0;color:var(--paper)}
+.hero-cta{display:flex;flex-wrap:wrap;gap:.75rem;margin:.15rem 0 0}
+.hero-price{margin:0;font-weight:600}
+.hero-note{margin:0;color:var(--mist)}
+.trust-strip{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:.35rem .85rem;color:var(--mist);max-width:var(--measure)}
+.trust-strip li:not(:first-child)::before{content:"· ";color:var(--mist)}
+.hero-film{margin-top:1.5rem}
+.hero-film-frame{position:relative;display:grid;width:100%;aspect-ratio:16/9;overflow:hidden;background:var(--steel);border:1px solid var(--line)}
+.hero-film:has(> .hero-film-frame:empty),.hero-film-frame:empty{display:none}
+.hero-film-poster,.hero-film-video{grid-area:1/1;width:100%;height:100%;min-width:0;min-height:0;object-fit:cover;display:block}
+.hero-film-video[hidden],.hero-film-toggle[hidden]{display:none !important}
+.hero-film-toggle{position:absolute;z-index:2;right:.75rem;bottom:.75rem;min-height:2.75rem;min-width:2.75rem;padding:.45rem .85rem}
+.story-band{max-width:var(--content-max);margin:0 auto;padding:var(--section-space) 1rem 0}
+.story-headline{margin:0;max-width:16em;font-family:var(--sans-strong);font-weight:600;font-size:var(--step-display);line-height:1.08;letter-spacing:-.02em;color:var(--paper);text-wrap:balance}
+.beats{list-style:none;margin:1.5rem 0 0;padding:0;display:grid;gap:1.5rem}
+.beat-icon{display:block;width:1.75rem;height:1.75rem;margin:0 0 .75rem;color:var(--beacon-amber)}
+.beat-icon svg{display:block;width:100%;height:100%}
+.section-cta{margin-top:1.5rem}
+.section-cta a,.instinct-cta a:not(.btn){text-decoration:underline;text-underline-offset:.15em}
+.instinct-cta{margin:1.5rem 0 0}
+.who-strip{margin-top:2.5rem}
+.hero-note a,.pay-note a,.need-more a,.faq-item a,.privacy a{color:var(--signal-blue);text-decoration:underline;text-underline-offset:.15em}
+.fan{margin:0;min-width:0}
+.fan-stage{position:relative;height:300px;margin:.15rem 0 .75rem;overflow:hidden;border:1px solid var(--line);background-color:var(--steel);background-image:linear-gradient(to right,color-mix(in srgb,var(--mist) 14%,transparent) 1px,transparent 1px),linear-gradient(to bottom,color-mix(in srgb,var(--mist) 14%,transparent) 1px,transparent 1px);background-size:18px 18px}
+.sheet-page{position:absolute;top:18px;width:min(58%,230px);background:var(--paper);border:1px solid var(--ink);line-height:0}
 .sheet-page img{display:block;width:100%;height:auto}
 .sheet-pm{left:1%;width:min(50%,200px);transform:rotate(-8deg)}
 .sheet-alarm{left:16%;top:12px;width:min(52%,210px);transform:rotate(-3deg)}
 .sheet-lock{left:30%;top:6px;width:min(54%,220px);transform:rotate(1deg)}
 .sheet-front{left:42%;top:20px;width:min(56%,230px);transform:rotate(5deg)}
-.callouts{list-style:none;margin:0;padding:0;display:grid;gap:0;border-top:1px solid var(--ink)}
-.callouts li{display:grid;grid-template-columns:4.4rem 1fr;gap:.5rem;align-items:baseline;padding:.4rem 0;border-bottom:1px solid var(--rule);font-size:.92rem}
-.callouts span{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:.75rem;letter-spacing:.04em}
-.flow{max-width:76rem;margin:0 auto;padding:0 .75rem 1.25rem}
-.flow-grid{display:grid;gap:.7rem;border-top:1px solid var(--ink);border-bottom:1px solid var(--ink);padding:1rem 0}
-.flow-label{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;margin:0 0 .5rem}
-.flow-to{margin:0;font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:1.25rem}
+.callouts{list-style:none;margin:0;padding:0;display:grid;gap:0;border-top:1px solid var(--line)}
+.callouts li{display:grid;grid-template-columns:4.4rem 1fr;gap:.5rem;align-items:baseline;padding:.5rem 0;border-bottom:1px solid var(--line);color:var(--paper)}
+.callouts span{font-family:var(--mono);font-size:var(--step-small);font-weight:400;letter-spacing:.04em}
+.flow{max-width:var(--content-max);margin:0 auto;padding:var(--section-space) 1rem 0}
+.flow-grid{display:grid;grid-template-columns:minmax(0,1fr);gap:1rem;border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:1.5rem 0}
+.flow-label{font-family:var(--mono);font-size:var(--step-small);font-weight:400;letter-spacing:.04em;text-transform:uppercase;margin:0 0 .5rem;color:var(--mist)}
+.flow-to{margin:0;font-family:var(--mono);font-size:1.25rem;color:var(--mist)}
 .exts,.chapters{list-style:none;margin:0;padding:0}
-.exts{display:flex;flex-wrap:wrap;gap:.35rem}
-.exts li{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:.8rem;border:1px solid var(--ink);background:var(--sheet);padding:.32rem .4rem}
+.exts{display:flex;flex-wrap:wrap;gap:.5rem}
+.exts li{font-family:var(--mono);font-size:var(--step-small);font-weight:400;letter-spacing:.04em;border:1px solid var(--line);background:var(--steel);color:var(--paper);padding:.35rem .5rem}
 .chapters{counter-reset:ch;display:grid;grid-template-columns:1fr 1fr;gap:.15rem 1rem}
-.chapters li{counter-increment:ch;border-top:1px solid var(--rule);padding:.28rem 0;font-size:.95rem}
-.chapters li::before{content:counter(ch,decimal-leading-zero) "  ";font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:.78rem}
-.section{max-width:76rem;margin:0 auto;padding:2.4rem .85rem 0}
-.section-intro{max-width:40rem;margin:0 0 1rem;color:var(--ink)}
-.spec{width:100%;border-collapse:collapse;font-size:.95rem}
-.spec th,.spec td{border:1px solid var(--ink);padding:.5rem .6rem;text-align:left;vertical-align:top;background:var(--sheet)}
-.spec thead th{background:var(--ink);color:#f3f0e6;font-weight:600;font-size:.78rem;letter-spacing:.05em;text-transform:uppercase}
-.spec td:first-child,.mono{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:.8rem}
-.plan-cards{display:grid;gap:1rem}
-.plan-card{border:1px solid var(--ink);background:var(--sheet);padding:1rem .95rem 1.05rem;display:flex;flex-direction:column;gap:.7rem}
-.plan-card.is-pro{box-shadow:inset 0 4px 0 var(--yellow)}
-.plan-card .plan{margin:0;font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:.78rem;letter-spacing:.06em;text-transform:uppercase;font-weight:500}
-.plan-card .price{margin:0;font-size:2rem;letter-spacing:-.03em;line-height:1}
-.plan-card .bill{margin:-.35rem 0 0;font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:.75rem;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
-.plan-card dl{margin:0;display:grid;gap:.65rem}
-.plan-card dt{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;font-weight:500}
-.plan-card dd{margin:.12rem 0 0}
+.chapters li{counter-increment:ch;border-top:1px solid var(--line);padding:.35rem 0}
+.chapters li::before{content:counter(ch,decimal-leading-zero) "  ";font-family:var(--mono);font-size:var(--step-small);letter-spacing:.04em;color:var(--mist)}
+.section{max-width:var(--content-max);margin:0 auto;padding:var(--section-space) 1rem 0}
+.section-intro{margin:0 0 1rem;color:var(--paper)}
+.table-scroll{overflow-x:auto}
+.spec{width:100%;border-collapse:collapse}
+.spec th,.spec td{border:1px solid var(--line);padding:.5rem .75rem;text-align:left;vertical-align:top;background:var(--steel);color:var(--paper)}
+.spec thead th{background:var(--graphite);color:var(--paper);font-weight:600;font-size:var(--step-small);letter-spacing:.04em;text-transform:uppercase}
+.spec td:first-child,.mono{font-family:var(--mono);font-size:var(--step-small);font-weight:400;letter-spacing:.04em}
+.plan-cards{display:grid;grid-template-columns:minmax(0,1fr);gap:1.5rem}
+.plan-card{border:1px solid var(--line);border-top:3px solid var(--beacon-amber);background:var(--graphite);padding:1rem 1rem 1.25rem;display:flex;flex-direction:column;gap:.75rem;color:var(--paper)}
+.plan-card.is-pro{border-top-color:var(--run-green)}
+.plan-card .plan{margin:0;font-family:var(--mono);font-size:var(--step-small);letter-spacing:.04em;text-transform:uppercase;font-weight:400;color:var(--mist)}
+.plan-card .price{margin:0;font-family:var(--sans-strong);font-size:clamp(2rem,1.5rem + 1.5vw,2.5rem);font-weight:600;letter-spacing:-.03em;line-height:1;color:var(--paper)}
+.plan-card .bill{margin:-.25rem 0 0;font-family:var(--mono);font-size:var(--step-small);letter-spacing:.04em;text-transform:uppercase;color:var(--mist)}
+.plan-card dl{margin:0;display:grid;gap:.75rem}
+.plan-card dt{font-family:var(--mono);font-size:var(--step-small);letter-spacing:.04em;text-transform:uppercase;font-weight:400;color:var(--mist)}
+.plan-card dd{margin:.15rem 0 0;color:var(--paper)}
 .need-more{margin-top:1rem}
 .steps,.features,.who-list{list-style:none;margin:0;padding:0}
-.steps li,.feature,.who-list li{border-top:1px solid var(--ink);padding:.9rem 0}
-.step-num{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:.8rem;letter-spacing:.06em;display:block;margin-bottom:.35rem}
-.sample-actions{margin:.9rem 0 1rem}
-.sample-sections{margin:.55rem 0 0;padding-left:1.15rem;max-width:40rem}
-.sample-sections li{margin:.2rem 0}
-.gallery{display:grid;gap:1.25rem}
-figure.page{margin:0;background:var(--sheet);border:1px solid var(--ink)}
-figure.page img{display:block;width:100%;background:#fff}
-figcaption{padding:.6rem .7rem .75rem;font-size:.92rem;border-top:1px solid var(--rule)}
-.privacy{margin-top:1rem;border:1px solid var(--ink);border-left:4px solid var(--yellow);background:var(--sheet);padding:.85rem .95rem}
-.privacy h3{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:.75rem;letter-spacing:.08em;text-transform:uppercase;font-weight:500}
-.btn-price{width:100%;margin-top:auto;padding:.55rem .9rem;font-size:1rem;line-height:1.2}
+.steps{display:grid;grid-template-columns:minmax(0,1fr)}
+.steps li,.feature,.who-list li{border-top:1px solid var(--line);padding:1rem 0}
+.step-num{font-family:var(--mono);font-size:var(--step-small);font-weight:400;letter-spacing:.04em;display:block;margin-bottom:.35rem;color:var(--mist)}
+.sample-actions{margin:1rem 0 1.5rem}
+.sample-sections{margin:.5rem 0 0;padding-left:1.25rem;max-width:var(--measure)}
+.sample-sections li{margin:.25rem 0}
+.gallery{display:grid;gap:1.5rem}
+figure.page{margin:0;background:var(--steel);border:1px solid var(--line)}
+figure.page img{display:block;width:100%;background:var(--paper)}
+figcaption{padding:.75rem;border-top:1px solid var(--line);color:var(--paper)}
+.privacy{margin-top:1.5rem;border:1px solid var(--line);border-left:4px solid var(--beacon-amber);background:var(--steel);padding:1rem}
+.privacy h3{font-family:var(--mono);font-size:var(--step-small);letter-spacing:.04em;text-transform:uppercase;font-weight:400;color:var(--mist)}
+.btn-price{width:100%;margin-top:auto}
 .checkout-error:empty{margin:0}
-.checkout-error:not(:empty){margin-top:1rem;padding:.75rem .85rem;border:1px solid var(--ink);border-left:4px solid #6b2a14;background:var(--sheet);color:var(--ink);font-weight:600}
-.pay-note{margin-top:1rem;color:var(--muted);max-width:42rem}
-.faq-item{padding:.9rem 0;border-top:1px solid var(--ink)}
-.faq-item p{margin-top:.35rem;max-width:46rem}
-.site-footer{background:var(--ink);color:#f3f0e6;margin-top:2.5rem;border-top:4px solid var(--yellow);padding:1.5rem .85rem 1.75rem}
-.site-footer a{color:#f3f0e6}
-.site-footer a:hover{color:var(--yellow)}
-.site-footer a:focus-visible{outline-color:#f3f0e6}
-.footer-inner{max-width:76rem;margin:0 auto;display:grid;gap:.8rem}
-.footer-brand{margin:0;font-size:1.15rem;font-weight:600;letter-spacing:-.02em;color:#f3f0e6}
-.footer-nav{display:flex;flex-wrap:wrap;gap:.15rem .9rem}
+.checkout-error:not(:empty){margin-top:1rem;padding:.75rem 1rem;border:1px solid var(--line);border-left:4px solid var(--beacon-amber);background:var(--steel);color:var(--paper);font-weight:600}
+.pay-note{margin-top:1rem;color:var(--mist)}
+.faq-item{padding:1rem 0;border-top:1px solid var(--line)}
+.faq-item p{margin-top:.35rem}
+.site-footer{background:var(--night);color:var(--paper);margin-top:var(--section-space);border-top:4px solid var(--run-green);padding:2.5rem 1rem 2.75rem}
+.site-footer a{color:var(--paper)}
+.site-footer a:hover{color:var(--run-green)}
+.footer-inner{max-width:var(--content-max);margin:0 auto;display:grid;gap:1rem}
+.footer-brand{margin:0;font-size:1.15rem;font-weight:600;letter-spacing:-.02em;color:var(--paper)}
+.footer-nav{display:flex;flex-wrap:wrap;gap:.15rem 1rem}
 .footer-nav a{display:inline-flex;align-items:center;min-height:2.75rem;font-weight:600;text-underline-offset:.15em}
-.legal{color:#d9d2c3;font-size:.95rem}
+.legal{color:var(--mist)}
+.hero-video-credit{margin:0;color:var(--paper);font-size:inherit;font-weight:400;line-height:1.6;opacity:1}
 @media(min-width:768px){
+  :root{--section-space:6.5rem}
   html{scroll-padding-top:4.5rem}
-  .hero-sheet{margin:1rem auto;max-width:76rem;padding:1rem 1.1rem 1.15rem}
-  .hero-grid{grid-template-columns:minmax(0,1.05fr) minmax(0,.95fr);align-items:start;gap:.5rem 1.25rem}
+  .hero-sheet{padding:2rem 1.5rem 0}
+  .bar{padding:.35rem 1.5rem}
+  .hero-grid{grid-template-columns:repeat(12,minmax(0,1fr));column-gap:1.5rem}
+  .hero-copy{grid-column:span 7}
+  .fan{grid-column:span 5}
   .fan-stage{height:430px}
   .sheet-page{top:28px}
   .sheet-pm{left:0}
   .sheet-alarm{left:14%;top:20px}
   .sheet-lock{left:28%;top:12px}
   .sheet-front{left:40%;top:32px}
-  .flow{padding:0 1rem 1.5rem}
-  .flow-grid{grid-template-columns:minmax(0,1.15fr) auto minmax(0,.9fr);align-items:center;gap:1.25rem;padding:1rem 0}
-  .flow-to{transform:none}
-  .section{padding:3.2rem 1.25rem 0}
-  .steps{display:grid;grid-template-columns:repeat(3,1fr)}
-  .steps li{border-top:1px solid var(--ink);border-left:1px solid var(--ink);padding:1rem .9rem 1.1rem}
+  .flow{padding:var(--section-space) 1.5rem 0}
+  .flow-grid{grid-template-columns:repeat(12,minmax(0,1fr));align-items:center;column-gap:1.5rem;padding:1.5rem 0}
+  .flow-grid>div:first-child{grid-column:span 6}
+  .flow-to{grid-column:span 1;justify-self:center}
+  .flow-grid>div:last-child{grid-column:span 5}
+  .section{padding:var(--section-space) 1.5rem 0}
+  .steps{grid-template-columns:repeat(12,minmax(0,1fr))}
+  .steps li{grid-column:span 4;border-top:1px solid var(--line);border-left:1px solid var(--line);padding:1rem 1rem 1.25rem}
   .steps li:first-child{border-left:0}
-  .gallery{grid-template-columns:1fr 1fr;gap:1rem}
+  .gallery{grid-template-columns:1fr 1fr;gap:1.5rem}
   .gallery figure.page:last-child{grid-column:1 / -1}
-  .plan-cards{grid-template-columns:1fr 1fr;align-items:stretch}
+  .plan-cards{grid-template-columns:repeat(12,minmax(0,1fr));align-items:stretch}
+  .plan-card{grid-column:span 6}
+  .site-footer{padding:2.5rem 1.5rem 3rem}
+  .story-band{padding:var(--section-space) 1.5rem 0}
+  .beats{grid-template-columns:repeat(12,minmax(0,1fr))}
+  .beats li{grid-column:span 4}
+  .who-list{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));column-gap:1.5rem}
+  .who-list li{grid-column:span 4}
 }
 @media(min-width:900px){
   .gallery{grid-template-columns:1fr 1fr 1fr}
   .gallery figure.page:last-child{grid-column:auto}
 }
 @media(max-width:767px){
-  .flow-to{transform:rotate(90deg);transform-origin:left center;height:1.25rem}
-  .titleblock{font-size:.62rem}
+  .flow-to{transform:rotate(90deg);transform-origin:left center;height:1.25rem;justify-self:start}
   .bar,.nav{flex-wrap:nowrap}
   .nav a:not(.btn){display:none}
-  html{scroll-padding-top:4.25rem}
   .callouts{display:none}
   .fan-stage{margin-bottom:0}
+  .hero-cta{flex-direction:column;align-items:stretch}
+  .hero-cta .btn{width:100%}
+  .trust-strip{display:grid;gap:.4rem}
+  .trust-strip li:not(:first-child)::before{content:none}
+  .hero-film-video,.hero-film-toggle{display:none !important}
 }
 @media(max-width:639px){
   .gallery .page-extra{display:none}
@@ -197,7 +274,7 @@ figcaption{padding:.6rem .7rem .75rem;font-size:.92rem;border-top:1px solid var(
       "name": "ManualOS",
       "url": "https://manualos.com/",
       "email": "support@manualos.com",
-      "description": "Upload your PLC or CAD files. PLC program files (.L5X, .L5K, .scl, .st and more) and CAD files (STEP, IGES, DXF).",
+      "description": "ManualOS turns your PLC program and CAD files into a plain-English operating and maintenance manual: safety, theory of operation, alarms, troubleshooting and maintenance, in one PDF you can hand over. From $39, plus applicable taxes.",
       "logo": {
         "@type": "ImageObject",
         "url": "https://manualos.com/assets/logo.png",
@@ -212,7 +289,7 @@ figcaption{padding:.6rem .7rem .75rem;font-size:.92rem;border-top:1px solid var(
       "operatingSystem": "Web",
       "url": "https://manualos.com/",
       "image": "https://manualos.com/assets/og-image.jpg",
-      "description": "Upload your PLC or CAD files. PLC program files (.L5X, .L5K, .scl, .st and more) and CAD files (STEP, IGES, DXF).",
+      "description": "ManualOS turns your PLC program and CAD files into a plain-English operating and maintenance manual: safety, theory of operation, alarms, troubleshooting and maintenance, in one PDF you can hand over. From $39, plus applicable taxes.",
       "publisher": { "@id": "https://manualos.com/#organization" },
       "offers": [
         {
@@ -222,7 +299,7 @@ figcaption{padding:.6rem .7rem .75rem;font-size:.92rem;border-top:1px solid var(
           "priceCurrency": "USD",
           "availability": "https://schema.org/InStock",
           "url": "https://manualos.com/#pricing",
-          "description": "One-time purchase of 3 manuals."
+          "description": "One-time purchase of 3 manuals, plus applicable taxes."
         },
         {
           "@type": "Offer",
@@ -231,7 +308,7 @@ figcaption{padding:.6rem .7rem .75rem;font-size:.92rem;border-top:1px solid var(
           "priceCurrency": "USD",
           "availability": "https://schema.org/InStock",
           "url": "https://manualos.com/#pricing",
-          "description": "Monthly subscription with unlimited manuals. Cancel anytime."
+          "description": "Monthly subscription with unlimited manuals, plus applicable taxes. Cancel anytime."
         }
       ]
     },
@@ -260,7 +337,7 @@ figcaption{padding:.6rem .7rem .75rem;font-size:.92rem;border-top:1px solid var(
           "name": "What counts as one manual?",
           "acceptedAnswer": {
             "@type": "Answer",
-            "text": "One generation run is one manual: one upload of up to 25 files or a .zip, whether those files are PLC, CAD, or both. A failed run doesn’t use a credit. Starter is a one-time $39 purchase and includes 3 manuals. Pro is $79 per month and includes unlimited manuals while the subscription is active."
+            "text": "One generation run is one manual: one upload of up to 25 files or a .zip, whether those files are PLC, CAD, or both. A failed run doesn’t use a credit. Starter is a one-time $39 purchase, plus applicable taxes, and includes 3 manuals. Pro is $79 per month, plus applicable taxes, and includes unlimited manuals while the subscription is active."
           }
         },
         {
@@ -268,7 +345,7 @@ figcaption{padding:.6rem .7rem .75rem;font-size:.92rem;border-top:1px solid var(
           "name": "Who can see my PLC program?",
           "acceptedAnswer": {
             "@type": "Answer",
-            "text": "ManualOS processes your files to write the manual. Extracted program logic, comments, and part details are sent to a third-party AI model provider to write the manual. We don’t use your files to train models, and our AI provider doesn’t train on API data by default. Uploaded files are processed in memory and never stored. The finished PDF is available to download for 24 hours, then no longer available. Programs are not sold."
+            "text": "ManualOS processes your files to write the manual. Extracted program logic, comments, and part details are sent to a third-party service provider that helps write the manual. We don’t use your files to train models, and that provider doesn’t train on API data by default. Uploaded files are processed and deleted when the job finishes and are not kept. The generated PDF stays on the server for up to 24 hours for download, then is deleted. Programs are not sold."
           }
         },
         {
@@ -276,7 +353,7 @@ figcaption{padding:.6rem .7rem .75rem;font-size:.92rem;border-top:1px solid var(
           "name": "Can I cancel Pro, and what about refunds?",
           "acceptedAnswer": {
             "@type": "Answer",
-            "text": "Pro is month to month. You can cancel anytime by emailing support@manualos.com, and you will not be billed again after the current period. Starter is not a subscription. It is a one-time $39 purchase for 3 manuals. If a payment or a generated manual is wrong, email support@manualos.com and we will help."
+            "text": "Pro is month to month. You can cancel anytime by emailing support@manualos.com, and you will not be billed again after the current period. Starter is not a subscription. It is a one-time $39 purchase for 3 manuals, plus applicable taxes. If a payment or a generated manual is wrong, email support@manualos.com and we will help."
           }
         }
       ]
@@ -308,17 +385,24 @@ figcaption{padding:.6rem .7rem .75rem;font-size:.92rem;border-top:1px solid var(
     </div>
     <div class="hero-grid">
       <div class="hero-copy">
-      <p class="kicker"><span class="idx">01</span> For small manufacturers</p>
-      <!-- Headline. This h1 is the wording to change. -->
-      <h1 id="hero-title">Upload your PLC or CAD files.</h1>
-      <p class="lede">PLC program files (.L5X, .L5K, .scl, .st and more) and CAD files (STEP, IGES, DXF).</p>
-      <p class="lede-next">ManualOS writes a plain-English equipment manual from them. Built for maintenance techs and integrators, too.</p>
+      <header class="section-sheet act-stop">
+        <span class="status-rail" aria-hidden="true"></span>
+        <p class="kicker"><span class="idx">01</span> Built for those of mechanical intelligence</p>
+        <!-- H1 stays the current ranking line. The story headline is the section below the hero. -->
+        <h1 id="hero-title">Upload your PLC or CAD files.</h1>
+      </header>
+      <p class="lede">ManualOS turns your PLC program and CAD files into a plain-English operating and maintenance manual: safety, theory of operation, alarms, troubleshooting and maintenance, in one PDF you can hand over. From $39, plus applicable taxes.</p>
       <div class="hero-cta">
-        <a class="btn btn-primary" href="#pricing">See pricing</a>
-        <a class="btn btn-ghost" href="#sample">View a sample manual</a>
+        <a class="btn btn-primary" href="#pricing">Get 3 manuals for $39, plus applicable taxes</a>
+        <a class="btn btn-ghost" href="#sample">See a sample manual</a>
       </div>
-      <p class="hero-price">Starter $39 once · 3 manuals. Pro $79 a month · unlimited.</p>
-      <p class="hero-note">A .zip of those files is fine. <a href="/upload.html">Already purchased? Upload a file</a>.</p>
+      <p class="hero-price">Starter $39 once · 3 manuals. Pro $79 a month · unlimited. Plus applicable taxes.</p>
+      <ul class="trust-strip">
+        <li>Files are deleted when your job finishes</li>
+        <li>A rejected file doesn’t use a credit</li>
+        <li>Your PDF stays available for 24 hours</li>
+      </ul>
+      <p class="hero-note"><a href="/upload.html">Already purchased? Upload a file</a>.</p>
       </div>
       <figure class="fan">
         <div class="fan-stage" aria-hidden="true">
@@ -349,9 +433,79 @@ figcaption{padding:.6rem .7rem .75rem;font-size:.92rem;border-top:1px solid var(
         </figcaption>
       </figure>
     </div>
+    <!-- Hero media slot for PR #8 (cursor/home-hero-video-303d). That PR drops
+         .hero-film-poster, .hero-film-video, and .hero-film-toggle into this frame.
+         Below 768px the video and its control stay hidden: poster only,
+         and this page does not request a video. No third-party player. -->
+    <div class="hero-film" id="hero-film">
+      <div class="hero-film-frame"></div>
+    </div>
+  </section>
+  <div class="story-band">
+    <p class="story-headline">Every machine has a fixer. Give every technician the manual.</p>
+  </div>
+  <section class="section" id="problem" aria-labelledby="problem-title">
+    <header class="section-sheet act-stop">
+      <span class="status-rail" aria-hidden="true"></span>
+      <p class="kicker"><span class="idx">02</span></p>
+      <h2 id="problem-title">The line is down. The manual doesn’t exist.</h2>
+    </header>
+    <p class="section-intro">Too many machines ship with a program that works and a manual that doesn’t exist yet.</p>
+    <ul class="beats">
+      <li>
+        <span class="beat-icon" aria-hidden="true"><svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 5h12l4 4v18H8z"/><path d="M20 5v4h4M12 15h8M12 19h8M12 23h5"/></svg></span>
+        <h3>The knowledge is in the program.</h3>
+        <p>Every interlock, alarm and sequence is in there, in a language only the person who wrote it reads fluently.</p>
+      </li>
+      <li>
+        <span class="beat-icon" aria-hidden="true"><svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 9h14v16H6z"/><path d="M10 7h14v16"/><path d="M14 5h14v16"/></svg></span>
+        <h3>The documentation comes last.</h3>
+        <p>At the end of a project, the manual is the line item that slips.</p>
+      </li>
+      <li>
+        <span class="beat-icon" aria-hidden="true"><svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M18.5 6.5a8.5 8.5 0 1 0 7 13.5 7 7 0 1 1-7-13.5z"/></svg></span>
+        <h3>The cost lands on the night shift.</h3>
+        <p>The technician who inherits the machine starts from zero.</p>
+      </li>
+    </ul>
+    <p class="section-cta"><a href="#how">See how ManualOS closes the gap</a></p>
+  </section>
+  <section class="section" id="instinct" aria-labelledby="instinct-title">
+    <header class="section-sheet act-turn">
+      <span class="status-rail" aria-hidden="true"></span>
+      <p class="kicker"><span class="idx">03</span></p>
+      <h2 id="instinct-title">Some people can fix anything. Here’s what they know.</h2>
+    </header>
+    <p class="section-intro">Great technicians don’t guess. They read the machine: what it was told to do, what stopped it, and what has to be true before it runs again.</p>
+    <p class="section-intro">That instinct takes years to build and one shift change to lose, or a retirement, or a contractor who moved on. ManualOS doesn’t replace it. It writes down what the machine already knows, so every technician starts from the program’s logic instead of a blank page.</p>
+    <p class="instinct-cta"><a class="btn btn-primary" href="#how">Put your machine’s logic on paper</a></p>
+    <section class="who-strip" id="who" aria-labelledby="who-title">
+      <h2 id="who-title">Who it’s for</h2>
+      <ul class="who-list">
+        <li>
+          <h3>Small manufacturers</h3>
+          <p>You have the machine and the files, and no one whose job is writing manuals.</p>
+        </li>
+        <li>
+          <h3>Maintenance technicians</h3>
+          <p>You need the equipment explained in plain language, at the machine.</p>
+        </li>
+        <li>
+          <h3>Machine builders and integrators</h3>
+          <p>You’re handing over a cell and need a manual that matches the files you shipped.</p>
+        </li>
+      </ul>
+      <div class="privacy">
+        <h3>Privacy</h3>
+        <p>ManualOS processes your files to write the manual. Extracted program logic, comments, and part details are sent to a third-party service provider that helps write the manual. We don’t use your files to train models, and that provider doesn’t train on API data by default. Uploaded files are processed and deleted when the job finishes and are not kept. The generated PDF stays on the server for up to 24 hours for download, then is deleted. Programs are not sold. Card numbers are entered at secure checkout, not on this site.</p>
+      </div>
+    </section>
   </section>
   <section class="flow" aria-labelledby="flow-title">
-    <h2 id="flow-title" class="sr-only">From the file to the manual</h2>
+    <header class="section-sheet act-method">
+      <span class="status-rail" aria-hidden="true"></span>
+      <h2 id="flow-title" class="sr-only">From the file to the manual</h2>
+    </header>
     <div class="flow-grid">
       <div>
         <p class="flow-label">Input</p>
@@ -388,8 +542,11 @@ figcaption{padding:.6rem .7rem .75rem;font-size:.92rem;border-top:1px solid var(
     </div>
   </section>
   <section class="section" id="formats" aria-labelledby="formats-title">
-    <p class="kicker"><span class="idx">02</span> Accepted today</p>
-    <h2 id="formats-title">Supported formats</h2>
+    <header class="section-sheet act-method">
+      <span class="status-rail" aria-hidden="true"></span>
+      <p class="kicker"><span class="idx">04</span> Accepted today</p>
+      <h2 id="formats-title">Supported formats</h2>
+    </header>
     <p class="section-intro">PLC: .L5X, .L5K, .scl, .st, .exp, PLCopen .xml, and .TcPOU. Tag lists: .csv and .xlsx. A tag-table XML is tags only, not the program. CAD: .step and .stp, .iges and .igs, and ASCII .dxf. Archives: a .zip of those files.</p>
     <div class="table-scroll">
       <table class="spec">
@@ -450,8 +607,11 @@ figcaption{padding:.6rem .7rem .75rem;font-size:.92rem;border-top:1px solid var(
     </div>
   </section>
   <section class="section" id="how" aria-labelledby="how-title">
-    <p class="kicker"><span class="idx">03</span> How it works</p>
-    <h2 id="how-title">From file to manual in three steps</h2>
+    <header class="section-sheet act-method">
+      <span class="status-rail" aria-hidden="true"></span>
+      <p class="kicker"><span class="idx">05</span> How it works</p>
+      <h2 id="how-title">From file to manual in three steps</h2>
+    </header>
     <p class="section-intro">You upload the file. ManualOS writes the manual.</p>
     <ol class="steps">
       <li>
@@ -481,8 +641,11 @@ figcaption{padding:.6rem .7rem .75rem;font-size:.92rem;border-top:1px solid var(
     preview-04 alarms and troubleshooting, page 40. preview-05 preventive maintenance, page 43.
   -->
   <section class="section" id="sample" aria-labelledby="sample-title">
-    <p class="kicker"><span class="idx">04</span> Sample manual</p>
-    <h2 id="sample-title">Sample manual</h2>
+    <header class="section-sheet act-method">
+      <span class="status-rail" aria-hidden="true"></span>
+      <p class="kicker"><span class="idx">06</span> Sample manual</p>
+      <h2 id="sample-title">Sample manual</h2>
+    </header>
     <p class="section-intro">A 60-page operating and maintenance manual for the SAMPLE-A Case Packer, Example Machinery Co. (fictional), document OM-SAMPLE-A-EN. The machine and data are invented.</p>
     <ul class="sample-sections">
       <li>Safety, including residual risk</li>
@@ -536,8 +699,11 @@ figcaption{padding:.6rem .7rem .75rem;font-size:.92rem;border-top:1px solid var(
     </div>
   </section>
   <section class="section" id="features" aria-labelledby="features-title">
-    <p class="kicker"><span class="idx">05</span> What you get</p>
-    <h2 id="features-title">What you get</h2>
+    <header class="section-sheet act-method">
+      <span class="status-rail" aria-hidden="true"></span>
+      <p class="kicker"><span class="idx">07</span> What you get</p>
+      <h2 id="features-title">What you get</h2>
+    </header>
     <div class="features">
       <article class="feature">
         <h3>Plain language</h3>
@@ -553,37 +719,19 @@ figcaption{padding:.6rem .7rem .75rem;font-size:.92rem;border-top:1px solid var(
       </article>
     </div>
   </section>
-  <section class="section" id="who" aria-labelledby="who-title">
-    <p class="kicker"><span class="idx">06</span> Who it is for</p>
-    <h2 id="who-title">Who it is for</h2>
-    <ul class="who-list">
-      <li>
-        <h3>Small manufacturers</h3>
-        <p>You have a machine and the files for it, and no one on staff whose job is writing manuals.</p>
-      </li>
-      <li>
-        <h3>Maintenance techs</h3>
-        <p>You need the equipment explained in plain language while you are at the machine.</p>
-      </li>
-      <li>
-        <h3>Integrators</h3>
-        <p>You are handing a cell to a customer and need a manual that matches the files you shipped.</p>
-      </li>
-    </ul>
-    <div class="privacy">
-      <h3>Privacy</h3>
-      <p>ManualOS processes your files to write the manual. Extracted program logic, comments, and part details are sent to a third-party AI model provider to write the manual. We don’t use your files to train models, and our AI provider doesn’t train on API data by default. Uploaded files are processed in memory and never stored. The finished PDF is available to download for 24 hours, then no longer available. Programs are not sold. Card numbers are entered at secure checkout, not on this site.</p>
-    </div>
-  </section>
   <section class="section" id="pricing" aria-labelledby="pricing-title">
-    <p class="kicker"><span class="idx">07</span> Pricing</p>
-    <h2 id="pricing-title">Pricing</h2>
-    <p class="section-intro">Starter is a one-time purchase of 3 manuals. Pro is a monthly plan you can cancel anytime.</p>
+    <header class="section-sheet act-commit">
+      <span class="status-rail" aria-hidden="true"></span>
+      <p class="kicker"><span class="idx">08</span> Pricing</p>
+      <h2 id="pricing-title">Pricing</h2>
+    </header>
+    <p class="section-intro">Starter $39 once · 3 manuals. Pro $79 a month · unlimited. Plus applicable taxes.</p>
     <div class="plan-cards">
       <article class="plan-card">
         <h3 class="plan">Starter</h3>
         <p class="price">$39</p>
         <p class="bill">one-time</p>
+        <p>plus applicable taxes</p>
         <dl>
           <div>
             <dt>Files</dt>
@@ -604,6 +752,7 @@ figcaption{padding:.6rem .7rem .75rem;font-size:.92rem;border-top:1px solid var(
         <h3 class="plan">Pro</h3>
         <p class="price">$79</p>
         <p class="bill">per month · Monthly</p>
+        <p>plus applicable taxes</p>
         <dl>
           <div>
             <dt>Files</dt>
@@ -629,8 +778,11 @@ figcaption{padding:.6rem .7rem .75rem;font-size:.92rem;border-top:1px solid var(
     <p class="pay-note">Secure checkout. ManualOS does not see or store your card number. A rejected file doesn’t use a credit. <a href="/upload.html">Already purchased? Go to upload</a>.</p>
   </section>
   <section class="section" id="faq" aria-labelledby="faq-title">
-    <p class="kicker"><span class="idx">08</span> Questions</p>
-    <h2 id="faq-title">Questions</h2>
+    <header class="section-sheet act-run">
+      <span class="status-rail" aria-hidden="true"></span>
+      <p class="kicker"><span class="idx">09</span> Questions</p>
+      <h2 id="faq-title">Questions</h2>
+    </header>
     <div class="faq-item">
       <h3>Which files can I upload?</h3>
       <p>PLC: .L5X, .L5K, .scl, .st, .exp, PLCopen .xml, and .TcPOU. Tag lists: .csv and .xlsx. A tag-table XML is tags only, not the program. CAD: .step and .stp, .iges and .igs, and ASCII .dxf. Archives: a .zip of those files.</p>
@@ -641,15 +793,15 @@ figcaption{padding:.6rem .7rem .75rem;font-size:.92rem;border-top:1px solid var(
     </div>
     <div class="faq-item">
       <h3>What counts as one manual?</h3>
-      <p>One generation run is one manual: one upload of up to 25 files or a .zip, whether those files are PLC, CAD, or both. A failed run doesn’t use a credit. Starter is a one-time $39 purchase and includes 3 manuals. Pro is $79 per month and includes unlimited manuals while the subscription is active.</p>
+      <p>One generation run is one manual: one upload of up to 25 files or a .zip, whether those files are PLC, CAD, or both. A failed run doesn’t use a credit. Starter is a one-time $39 purchase, plus applicable taxes, and includes 3 manuals. Pro is $79 per month, plus applicable taxes, and includes unlimited manuals while the subscription is active.</p>
     </div>
     <div class="faq-item">
       <h3>Who can see my PLC program?</h3>
-      <p>ManualOS processes your files to write the manual. Extracted program logic, comments, and part details are sent to a third-party AI model provider to write the manual. We don’t use your files to train models, and our AI provider doesn’t train on API data by default. Uploaded files are processed in memory and never stored. The finished PDF is available to download for 24 hours, then no longer available. Programs are not sold.</p>
+      <p>ManualOS processes your files to write the manual. Extracted program logic, comments, and part details are sent to a third-party service provider that helps write the manual. We don’t use your files to train models, and that provider doesn’t train on API data by default. Uploaded files are processed and deleted when the job finishes and are not kept. The generated PDF stays on the server for up to 24 hours for download, then is deleted. Programs are not sold.</p>
     </div>
     <div class="faq-item">
       <h3>Can I cancel Pro, and what about refunds?</h3>
-      <p>Pro is month to month. You can cancel anytime by emailing <a href="mailto:support@manualos.com">support@manualos.com</a>, and you will not be billed again after the current period. Starter is not a subscription. It is a one-time $39 purchase for 3 manuals. If a payment or a generated manual is wrong, email support@manualos.com and we will help.</p>
+      <p>Pro is month to month. You can cancel anytime by emailing <a href="mailto:support@manualos.com">support@manualos.com</a>, and you will not be billed again after the current period. Starter is not a subscription. It is a one-time $39 purchase for 3 manuals, plus applicable taxes. If a payment or a generated manual is wrong, email support@manualos.com and we will help.</p>
     </div>
   </section>
 </main>
@@ -666,7 +818,7 @@ figcaption{padding:.6rem .7rem .75rem;font-size:.92rem;border-top:1px solid var(
       <a href="/sitemap.xml">Sitemap</a>
       <a href="mailto:support@manualos.com">support@manualos.com</a>
     </nav>
-    <p class="legal">© 2026 ManualOS. manualos.com</p>
+    <p class="legal">© 2026 Op3x LLC. ManualOS is operated by Op3x LLC.</p>
   </div>
 </footer>
 <script>
