@@ -923,7 +923,7 @@
     paintNotes(opts.warnings, opts.coverage);
     var updated = await verifySession({ keepAccessOnError: true });
     var successText = opts.legacy
-      ? "Your PDF is ready. Download it now, because it isn't kept."
+      ? "Your PDF is ready. Download it now."
       : "Your PDF is ready. Download it right away, because it's deleted 24 hours after it's made.";
     if (updated && updated.remaining === null) successText += ' Unlimited manuals remaining.';
     else if (updated) successText += ' ' + remainingLabel(updated.remaining) + '.';

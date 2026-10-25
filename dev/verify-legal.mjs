@@ -255,7 +255,7 @@ async function main() {
   for (const name of ['index.html', 'upload.html', '404.html', 'privacy.html', 'terms.html', 'refunds.html', 'support.html', 'cancel/index.html']) {
     if (!html[name].includes('<p class="legal">' + footerLine + '</p>')) throw new Error(name + ' footer is not the Op3x product line');
   }
-  if (/never stored|after you leave the page/i.test(Object.values(html).join('\n'))) throw new Error('a page still says files are never stored or not kept after you leave');
+  if (/never stored|after you leave the page|isn['\u2019]t kept/i.test(Object.values(html).join('\n'))) throw new Error('a page still says files are never stored, aren\'t kept, or disappear after you leave');
   const allowedRetention = new Set(['24 hour', '24 hours', '30 day', '30 days', '28 day', '28 days']);
   for (const name of pages) {
     const visible = html[name].replace(/<!--[\s\S]*?-->/g, '');
@@ -271,9 +271,15 @@ async function main() {
     }
   }
   const homepageLine = "To write your manual, we send content extracted from your files, such as program logic, comments, and part details, to a third-party service provider that helps write the manual. We delete your uploaded files when the job finishes. Download your PDF right away, because we delete it 24 hours after it's made. Our provider deletes what we send it within 30 days, unless it must keep it longer to enforce its usage policy or comply with the law. Full details are in our Privacy Policy.";
-  if (!html['index.html'].includes(homepageLine)) throw new Error('homepage JSON-LD retention line missing');
+  const faqDownloadLine = "You get the PDF when the job is done. Download it right away, because it's deleted 24 hours after it's made.";
+  const faqAnswer = homepageLine + ' ' + faqDownloadLine;
+  if (!html['index.html'].includes('"text": "' + faqAnswer + '"')) throw new Error('JSON-LD FAQ answer missing');
   if (!html['index.html'].includes(homepageLine.replace('Privacy Policy.', '<a href="/privacy.html">Privacy Policy</a>.'))) throw new Error('homepage visible retention line missing');
-  if (!html['index.html'].includes("You get the PDF when the job is done. Download it right away, because it's deleted 24 hours after it's made.")) throw new Error('homepage FAQ download line missing');
+  const faqHeading = 'Who can see my PLC program?</h3>';
+  const faqStart = html['index.html'].indexOf(faqHeading);
+  const faqItem = html['index.html'].slice(faqStart + faqHeading.length, html['index.html'].indexOf('</div>', faqStart));
+  const faqText = faqItem.replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
+  if (faqText !== faqAnswer) throw new Error('visible FAQ text does not match JSON-LD');
   const readyCard = "Your PDF is ready. Download it right away, because it's deleted 24 hours after it's made.";
   const expiredManual = "This manual isn't available. Manuals are deleted 24 hours after they're made. Generate it again from your files.";
   if (!html['upload.html'].includes(readyCard)) throw new Error('upload ready card missing');
