@@ -4,9 +4,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Upload a program or CAD model — ManualOS</title>
+  <title>Upload your PLC or CAD files — ManualOS</title>
   <link rel="icon" href="/favicon.ico" sizes="32x32">
-  <meta name="description" content="Upload a PLC program, a CAD model, or both after checkout. ManualOS checks your plan, then generates a plain-English PDF.">
+  <meta name="description" content="Upload your PLC or CAD files after checkout. ManualOS checks your plan, then writes a plain-English PDF.">
   <meta name="robots" content="noindex">
   <link rel="canonical" href="https://manualos.com/upload.html">
   <meta name="theme-color" content="#f3f0e6">
@@ -42,7 +42,9 @@
     .source-options{display:grid;gap:.45rem}
     .choice{display:flex;align-items:flex-start;gap:.6rem;background:var(--sheet);border:1px solid var(--ink);border-radius:0;padding:.75rem .8rem;min-height:2.75rem;cursor:pointer;font-weight:600}
     .choice input{width:1.15rem;height:1.15rem;margin-top:.15rem;accent-color:var(--ink);flex:0 0 auto}
+    .choice:hover{background:#fff}
     .choice.is-selected{background:var(--sheet);box-shadow:inset 4px 0 0 var(--yellow)}
+    .choice:focus-within{outline:2px solid var(--ink);outline-offset:2px}
     .hint{color:var(--muted);margin-top:.65rem}
     .fields{display:grid;gap:.7rem}
     .field{display:block;font-weight:600}
@@ -84,7 +86,7 @@
     .upload-error{margin-top:1rem;padding:.75rem .85rem;border-radius:0;background:var(--sheet);border:1px solid var(--ink);border-left:4px solid #6b2a14;color:var(--ink);font-size:.95rem;font-weight:600}
     .upload-error ul{margin:0;padding-left:1.1rem}
     .upload-error li+li{margin-top:.35rem}
-    .upload-error a{color:var(--ink);font-weight:600}
+    .upload-error a{color:var(--ink);font-weight:600;text-decoration:underline;text-underline-offset:.15em}
     .mode-note{margin:1rem 0;padding:.75rem .85rem;border-radius:0;background:var(--sheet);border:1px solid var(--ink);font-weight:600}
     .success-section{text-align:left;padding:1.25rem 0 0}
     .success-icon{margin-bottom:.6rem}
@@ -306,7 +308,7 @@
   var DROP_HELP = {
     plc: '.L5X, .L5K, .scl, .st, .exp, PLCopen .xml, .TcPOU, .csv, .xlsx, or a zip of those.',
     cad: 'STEP, IGES, DXF, or a zip of those.',
-    both: 'PLC exports and CAD models together, or a zip of both.'
+    both: 'PLC program files and CAD files together, or a zip of both.'
   };
 
   var apiBase = resolveApiBase();

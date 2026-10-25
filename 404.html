@@ -22,9 +22,11 @@ body{margin:0;min-height:100vh;display:flex;flex-direction:column;font-family:"I
 header,footer{padding:.35rem .85rem}
 header{border-bottom:1px solid var(--ink)}
 .logo{display:inline-flex;align-items:center;gap:.55rem;min-height:2.75rem;color:var(--ink);text-decoration:none;font-weight:600;font-size:1.05rem;letter-spacing:-.02em}
-.logo-mark{width:1.7rem;height:1.7rem;background:var(--ink);color:var(--paper);display:grid;place-items:center;border-bottom:3px solid var(--yellow)}
+.logo-mark{width:1.7rem;height:1.7rem;background:var(--ink);color:var(--paper);display:grid;place-items:center;font-size:.95rem;border-bottom:3px solid var(--yellow)}
 main{flex:1;max-width:40rem;margin:0 auto;padding:2.2rem .85rem;width:100%}
-.kicker{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;margin:0 0 .5rem}
+.titleblock{display:grid;grid-template-columns:1.5fr .7fr .7fr;border:1px solid var(--ink);font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:.68rem;letter-spacing:.04em;text-transform:uppercase;margin:0 0 1rem}
+.titleblock span{padding:.32rem .45rem;border-left:1px solid var(--ink);min-width:0;overflow-wrap:anywhere}
+.titleblock span:first-child{border-left:0}
 h1{font-size:clamp(1.8rem,5vw,2.5rem);font-weight:600;letter-spacing:-.02em;line-height:1.15;margin:0 0 .7rem}
 .actions{display:flex;flex-wrap:wrap;gap:.6rem;margin-top:1.2rem}
 a.btn{display:inline-flex;align-items:center;justify-content:center;min-height:2.75rem;padding:.55rem .9rem;font-weight:600;text-decoration:none;border:1px solid var(--ink);border-radius:0}
@@ -33,7 +35,7 @@ a.btn{display:inline-flex;align-items:center;justify-content:center;min-height:2
 .btn-outline{background:var(--sheet);color:var(--ink)}
 .btn-outline:hover{background:var(--yellow);color:var(--ink)}
 footer{border-top:1px solid var(--ink);color:#3a3f44}
-footer a{color:var(--ink)}
+footer a{color:var(--ink);display:inline-flex;align-items:center;min-height:2.75rem}
 </style>
 </head>
 <body>
@@ -42,9 +44,13 @@ footer a{color:var(--ink)}
   <a class="logo" href="/"><span class="logo-mark" aria-hidden="true">M</span>ManualOS</a>
 </header>
 <main id="main" tabindex="-1">
-  <p class="kicker">Sheet — 404</p>
+  <div class="titleblock">
+    <span>Doc no. 404</span>
+    <span>Rev —</span>
+    <span>Sheet —</span>
+  </div>
   <h1>That page is not here</h1>
-  <p>The address does not match a ManualOS page. The site home page has pricing, a sample manual, and how checkout works.</p>
+  <p>The address does not match a ManualOS page. The home page has pricing, a sample manual, and checkout.</p>
   <div class="actions">
     <a class="btn btn-primary" href="/">Back to home</a>
     <a class="btn btn-outline" href="/#pricing">View pricing</a>
