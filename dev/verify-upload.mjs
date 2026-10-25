@@ -213,6 +213,15 @@ async function main() {
   }
   const footer = index.slice(index.indexOf('<footer'), index.indexOf('</footer>'));
   if (/export/i.test(footer)) exportHits.push('footer');
+  if (/sitemap\.xml/i.test(footer)) throw new Error('footer still links to sitemap.xml');
+  const robots = await readFile(path.join(root, 'robots.txt'), 'utf8');
+  const sitemap = await readFile(path.join(root, 'sitemap.xml'), 'utf8');
+  if (!/^Sitemap:\s+\S*sitemap\.xml\s*$/m.test(robots)) throw new Error('robots.txt lost the crawler sitemap');
+  if (!sitemap.includes('<urlset')) throw new Error('sitemap.xml is missing');
+  const intro = (html.match(/<p class="export-intro">([\s\S]*?)<\/p>/) || ['', ''])[1];
+  if (/\.L5X|\.step|PLCopen/i.test(intro)) throw new Error('export intro still lists formats: ' + intro);
+  if (!/href="#accepted-files"/.test(intro)) throw new Error('export intro does not link to the accepted-files table');
+  if (!/id="accepted-files"/.test(html)) throw new Error('accepted-files table is missing');
   const heroStart = index.indexOf('id="hero-title"');
   const heroEnd = index.indexOf('class="fan"', heroStart);
   if (/export/i.test(index.slice(heroStart, heroEnd))) exportHits.push('hero');
@@ -750,11 +759,34 @@ async function main() {
       note(label + ' locks upload without an empty welcome gap', true);
     }
     await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 1 });
-    await expectLocked('?session_id=cs_test_invalid', /isn.t active/, 'invalid session');
+    await expectLocked('?session_id=cs_test_invalid', /No purchase found/, 'unknown session');
     await shoot(page, 'invalid_session', '#access-banner');
+    await expectLocked('?session_id=cs_test_canceled', /isn.t active/, 'canceled plan');
+    await expectLocked('?session_id=cs_test_unpaid', /isn.t active/, 'unpaid starter');
     await expectLocked('?session_id=cs_test_drop', /couldn.t check your purchase/, 'network error');
     await shoot(page, 'network_error', '#access-banner');
     await expectLocked('', /No purchase found/, 'no session');
+
+    await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 1 });
+    await openUpload(page, base, '?session_id=cs_test_local');
+    const uploadMobile = await page.evaluate(() => {
+      const intro = document.querySelector('.export-intro');
+      const table = document.getElementById('accepted-files');
+      const link = document.querySelector('.export-intro a[href="#accepted-files"]');
+      return {
+        scroll: document.documentElement.scrollHeight,
+        overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+        rows: table ? table.querySelectorAll('.platform-tags li').length : 0,
+        linked: !!(link && link.getAttribute('href') === '#accepted-files'),
+        openDetails: [...document.querySelectorAll('#export-help details')].filter((el) => el.open).length,
+      };
+    });
+    if (uploadMobile.overflow > 1) throw new Error('upload overflow 390 ' + uploadMobile.overflow);
+    if (uploadMobile.rows !== 8 || !uploadMobile.linked || uploadMobile.openDetails !== 0) {
+      throw new Error('accepted-files list ' + JSON.stringify(uploadMobile));
+    }
+    if (uploadMobile.scroll > 3200) throw new Error('upload page is excessively long at 390px: ' + uploadMobile.scroll);
+    note('upload at 390 lists formats once', true, uploadMobile.scroll + 'px tall');
 
     await page.setViewport({ width: 1280, height: 1000, deviceScaleFactor: 1 });
     await openUpload(page, base);
