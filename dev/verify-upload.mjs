@@ -182,6 +182,7 @@ async function main() {
     zip: path.join(fixtureDir, 'drawings.zip'),
     long: path.join(fixtureDir, 'VeryLongProgramNameForTheMobileFileListCheck.L5X'),
     over: path.join(fixtureDir, 'overlimit.L5X'),
+    limit: path.join(fixtureDir, 'limit.L5X'),
   };
   await writeFile(fixtures.line, '<RSLogix5000Content></RSLogix5000Content>');
   await writeFile(fixtures.step, 'ISO-10303-21;\n');
@@ -202,6 +203,7 @@ async function main() {
   await writeFile(fixtures.zip, 'PK');
   await writeFile(fixtures.long, '<RSLogix5000Content></RSLogix5000Content>');
   await writeFile(fixtures.over, '<RSLogix5000Content></RSLogix5000Content>');
+  await writeFile(fixtures.limit, '<RSLogix5000Content></RSLogix5000Content>');
   const manyFiles = [];
   for (let i = 0; i < 26; i += 1) {
     const file = path.join(fixtureDir, `batch-${i}.L5X`);
@@ -352,6 +354,23 @@ async function main() {
     await shoot(page, 'selector', '#source-picker');
     note('selector at 1280 and 390', true, banner);
 
+    const generateHint = await page.evaluate(() => {
+      const button = document.getElementById('generate-btn');
+      const hint = document.getElementById('generate-hint');
+      const style = getComputedStyle(hint);
+      return {
+        disabled: button.disabled,
+        described: button.getAttribute('aria-describedby'),
+        text: hint.textContent,
+        hidden: hint.hidden,
+        display: style.display,
+      };
+    });
+    if (!generateHint.disabled || generateHint.described !== 'generate-hint' || generateHint.text !== 'Add a file first' || generateHint.hidden || generateHint.display === 'none') {
+      throw new Error('generate hint ' + JSON.stringify(generateHint));
+    }
+    note('a disabled generate button explains that a file is required', true);
+
     await page.click('input[value="cad"]');
     const cadText = await page.$eval('#source-guidance', (el) => el.textContent);
     const acceptCad = await page.$eval('#file-input', (el) => el.getAttribute('accept'));
@@ -397,6 +416,14 @@ async function main() {
     await page.$eval('#doc_number', (el) => { el.value = 'OM-CP200'; });
     await page.$eval('#revision', (el) => { el.value = 'B'; });
     await addFile(page, fixtures.hold);
+    const hintAfterFile = await page.evaluate(() => {
+      const hint = document.getElementById('generate-hint');
+      return {
+        hidden: hint.hidden,
+        described: document.getElementById('generate-btn').getAttribute('aria-describedby'),
+      };
+    });
+    if (!hintAfterFile.hidden || hintAfterFile.described) throw new Error('hint stayed after a file ' + JSON.stringify(hintAfterFile));
     await addFile(page, fixtures.step);
     const names = await page.$$eval('.file-name', (nodes) => nodes.map((node) => node.textContent));
     const sizes = await page.$$eval('.file-size', (nodes) => nodes.map((node) => node.textContent));
@@ -981,6 +1008,58 @@ async function main() {
     await shoot(page, 'network_error', '#access-banner');
     await expectLocked('', /No purchase found/, 'no session');
 
+    const beforeLimitToken = (await requests(base)).filter((entry) => entry.path === '/access-token' && entry.status === 429).length;
+    await page.goto(base + '/upload.html?session_id=cs_test_limit', { waitUntil: 'networkidle0' });
+    await page.waitForFunction(() => document.body.dataset.phase === 'locked');
+    const limitCopy = await page.$eval('#payment-welcome-text', (el) => el.textContent);
+    const limitPosts = (await requests(base)).filter((entry) => entry.path === '/access-token' && entry.status === 429).length;
+    if (limitCopy !== 'Too many requests, please wait a minute and try again' || limitPosts !== beforeLimitToken + 1) {
+      throw new Error('access token 429 ' + JSON.stringify({ limitCopy, limitPosts, beforeLimitToken }));
+    }
+    note('a 429 from access-token asks the buyer to wait and is not retried', true);
+
+    await openUpload(page, base);
+    await addFile(page, fixtures.limit);
+    await page.click('#generate-btn');
+    await waitPhase(page, 'error');
+    const jobLimit = await page.$eval('#upload-error', (el) => el.innerText);
+    const jobPosts = (await requests(base)).filter((entry) => entry.method === 'POST' && entry.path === '/jobs' && entry.files.includes('limit.L5X'));
+    if (!/Too many requests, please wait a minute and try again/.test(jobLimit) || jobPosts.length !== 1 || jobPosts[0].status !== 429) {
+      throw new Error('jobs 429 ' + JSON.stringify({ jobLimit, count: jobPosts.length, status: jobPosts[0] && jobPosts[0].status }));
+    }
+    note('a 429 from upload asks the buyer to wait and is not retried', true);
+
+    async function dropTitleForPointer(coarse) {
+      const installed = await page.evaluateOnNewDocument((useCoarse) => {
+        const orig = window.matchMedia.bind(window);
+        window.matchMedia = (query) => {
+          const text = String(query);
+          if (text.includes('pointer') || text.includes('hover')) {
+            const wantsCoarse = text.includes('coarse') || text.includes('hover: none');
+            return {
+              matches: wantsCoarse ? useCoarse : !useCoarse,
+              media: text,
+              addEventListener() {},
+              removeEventListener() {},
+              addListener() {},
+              removeListener() {},
+            };
+          }
+          return orig(query);
+        };
+      }, coarse);
+      await page.goto(base + '/upload.html?session_id=cs_test_local', { waitUntil: 'networkidle0' });
+      const title = await page.$eval('#drop-title', (el) => el.textContent);
+      await page.removeScriptToEvaluateOnNewDocument(installed.identifier);
+      return title;
+    }
+    const touchTitle = await dropTitleForPointer(true);
+    const mouseTitle = await dropTitleForPointer(false);
+    if (touchTitle !== 'Choose files' || mouseTitle !== 'Drag and drop files here') {
+      throw new Error('drop title ' + JSON.stringify({ touchTitle, mouseTitle }));
+    }
+    note('touch devices say Choose files instead of drag and drop', true);
+
     await page.setViewport({ width: 1280, height: 1000, deviceScaleFactor: 1 });
     await openUpload(page, base);
     await runAxe(page, 'ready desktop');
@@ -1016,6 +1095,28 @@ async function main() {
     await assertButtonContrast(page, 'home 390');
     await runAxe(page, 'home 390');
     note('home at 390 keeps one header row, copy before the image, stacked pricing, and two previews', true);
+
+    await page.evaluate(() => { document.documentElement.style.fontSize = '32px'; });
+    const largeText = await page.evaluate(() => {
+      const vw = document.documentElement.clientWidth;
+      const bar = document.querySelector('.bar').getBoundingClientRect();
+      const cta = document.querySelector('a.btn.btn-nav').getBoundingClientRect();
+      const exts = document.querySelector('.flow ul.exts').getBoundingClientRect();
+      return {
+        scroll: document.documentElement.scrollWidth - vw,
+        header: Math.round(bar.height),
+        ctaLeft: cta.left,
+        ctaRight: cta.right,
+        ctaH: cta.height,
+        extsRight: exts.right,
+        vw,
+      };
+    });
+    await page.evaluate(() => { document.documentElement.style.fontSize = ''; });
+    if (largeText.scroll > 1 || largeText.header >= 110 || largeText.ctaLeft < 0 || largeText.ctaRight > largeText.vw + 1 || largeText.ctaH < 44 || largeText.extsRight > largeText.vw + 1) {
+      throw new Error('200% text at 390 ' + JSON.stringify(largeText));
+    }
+    note('home at 390 with 200% text keeps Get started and the file types on screen', true, 'header ' + largeText.header + 'px');
 
     const menuClosed = await page.evaluate(() => {
       const toggle = document.querySelector('.nav-toggle');

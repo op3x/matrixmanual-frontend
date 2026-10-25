@@ -85,6 +85,7 @@
     .file-remove:hover{background:var(--yellow)}
     .credit-note{margin:1rem 0 0;color:var(--muted);font-size:.95rem}
     .generate-btn-wrap{margin-top:1rem}
+    .generate-hint{margin:.55rem 0 0;color:var(--muted);font-size:.95rem;font-weight:600}
     .progress-wrap{margin-top:1rem}
     .progress-row{display:flex;justify-content:space-between;gap:1rem;align-items:baseline}
     .progress-label{font-size:.95rem;color:var(--ink);font-weight:600}
@@ -235,7 +236,8 @@
       <ul class="file-list" id="file-list" hidden></ul>
       <p class="credit-note" id="credit-note">A file we reject — wrong format, or no equipment data in the file — does not use a credit.</p>
       <div class="generate-btn-wrap">
-        <button class="btn-primary" id="generate-btn" type="submit" disabled>Generate my manual</button>
+        <button class="btn-primary" id="generate-btn" type="submit" disabled aria-describedby="generate-hint">Generate my manual</button>
+        <p class="generate-hint" id="generate-hint">Add a file first</p>
       </div>
     </form>
     <div class="progress-wrap" id="progress-wrap" hidden>
@@ -353,6 +355,7 @@
     both: 'Drop files here, or choose them.'
   };
   var FILE_LIMIT_MESSAGE = 'You can add up to 25 files.';
+  var RATE_LIMIT_MESSAGE = 'Too many requests, please wait a minute and try again';
 
   var apiBase = resolveApiBase();
   var sessionId = '';
@@ -390,6 +393,8 @@
   var warningBlock = document.getElementById('warning-block');
   var warningsEl = document.getElementById('warnings');
   var downloadLink = document.getElementById('download-link');
+  var dropTitle = document.getElementById('drop-title');
+  var generateHint = document.getElementById('generate-hint');
 
   function resolveApiBase() {
     var host = location.hostname;
@@ -732,6 +737,12 @@
     }
     var data = {};
     try { data = await res.json(); } catch (err) { data = {}; }
+    if (res.status === 429) {
+      accessToken = '';
+      try { sessionStorage.removeItem(TOKEN_STORAGE_KEY); } catch (err) {}
+      lockUpload(RATE_LIMIT_MESSAGE);
+      return { error: true, limited: true };
+    }
     if (res.status === 503) {
       compatSession = true;
       accessToken = '';
@@ -771,6 +782,10 @@
     }
     var data = {};
     try { data = await res.json(); } catch (err) { data = {}; }
+    if (res.status === 429) {
+      if (!keepAccessOnError) lockUpload(RATE_LIMIT_MESSAGE);
+      return null;
+    }
     if (res.status === 401 && sessionId && accessToken) {
       var refreshed = await exchangeSession(sessionId);
       if (refreshed.ok) return refreshed.data;
@@ -796,6 +811,7 @@
     } catch (err) {
       return;
     }
+    if (res.status === 429) return;
     if (res.status === 401 && sessionId) {
       var refreshed = await exchangeSession(sessionId);
       if (!refreshed.ok) return;
@@ -963,7 +979,25 @@
   }
 
   function updateGenerateButton() {
+    var needsFile = selectedFiles.length === 0;
     generateBtn.disabled = busy || !uploadEnabled || !filesAreAcceptable();
+    if (!generateHint) return;
+    generateHint.hidden = !needsFile;
+    if (needsFile) generateBtn.setAttribute('aria-describedby', 'generate-hint');
+    else generateBtn.removeAttribute('aria-describedby');
+  }
+
+  function coarsePointer() {
+    try {
+      return window.matchMedia('(pointer: coarse)').matches || window.matchMedia('(hover: none)').matches;
+    } catch (err) {
+      return false;
+    }
+  }
+
+  function syncDropTitle() {
+    if (!dropTitle) return;
+    dropTitle.textContent = coarsePointer() ? 'Choose files' : 'Drag and drop files here';
   }
 
   function canGenerate() {
@@ -1013,6 +1047,7 @@
   }
 
   function friendlyHttpError(status, data) {
+    if (status === 429) return { message: RATE_LIMIT_MESSAGE, server: '' };
     var server = safeServerMessage(data);
     var code = data && typeof data.code === 'string' ? data.code : '';
     if (code === 'too_many_files' || server === 'Upload failed.' || /too many files/i.test(server) || /up to 25 files/i.test(server)) {
@@ -1151,6 +1186,12 @@
         continue;
       }
       if (token !== runToken) return null;
+      if (res.status === 429) {
+        resetProgress();
+        setBusy(false);
+        showUploadError(RATE_LIMIT_MESSAGE);
+        return null;
+      }
       if (res.status === 401 && !refreshed && sessionId) {
         refreshed = true;
         var again = await exchangeSession(sessionId);
@@ -1228,6 +1269,10 @@
       } catch (err) {
         await sleep(600);
         continue;
+      }
+      if (res.status === 429) {
+        if (!quiet) showUploadError(RATE_LIMIT_MESSAGE);
+        return false;
       }
       if (res.status === 401 && !refreshed && sessionId) {
         refreshed = true;
@@ -1540,6 +1585,11 @@
   });
 
   syncSource();
+  syncDropTitle();
+  try {
+    window.matchMedia('(pointer: coarse)').addEventListener('change', syncDropTitle);
+    window.matchMedia('(hover: none)').addEventListener('change', syncDropTitle);
+  } catch (err) {}
   bootAccess();
 })();
 </script>
