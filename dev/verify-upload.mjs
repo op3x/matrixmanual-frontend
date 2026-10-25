@@ -333,7 +333,7 @@ async function main() {
     ]) {
       await addFile(page, file);
       const alertText = await page.$eval('#upload-error', (el) => el.innerText);
-      if (!pattern.test(alertText) || !/did not use a credit/i.test(alertText)) {
+      if (!pattern.test(alertText) || !/we give the credit back/i.test(alertText)) {
         throw new Error('blocked ext ' + file + ': ' + alertText);
       }
     }
@@ -343,7 +343,7 @@ async function main() {
 
     await addFile(page, fixtures.big);
     let alertText = await page.$eval('#upload-error', (el) => el.innerText);
-    if (!/50 MB/.test(alertText) || !alertText.trim().endsWith('This did not use a credit.')) throw new Error('size message: ' + alertText);
+    if (!/50 MB/.test(alertText) || !alertText.trim().endsWith("email support and we'll restore it.")) throw new Error('size message: ' + alertText);
     const welcomeHiddenOnSize = await page.$eval('#payment-welcome', (el) => el.hidden);
     if (!welcomeHiddenOnSize) throw new Error('welcome stayed after the size error');
     await shoot(page, 'oversize', '#upload-error');
@@ -415,7 +415,7 @@ async function main() {
     await page.click('#generate-btn');
     await waitPhase(page, 'error');
     alertText = await page.$eval('#upload-error', (el) => el.innerText);
-    if (!/did not use a credit/i.test(alertText) || !/equipment data/i.test(alertText)) throw new Error('422: ' + alertText);
+    if (!/we give the credit back/i.test(alertText) || !/equipment data/i.test(alertText)) throw new Error('422: ' + alertText);
     if (!(await page.$eval('#payment-welcome', (el) => el.hidden))) throw new Error('welcome stayed after 422');
     await runAxe(page, 'error');
     await shoot(page, 'error', '#upload-error');
@@ -430,8 +430,8 @@ async function main() {
       if (!pattern.test(text)) throw new Error(label + ': ' + text);
       note(label, true);
     }
-    await expectError(fixtures.unknown, /did not use a credit/i, '415 rejected file did not use a credit');
-    await expectError(fixtures.down, /unavailable/i, '503 says the generator is unavailable and did not use a credit');
+    await expectError(fixtures.unknown, /we give the credit back/i, '415 rejected file gives the credit back');
+    await expectError(fixtures.down, /unavailable/i, '503 says the generator is unavailable');
     await expectError(fixtures.nocredit, /No credit was used/i, '402 says no credit was used');
     await expectError(fixtures.fail, /If a run fails with an error, we give the credit back/i, 'starter failure gives the credit back');
     await openUpload(page, base, '?session_id=cs_test_pro');
@@ -585,7 +585,7 @@ async function main() {
     await openUpload(page, base);
     await addFile(page, fixtures.big);
     const staleStart = await page.$eval('#upload-error', (el) => el.hidden ? '' : el.innerText);
-    if (!staleStart.trim().endsWith('This did not use a credit.')) throw new Error('stale start: ' + staleStart);
+    if (!staleStart.trim().endsWith("email support and we'll restore it.")) throw new Error('stale start: ' + staleStart);
     await addFile(page, fixtures.line);
     if (!(await page.$eval('#upload-error', (el) => el.hidden))) throw new Error('error stayed after a successful add');
     await addFile(page, fixtures.big);
