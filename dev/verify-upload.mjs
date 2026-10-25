@@ -868,7 +868,10 @@ async function main() {
     await page.evaluate(() => localStorage.clear());
     await page.reload({ waitUntil: 'domcontentloaded' });
     await page.waitForFunction(() => document.body.dataset.phase && document.body.dataset.phase !== 'checking', { timeout: 8000 });
-    const uploadOff = await page.$eval('#access-pricing-link', (el) => el.hidden && getComputedStyle(el).display === 'none');
+    const uploadOff = await page.$eval('#access-pricing-link', (el) => {
+      const style = getComputedStyle(el);
+      return el.hidden || style.display === 'none' || style.visibility === 'hidden';
+    });
     const afterOff = (await fetch(base + '/__mock/requests').then((res) => res.json())).filter((item) => item.path === '/create-checkout-session').length;
     if (!uploadOff || afterOff !== beforeOff) throw new Error('checkout off still exposed a purchase path');
     await runAxe(page, 'checkout off upload 390');

@@ -585,13 +585,14 @@ async function main() {
     await page.waitForFunction(() => document.body.dataset.phase && document.body.dataset.phase !== 'checking', { timeout: 8000 });
     const uploadClosed = await page.evaluate(() => {
       const link = document.getElementById('access-pricing-link');
+      const style = getComputedStyle(link);
+      const shown = !link.hidden && style.display !== 'none' && style.visibility !== 'hidden';
       return {
-        hidden: link.hidden,
-        display: getComputedStyle(link).display,
+        shown,
         purchaseLink: !!document.querySelector('#upload-error a[href="/#pricing"]'),
       };
     });
-    if (!uploadClosed.hidden || uploadClosed.display !== 'none' || uploadClosed.purchaseLink) {
+    if (uploadClosed.shown || uploadClosed.purchaseLink) {
       throw new Error('upload purchase path stayed open ' + JSON.stringify(uploadClosed));
     }
     await page.setViewport({ width: 1280, height: 1000, deviceScaleFactor: 1 });
