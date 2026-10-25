@@ -760,10 +760,11 @@ async function main() {
         .filter((el) => /\.L5X/i.test(el.textContent))
         .map((el) => el.id || el.className);
     });
-    if (formatLists.length !== 1 || formatLists[0] !== 'source-guidance') {
-      throw new Error('accepted formats listed ' + JSON.stringify(formatLists));
+    const guidanceLimits = await page.$eval('#source-guidance', (el) => el.textContent);
+    if (!formatLists.includes('source-guidance') || !formatLists.includes('platform-tags') || !/25 MB each/.test(guidanceLimits) || !/100 MB/.test(guidanceLimits)) {
+      throw new Error('accepted formats listed ' + JSON.stringify(formatLists) + ' ' + guidanceLimits);
     }
-    note('accepted formats are listed once', true);
+    note('accepted formats stay on the guidance line and the accepted-files list', true);
 
     const beforeLimit = (await requests(base)).filter((entry) => entry.path === '/jobs').length;
     const limitInput = await page.$('#file-input');
@@ -1458,7 +1459,7 @@ async function main() {
     }
     await assertButtonContrast(page, 'home 1280');
     await runAxe(page, 'home 1280');
-    note('home at 1280 top-aligns the hero, keeps the price on the primary button, and does not leave the last preview alone', true);
+    note('home at 1280 top-aligns the hero, keeps the price under the hero buttons, and does not leave the last preview alone', true);
     await shoot(page, 'retention_privacy', '.privacy');
 
     await fetch(base + '/__mock/checkout-config', {
