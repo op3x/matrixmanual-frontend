@@ -304,6 +304,15 @@ async function main() {
     await openUpload(page, base, '?session_id=cs_test_local');
     const banner = await page.$eval('#access-message', (el) => el.textContent);
     if (!/Starter plan/.test(banner) || !/3 manuals remaining/.test(banner)) throw new Error('banner: ' + banner);
+    const creditNote = await page.$eval('#credit-note', (el) => ({
+      hidden: el.hidden,
+      text: el.innerText.replace(/\s+/g, ' ').trim(),
+      href: (el.querySelector('a') || {}).href || '',
+    }));
+    const creditExpected = "If we can't read your files, we turn them away before any credit is used. If a run ends in an error or doesn't finish, your credit comes back automatically. A finished manual uses a credit, even if it includes warnings. If a credit doesn't come back, or anything else goes wrong on our side, email support@manualos.com and we'll restore it.";
+    if (creditNote.hidden || creditNote.text !== creditExpected) throw new Error('credit note: ' + JSON.stringify(creditNote));
+    if (!/mailto:support@manualos.com$/i.test(creditNote.href)) throw new Error('credit note mailto: ' + creditNote.href);
+    note('credit note states the hand-back rules and links support', true);
     const acceptPlc = await page.$eval('#file-input', (el) => el.getAttribute('accept'));
     if (!acceptPlc.includes('.l5x') || !acceptPlc.includes('.acd') || !acceptPlc.includes('.awl') || !acceptPlc.includes('.stl') || acceptPlc.includes('.step') || acceptPlc.includes('.dwg')) {
       throw new Error('plc accept ' + acceptPlc);
@@ -333,7 +342,7 @@ async function main() {
     ]) {
       await addFile(page, file);
       const alertText = await page.$eval('#upload-error', (el) => el.innerText);
-      if (!pattern.test(alertText) || !/we give the credit back/i.test(alertText)) {
+      if (!pattern.test(alertText) || !/This didn.t use a credit\./i.test(alertText)) {
         throw new Error('blocked ext ' + file + ': ' + alertText);
       }
     }
@@ -343,7 +352,7 @@ async function main() {
 
     await addFile(page, fixtures.big);
     let alertText = await page.$eval('#upload-error', (el) => el.innerText);
-    if (!/50 MB/.test(alertText) || !alertText.trim().endsWith("email support and we'll restore it.")) throw new Error('size message: ' + alertText);
+    if (!/50 MB/.test(alertText) || !alertText.trim().endsWith("This didn't use a credit.")) throw new Error('size message: ' + alertText);
     const welcomeHiddenOnSize = await page.$eval('#payment-welcome', (el) => el.hidden);
     if (!welcomeHiddenOnSize) throw new Error('welcome stayed after the size error');
     await shoot(page, 'oversize', '#upload-error');
@@ -415,11 +424,12 @@ async function main() {
     await page.click('#generate-btn');
     await waitPhase(page, 'error');
     alertText = await page.$eval('#upload-error', (el) => el.innerText);
-    if (!/we give the credit back/i.test(alertText) || !/equipment data/i.test(alertText)) throw new Error('422: ' + alertText);
+    if (!/This didn.t use a credit\./i.test(alertText) || !/equipment data/i.test(alertText)) throw new Error('422: ' + alertText);
+    if (/will come back automatically/i.test(alertText)) throw new Error('422 promised a hand-back: ' + alertText);
     if (!(await page.$eval('#payment-welcome', (el) => el.hidden))) throw new Error('welcome stayed after 422');
     await runAxe(page, 'error');
     await shoot(page, 'error', '#upload-error');
-    note('422 tells the user the file did not use a credit', true);
+    note('422 tells the user this did not use a credit', true);
 
     async function expectError(file, pattern, label) {
       await openUpload(page, base);
@@ -430,10 +440,10 @@ async function main() {
       if (!pattern.test(text)) throw new Error(label + ': ' + text);
       note(label, true);
     }
-    await expectError(fixtures.unknown, /we give the credit back/i, '415 rejected file gives the credit back');
-    await expectError(fixtures.down, /unavailable/i, '503 says the generator is unavailable');
-    await expectError(fixtures.nocredit, /No credit was used/i, '402 says no credit was used');
-    await expectError(fixtures.fail, /If a run fails with an error, we give the credit back/i, 'starter failure gives the credit back');
+    await expectError(fixtures.unknown, /This didn.t use a credit\./i, '415 rejected file did not use a credit');
+    await expectError(fixtures.down, /unavailable[\s\S]*This didn.t use a credit\./i, '503 says the generator is unavailable and did not use a credit');
+    await expectError(fixtures.nocredit, /This didn.t use a credit\./i, '402 says this did not use a credit');
+    await expectError(fixtures.fail, /Your credit will come back automatically\. If it doesn.t, email support@manualos.com\./i, 'starter failure says the credit comes back');
     await openUpload(page, base, '?session_id=cs_test_pro');
     await addFile(page, fixtures.fail);
     await page.click('#generate-btn');
@@ -441,7 +451,7 @@ async function main() {
     const proFail = await page.$eval('#upload-error', (el) => el.innerText);
     if (/credit/i.test(proFail)) throw new Error('pro failure mentions a credit: ' + proFail);
     note('pro failure does not mention a credit', true);
-    await expectError(fixtures.drop, /couldn.t reach ManualOS/i, 'network error is explained');
+    await expectError(fixtures.drop, /couldn.t reach ManualOS[\s\S]*Your credit will come back automatically\. If it doesn.t, email support@manualos.com\./i, 'network error says the credit comes back');
 
     await openUpload(page, base, '?session_id=cs_test_local&jobs=0');
     await page.click('input[value="both"]');
@@ -474,7 +484,7 @@ async function main() {
     await page.click('#generate-btn');
     await waitPhase(page, 'error');
     const forced = await page.$eval('#upload-error', (el) => el.innerText);
-    if (!/isn.t available/.test(forced) || !/Nothing was charged/.test(forced)) throw new Error('jobs=1: ' + forced);
+    if (!/isn.t available/.test(forced) || !/This didn.t use a credit\./i.test(forced)) throw new Error('jobs=1: ' + forced);
     const afterForced = (await requests(base)).filter((entry) => entry.path === '/generate-manual').length;
     if (afterForced !== beforeForced) throw new Error('jobs=1 fell back');
     note('jobs=1 does not fall back when /jobs is 404', true);
@@ -540,8 +550,34 @@ async function main() {
     await openUpload(page, base, '?session_id=cs_test_pro');
     const pro = await page.$eval('#access-message', (el) => el.textContent);
     if (!/Pro plan/.test(pro) || !/Unlimited/.test(pro)) throw new Error(pro);
+    const proNote = await page.evaluate(() => {
+      const el = document.getElementById('credit-note');
+      const style = getComputedStyle(el);
+      const needle = "If we can't read your files";
+      const visible = [];
+      const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+      let node;
+      while ((node = walker.nextNode())) {
+        if (!node.textContent.includes(needle)) continue;
+        const parent = node.parentElement;
+        const parentStyle = getComputedStyle(parent);
+        const rect = parent.getBoundingClientRect();
+        if (parentStyle.display === 'none' || parentStyle.visibility === 'hidden' || rect.height < 1) continue;
+        if (parent.closest('[hidden]')) continue;
+        visible.push(parent.id || parent.className);
+      }
+      return {
+        hidden: el.hidden,
+        display: style.display,
+        height: el.getBoundingClientRect().height,
+        visible,
+      };
+    });
+    if (!proNote.hidden || proNote.display !== 'none' || proNote.height > 0 || proNote.visible.length) {
+      throw new Error('pro rendered the credit note ' + JSON.stringify(proNote));
+    }
     await runAxe(page, 'pro session');
-    note('pro session shows unlimited manuals', true);
+    note('pro session shows unlimited manuals and does not render the credit note', true);
 
     await openUpload(page, base);
     await addFile(page, fixtures.exp);
@@ -585,7 +621,7 @@ async function main() {
     await openUpload(page, base);
     await addFile(page, fixtures.big);
     const staleStart = await page.$eval('#upload-error', (el) => el.hidden ? '' : el.innerText);
-    if (!staleStart.trim().endsWith("email support and we'll restore it.")) throw new Error('stale start: ' + staleStart);
+    if (!staleStart.trim().endsWith("This didn't use a credit.")) throw new Error('stale start: ' + staleStart);
     await addFile(page, fixtures.line);
     if (!(await page.$eval('#upload-error', (el) => el.hidden))) throw new Error('error stayed after a successful add');
     await addFile(page, fixtures.big);
@@ -603,7 +639,7 @@ async function main() {
     await page.click('#generate-btn');
     await waitPhase(page, 'error');
     const cadOnly = await page.$eval('#upload-error', (el) => el.innerText);
-    const cadExpected = 'CAD models need the new generator, which isn’t live yet. Nothing was uploaded and no credit was used.';
+    const cadExpected = 'CAD models need the new generator, which isn’t live yet. Nothing was uploaded. This didn\'t use a credit.';
     if (!cadOnly.includes(cadExpected)) throw new Error('cad only: ' + cadOnly);
     const cadSent = (await requests(base)).slice(beforeCad).filter((entry) => entry.path === '/generate-manual' || entry.path === '/jobs');
     if (cadSent.length) throw new Error('CAD-only legacy sent ' + JSON.stringify(cadSent));
@@ -618,7 +654,7 @@ async function main() {
     await page.click('#generate-btn');
     await waitPhase(page, 'error');
     const autoCad = await page.$eval('#upload-error', (el) => el.innerText);
-    if (!autoCad.includes('Nothing was processed and no credit was used.')) throw new Error('auto cad: ' + autoCad);
+    if (!autoCad.includes('Nothing was processed. This didn\'t use a credit.')) throw new Error('auto cad: ' + autoCad);
     if (/Nothing was uploaded/.test(autoCad)) throw new Error('auto cad still says uploaded: ' + autoCad);
     const autoCadCalls = (await requests(base)).slice(beforeAutoCad);
     const autoJobs = autoCadCalls.filter((entry) => entry.path === '/jobs');

@@ -23,6 +23,9 @@ const chromePath = process.env.CHROME_PATH || '/usr/bin/google-chrome';
 const axePath = '/tmp/manualos-test/node_modules/axe-core/axe.min.js';
 const pages = ['index.html', 'upload.html', '404.html', 'privacy.html', 'terms.html', 'refunds.html', 'support.html', 'cancel/index.html'];
 const CREDIT_LINE = "If a run fails with an error, we give the credit back; if anything goes wrong on our side, email support and we'll restore it.";
+const UPLOAD_CREDIT_NOTE = "If we can't read your files, we turn them away before any credit is used. If a run ends in an error or doesn't finish, your credit comes back automatically. A finished manual uses a credit, even if it includes warnings. If a credit doesn't come back, or anything else goes wrong on our side, email <a href=\"mailto:support@manualos.com\">support@manualos.com</a> and we'll restore it.";
+const UPLOAD_UNTOUCHED = "This didn't use a credit.";
+const UPLOAD_RETURN = "Your credit will come back automatically. If it doesn't, email support@manualos.com.";
 
 function read(name) {
   return readFile(path.join(root, name), 'utf8');
@@ -210,7 +213,10 @@ async function main() {
   if ((html['index.html'].split(creditLine).length - 1) < 2) throw new Error('homepage credit line missing from the FAQ or JSON-LD');
   if ((html['terms.html'].split(creditLine).length - 1) < 2) throw new Error('terms credit line missing');
   if (!html['refunds.html'].includes(creditLine)) throw new Error('refunds credit line missing');
-  if (!html['upload.html'].includes("sessionPlan === 'starter'") || !html['upload.html'].includes(creditLine)) throw new Error('upload credit line is not limited to Starter');
+  if (!html['upload.html'].includes("sessionPlan !== 'starter'") || !html['upload.html'].includes(UPLOAD_RETURN)) throw new Error('upload credit return is not limited to Starter');
+  if (!html['upload.html'].includes(UPLOAD_CREDIT_NOTE)) throw new Error('upload credit note missing');
+  if (!html['upload.html'].includes(UPLOAD_UNTOUCHED)) throw new Error('upload pre-credit sentence missing');
+  if (html['upload.html'].includes(creditLine)) throw new Error('upload still uses the short credit line');
   if (!html['terms.html'].includes('the credits and access from that purchase end.')) throw new Error('terms missing access-ends sentence');
   const chargeback = "Chargebacks and payment disputes: access is suspended while a dispute is open, restored if it's decided in ManualOS's favor, and permanently revoked for the disputed purchase if ManualOS loses it. A dispute doesn't stop you from buying from us again, but we may decline a purchase if we reasonably suspect fraud or abuse.";
   for (const name of ['terms.html', 'refunds.html']) {
@@ -436,7 +442,8 @@ async function main() {
     if (shipped.toLowerCase().includes(phrase.toLowerCase())) throw new Error('shipped page still contains ' + phrase);
   }
   if (/provided by Op3x/i.test(shipped)) throw new Error('hidden checkout copy still says provided by');
-  if (!html['upload.html'].includes(CREDIT_LINE) || !html['index.html'].includes(CREDIT_LINE)) throw new Error('approved credit line missing');
+  if (!html['index.html'].includes(CREDIT_LINE)) throw new Error('approved credit line missing');
+  if (!html['upload.html'].includes(UPLOAD_CREDIT_NOTE) || !html['upload.html'].includes(UPLOAD_RETURN)) throw new Error('upload credit wording missing');
   await assertNoBrandNames(root);
   console.log('PASS static checks and brand names');
 
