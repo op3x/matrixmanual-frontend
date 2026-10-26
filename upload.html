@@ -216,7 +216,7 @@
         </div>
       </div>
       <ul class="file-list" id="file-list" hidden></ul>
-      <p class="credit-note" id="credit-note">A file we reject — wrong format, or no equipment data in the file — does not use a credit.</p>
+      <p class="credit-note" id="credit-note">Unreadable files use no Starter credit</p>
       <div class="generate-btn-wrap">
         <button class="btn-primary" id="generate-btn" type="submit" disabled>Generate my manual</button>
       </div>
@@ -1138,7 +1138,7 @@
       generateBtn.textContent = 'Generate my manual';
       var reason = safeServerMessage({ error: job.error }) || 'Please try again.';
       var finished = 'The manual couldn’t be finished. ' + reason;
-      if (sessionPlan === 'starter') finished += " If a run fails with an error, we give the credit back; if anything goes wrong on our side, email support and we'll restore it.";
+      if (sessionPlan === 'starter') finished += " This run didn't finish, so your credit has been returned. If it isn't back in your balance, email support@manualos.com and we'll restore it.";
       showUploadError(finished);
       return;
     }

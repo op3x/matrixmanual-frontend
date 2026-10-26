@@ -155,7 +155,7 @@ async function main() {
     '<strong>Pro:</strong> each monthly charge can be refunded until that billing period ends, as long as no manual has been delivered in that period. Ask before your plan renews.',
     "Once a manual is delivered, that purchase or charge can't be refunded, except where required by law.",
     'from the email address you used at checkout.',
-    "If a run fails with an error, we give the credit back; if anything goes wrong on our side, email support and we'll restore it.",
+    "On Starter, if we can't read your files, we turn them away before any credit is used. If a run ends in an error or doesn't finish, your credit comes back automatically. A finished manual uses a credit, even if it includes warnings. If a credit doesn't come back, or anything else goes wrong on our side, email support@manualos.com and we'll restore it.",
     "and we'll help.",
   ];
   for (const phrase of refundRule) {
@@ -170,14 +170,17 @@ async function main() {
   }
   if (html['refunds.html'].includes('backup copies are deleted within 28 days')) throw new Error('refunds includes the backup clause');
   if (/A run that fails|failed run never/.test(Object.values(html).join('\n'))) throw new Error('a page still says every failed run returns a credit');
-  const creditLine = "If a run fails with an error, we give the credit back; if anything goes wrong on our side, email support and we'll restore it.";
+  const creditLine = "On Starter, if we can't read your files, we turn them away before any credit is used. If a run ends in an error or doesn't finish, your credit comes back automatically. A finished manual uses a credit, even if it includes warnings. If a credit doesn't come back, or anything else goes wrong on our side, email support@manualos.com and we'll restore it.";
   const pagesHtml = Object.values(html).join('\n');
+  if (pagesHtml.includes("If a run fails with an error, we give the credit back; if anything goes wrong on our side, email support and we'll restore it.")) throw new Error('fallback credit line remains');
   if (pagesHtml.includes("If we can't read your files, or the run ends in an error, it doesn't use a credit.")) throw new Error('old interim credit line remains');
   if (/never uses a credit|doesn['\u2019]t use a credit/i.test(pagesHtml)) throw new Error('a page still makes an absolute credit claim');
-  if ((html['index.html'].split(creditLine).length - 1) < 2) throw new Error('homepage credit line missing from the FAQ or JSON-LD');
-  if ((html['terms.html'].split(creditLine).length - 1) < 2) throw new Error('terms credit line missing');
-  if (!html['refunds.html'].includes(creditLine)) throw new Error('refunds credit line missing');
-  if (!html['upload.html'].includes("sessionPlan === 'starter'") || !html['upload.html'].includes(creditLine)) throw new Error('upload credit line is not limited to Starter');
+  if ((html['index.html'].split(creditLine).length - 1) < 2) throw new Error('homepage credit block missing from the FAQ or JSON-LD');
+  if (!html['terms.html'].includes(creditLine)) throw new Error('terms credit block missing');
+  if (!html['refunds.html'].includes(creditLine)) throw new Error('refunds credit block missing');
+  const starterFail = "This run didn't finish, so your credit has been returned. If it isn't back in your balance, email support@manualos.com and we'll restore it.";
+  if (!html['upload.html'].includes("sessionPlan === 'starter'") || !html['upload.html'].includes(starterFail)) throw new Error('upload credit line is not limited to Starter');
+  if (!html['upload.html'].includes('Unreadable files use no Starter credit')) throw new Error('short credit slot missing');
   if (!html['terms.html'].includes('the credits and access from that purchase end.')) throw new Error('terms missing access-ends sentence');
   const chargeback = "Chargebacks and payment disputes: access is suspended while a dispute is open, restored if it's decided in ManualOS's favor, and permanently revoked for the disputed purchase if ManualOS loses it. A dispute doesn't stop you from buying from us again, but we may decline a purchase if we reasonably suspect fraud or abuse.";
   for (const name of ['terms.html', 'refunds.html']) {
